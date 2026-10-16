@@ -100,12 +100,44 @@ riconosciuti corretti, pixel nero fuori combattimento, mai bianco. È il motivo
 della sostituzione di JustAC con il motore interno; la correzione è provata
 solo offline (`test_queue.lua`), non ancora in gioco.
 
+## Prove in gioco del motore interno (2026-10-16, 1.0.0)
+
+Guerriero livello 13, talenti Fury, client 1.60.1.70425, log diagnostico
+(righe `queue`, `head`, `pixel`, `cast`, `defense`, `interrupt`), una decina di
+combattimenti contro uno o più mob.
+
+| Verifica | Esito | Evidenza |
+|---|---|---|
+| Albero e contesto | **verificato**: `fury`, `st` con un nemico, `aoe` con tre, ritorno a `st` | righe `queue` |
+| Liste di livellamento | **verificato**: `fury+leveling`; Bloodrage, Battle Shout, Rend (anche su bersagli nuovi), Sunder una volta per bersaglio, Thunder Clap in aoe, Heroic Strike, Overpower dopo una schivata | righe `head` e `cast` |
+| Nessun ciclo di posture | **verificato**: nessuna postura in coda in Postura da battaglia | righe `head` |
+| Pixel | **verificato**: ogni suggerimento pronto codificato (celle 2, 3, 4, 6, 7, 8), nero dopo ogni lancio riconosciuto, nero in "wait" e fuori combattimento | righe `pixel` |
+| Riga promemoria | **verificato**: il clic sul cibo fa mangiare | conferma del proprietario, lanci 433 / 1248380 |
+| Cella automatica dell'oggetto di cura | **verificato**: svuotata senza pozioni nelle borse | conferma del proprietario |
+| "Wait" | 64-71 % del tempo contro mob singoli: rabbia esaurita a questo livello | righe `head` |
+| Interruzioni | **non verificato**: nessun nemico incantatore nella zona | nessuna riga `interrupt` |
+| Colonna difensiva sotto il 50 % | **non verificato**: nessuna pozione nelle borse, nessun difensivo noto al livello 13 | righe `defense` = `none` |
+| Burst | **non verificato**: Death Wish si impara al livello 30 | — |
+
+Difetti trovati in gioco e corretti lo stesso giorno:
+
+| Difetto | Causa | Correzione |
+|---|---|---|
+| Coda vuota per 18 s dopo l'ingaggio | spell conosciute lette con risposta segreta in combattimento | `d84e209`: ultima risposta in chiaro conservata |
+| Errore della coda per 10-20 s a ogni ingaggio (`attempt to compare local 'back'`) | il controllo in chiaro riusava la FontString che aveva contenuto un segreto | `fbae03a`: FontString separata |
+| Sunder suggerito dopo ogni lancio; DoT mai riconosciuti | debuff del bersaglio illeggibili e GUID del bersaglio segreto in combattimento | `f9f733f`: applicazioni proprie contate, bersaglio riconosciuto anche senza GUID |
+| Fury in Postura difensiva senza via d'uscita | Postura berserker non ancora appresa | `f9f733f`: Postura da battaglia come ripiego |
+| Molti "wait" con le liste di livello 60 | liste wowsims per personaggi di livello 60 | `9237417`: liste di livellamento; `39603da`: Heroic Strike senza soglia prima di Bloodthirst |
+| Clic sui promemoria senza effetto | registrato solo il rilascio, il client agisce alla pressione | `462e863` |
+| Colonna difensiva vuota con una pozione nelle borse | conteggi delle borse segreti in combattimento | `3c7935f`: ultimo conteggio in chiaro conservato |
+| Cella della pozione rimasta senza pozioni | la cella automatica non veniva mai svuotata | `1de7b0d` |
+
 ## Prove non eseguite (limiti)
 
 | Prova | Motivo | Riferimento |
 |---|---|---|
-| Motore interno in gioco (albero, contesto, posture, Carica, interruzioni, burst, difensivi, oggetto di cura, promemoria) | non ancora eseguita | `RUNTIME_CHECKLIST.md` F |
-| API del motore su Forever (curve, `TruncateWhenZero`, `DurationObject`, talenti, nameplate) | i mock non provano il comportamento del client | `FOREVER_API_COMPATIBILITY.md` |
+| Interruzioni, colonna difensiva sotto il 50 %, burst, altre classi | vedi la tabella sopra; solo il Guerriero è giocabile | `RUNTIME_CHECKLIST.md` F |
+| API del motore su Forever (curve, `TruncateWhenZero`, `DurationObject`, talenti, nameplate) | provate indirettamente dal Guerriero (coda, soglie, nameplate funzionanti); casi limite non coperti | `FOREVER_API_COMPATIBILITY.md` |
 | Cattura reale del pixel a schermo | richiede il client in esecuzione con un personaggio | `RUNTIME_CHECKLIST.md` D |
 | Pulsanti secure, binding override, `ActionButtonUseKeyDown`, state driver della riga promemoria su Forever | idem | B, F |
 | Valori segreti reali in combattimento/istanza | i mock non provano il comportamento del client | E20 |

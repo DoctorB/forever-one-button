@@ -63,3 +63,8 @@ Preparazione: copiare `dist/ForeverOneButton-<versione>.zip` in `AddOns`,
 31. Oggetto di cura: con una pozione di cura nelle borse una cella automatica la contiene; con una pozione migliore la cella cambia oggetto; dopo l'uso in combattimento la voce resta "in cooldown" fino alla fine del combattimento.
 32. Riga promemoria: fuori combattimento, con un elisir di forza o una pietra per armi nelle borse e nessun effetto di quella categoria attivo, compare sotto la striscia (il Guerriero non ha buff di classe nei dati); il clic lancia la spell o usa l'oggetto; nessun tasto la attiva; all'ingaggio la riga sparisce e riappare dopo il combattimento; nessun errore `ADDON_ACTION_BLOCKED`.
 33. Dopo un combattimento con salute sotto il 70 %: la riga propone cibo (o una benda se non c'è cibo e non si è "Recently Bandaged"); mentre si mangia non viene riproposto.
+
+Esito al 2026-10-16 (Guerriero Fury livello 13, `TEST_REPORT.md`): 24, 25, 27,
+32 (cibo), 33 verificati; 26 (Carica) visto nei lanci, non come suggerimento
+in posizione 1; 28, 29, 30 non verificati (nessun incantatore, Death Wish non
+appresa, nessuna pozione); 31 parzialmente (cella svuotata senza pozioni).
