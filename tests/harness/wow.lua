@@ -67,8 +67,19 @@ function Region:SetHeight(h) self.height = h end
 function Region:Show() self.shown = true end
 function Region:Hide() self.shown = false end
 function Region:IsShown() return self.shown end
-function Region:SetText(t) self.text = t end
-function Region:GetText() return self.text end
+-- As on the client, a font string that once held secret text returns any
+-- non-empty text as a secret from then on (empty text: nothing).
+function Region:SetText(t)
+    if issecretvalue(t) then self.heldSecret = true end
+    self.text = t
+end
+function Region:GetText()
+    if self.heldSecret and not issecretvalue(self.text) then
+        if self.text == nil or self.text == "" then return nil end
+        return H.SecretOf(self.text)
+    end
+    return self.text
+end
 function Region:SetTextColor() end
 function Region:SetJustifyH() end
 function Region:SetWordWrap() end

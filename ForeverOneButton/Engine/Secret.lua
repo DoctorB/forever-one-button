@@ -16,21 +16,33 @@ local ADDON_NAME, ns = ...
 local Secret = {}
 ns.Secret = Secret
 
-local scratchText, probeArg
-local function TextProbe()
-    scratchText:SetText(C_StringUtil.TruncateWhenZero(probeArg) or "")
-    return scratchText:GetText()
-end
-
-local function ScratchText()
-    if scratchText ~= nil then return scratchText or nil end
-    scratchText = false
+-- Two hidden font strings: one receives the secrets, the other only plain
+-- text. A font string that once held a secret returns secret text for good,
+-- so the plain readback check must never use the probe's own widget.
+local function NewScratch()
     local ok, holder = pcall(CreateFrame, "Frame")
-    if not ok or not holder then return nil end
+    if not ok or not holder then return false end
     holder:Hide()
     local okFS, fs = pcall(holder.CreateFontString, holder, nil, "BACKGROUND", "GameFontNormal")
-    if okFS and fs then scratchText = fs end
-    return scratchText or nil
+    return okFS and fs or false
+end
+
+local probeText, checkText, probeArg
+local function TextProbe()
+    probeText:SetText(C_StringUtil.TruncateWhenZero(probeArg) or "")
+    return probeText:GetText()
+end
+
+local function Scratches()
+    if probeText == nil then probeText, checkText = NewScratch(), NewScratch() end
+    return probeText and checkText
+end
+
+-- Does a plain text still come back at all? A dead readback and a real zero
+-- both give no text.
+local function ReadbackWorks()
+    local ok, back = pcall(function() checkText:SetText("1"); return checkText:GetText() end)
+    return ok and not ns.IsSecret(back) and back == "1"
 end
 
 -- true when v is zero, false when it is not, nil when that cannot be known.
@@ -40,17 +52,16 @@ function Secret.IsZero(v)
         if type(v) == "number" then return v == 0 end
         return nil
     end
-    if not (C_StringUtil and C_StringUtil.TruncateWhenZero) or not ScratchText() then return nil end
+    if not (C_StringUtil and C_StringUtil.TruncateWhenZero) or not Scratches() then return nil end
     probeArg = v
     local ok, text = pcall(TextProbe)
     probeArg = nil
     if not ok then return nil end
     -- Text came back: a real non-zero (a secret string is truthy, never
     -- compared). No text: zero, unless the readback itself stopped working,
-    -- which a plain round trip tells apart.
+    -- which a plain round trip on the other widget tells apart.
     if text and (ns.IsSecret(text) or text ~= "") then return false end
-    local okPlain, back = pcall(function() scratchText:SetText("1"); return scratchText:GetText() end)
-    if not okPlain or back ~= "1" then return nil end
+    if not ReadbackWorks() then return nil end
     return true
 end
 
