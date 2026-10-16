@@ -1,12 +1,9 @@
 -- Forever One Button: automatic, stable cell filling (owner decision, 2026-10-15).
 --
--- Source: the set of abilities JustAC can suggest on this character (rotation
--- pool plus gap closers, see AddGapClosers), read
--- once per change from JustAC's public library function
--- LibStub("JustAC-BlizzardAPI").GetRotationSpells() (BlizzardAPI/SpellQuery.lua:326
--- @ 431e9a2). On Forever that is JustAC's pool: the spells on the action bars
--- plus the known abilities of its Forever list, at the rank JustAC presses
--- (ForeverPool, :317). Passive spells are already excluded there.
+-- Source: the abilities the engine can suggest for this character, in a
+-- fixed order: the active tree's priority list (single target, cleave, aoe),
+-- then the class's gap closers, interrupts and defensives. Known spells only,
+-- at the rank the character presses (Engine/Ranks.lua).
 --
 -- Rules:
 --   * a pool spell not on the grid takes the first free cell, in pool order,
@@ -16,73 +13,61 @@
 --   * a spell the user removed from a cell is never put back automatically;
 --   * cells the user filled are never touched;
 --   * out of combat only; requests in combat run when combat ends.
--- This never looks at JustAC's queue: what JustAC suggests at a given moment
+-- This never looks at the current queue: what is suggested at a given moment
 -- has no influence on which cell a spell gets.
 local ADDON_NAME, ns = ...
 
 local AutoFill = {}
 ns.AutoFill = AutoFill
 
-AutoFill.LIBRARY = "JustAC-BlizzardAPI"
-AutoFill.VERIFIED_MINOR = 36
-AutoFill.MAX_POOL = 80
 AutoFill.DELAY_SECONDS = 0.5 -- coalesces SPELLS_CHANGED / ACTIONBAR_SLOT_CHANGED bursts
 AutoFill.pending = false
 AutoFill.status = "not run"
 AutoFill.overflow = 0
 
 local scheduled = false
+local CONTEXTS = {"st", "cleave", "aoe"}
 
--- Copy of JustAC's pool: positive integer spell IDs in JustAC's order.
--- Returns list or nil, status.
-function AutoFill.ReadPool()
-    local stub = LibStub
-    if ns.IsSecret(stub) or type(stub) ~= "table" or type(stub.GetLibrary) ~= "function" then
-        return nil, "JustAC not loaded"
-    end
-    local ok, lib = pcall(stub.GetLibrary, stub, AutoFill.LIBRARY, true)
-    if not ok or type(lib) ~= "table" then return nil, "JustAC not loaded" end
-    if type(lib.GetRotationSpells) ~= "function" then return nil, "JustAC pool not available" end
-    local okCall, pool = pcall(lib.GetRotationSpells)
-    if not okCall then return nil, "JustAC pool error" end
-    if ns.IsSecret(pool) or type(pool) ~= "table" then return nil, "JustAC pool empty" end
+-- Interrupt spells of the data this character knows, best first (lockout
+-- kicks before crowd control, then the data's tiebreaker).
+local function KnownInterrupts()
     local out = {}
-    for i = 1, AutoFill.MAX_POOL do
-        local id = rawget(pool, i)
-        if ns.IsSecret(id) then return nil, "JustAC pool unreadable" end
-        if id == nil then break end
-        if type(id) == "number" and id > 0 and id == math.floor(id) then out[#out + 1] = id end
+    for id, info in pairs(ns.Data.Interrupts.abilities) do
+        if info.kind == "interrupt" and ns.Ranks.HighestKnown(id) then out[#out + 1] = {id = id, pri = info.pri or 9} end
     end
-    AutoFill.AddGapClosers(stub, lib, out)
-    return out, "ok"
+    table.sort(out, function(a, b)
+        if a.pri ~= b.pri then return a.pri < b.pri end
+        return a.id < b.id
+    end)
+    for i, item in ipairs(out) do out[i] = item.id end
+    return out
 end
 
--- JustAC also suggests gap closers (Charge, Intercept...) from a separate
--- list, injected by its gap-closer stage (SpellQueue._StageGapCloser), not
--- from the rotation pool. They are appended after the pool: the class
--- defaults JustAC uses (JustAC-SpellDB.GetGapCloserDefaults, rank-1 IDs on
--- Forever, Data/ForeverDefaults.lua GAP_CLOSER) resolved to the rank the
--- character knows with JustAC's own BlizzardAPI.ResolveKnownSpellID.
--- Unknown spells resolve to nil and are skipped.
-function AutoFill.AddGapClosers(stub, blizzardAPI, out)
-    local okDB, spellDB = pcall(stub.GetLibrary, stub, "JustAC-SpellDB", true)
-    if not okDB or type(spellDB) ~= "table" or type(spellDB.GetGapCloserDefaults) ~= "function" then return end
-    if type(blizzardAPI.ResolveKnownSpellID) ~= "function" then return end
-    local ok, defaults = pcall(spellDB.GetGapCloserDefaults)
-    if not ok or ns.IsSecret(defaults) or type(defaults) ~= "table" then return end
-    local have = {}
-    for _, id in ipairs(out) do have[id] = true end
-    for i = 1, 20 do
-        local raw = rawget(defaults, i)
-        if raw == nil or ns.IsSecret(raw) then break end
-        if type(raw) == "number" and raw > 0 then
-            local okID, id = pcall(blizzardAPI.ResolveKnownSpellID, raw)
-            if okID and ns.Readable(id) and type(id) == "number" and id > 0 and not have[id] then
-                have[id] = true
-                out[#out + 1] = id
-            end
+-- Pool: spell IDs at the pressed rank. Returns list or nil, status.
+function AutoFill.ReadPool()
+    local class = ns.Trees.Class()
+    local trees = class and ns.Data.Rotations.classes[class]
+    if not trees then return nil, "no priority list for this class" end
+    local out, seen = {}, {}
+    local function Add(first)
+        first = ns.Ranks.Base(first)
+        if seen[first] then return end
+        seen[first] = true
+        local id = ns.Ranks.Pressed(first)
+        if id then out[#out + 1] = id end
+    end
+    local roles = ns.Data.Defaults.abilityRoles
+    local contexts = trees[ns.Trees.Pick(class)] or {}
+    for _, key in ipairs(CONTEXTS) do
+        for _, entry in ipairs(contexts[key] or {}) do
+            local role = roles[entry.id]
+            if role == nil or role == "mixed" then Add(entry.id) end
         end
     end
+    for _, id in ipairs(ns.Data.Defaults.gapClosers[class] or {}) do Add(id) end
+    for _, id in ipairs(KnownInterrupts()) do Add(id) end
+    for _, id in ipairs(ns.Data.Defaults.defensive[class] or {}) do Add(id) end
+    return out, "ok"
 end
 
 local function Override(spellID)

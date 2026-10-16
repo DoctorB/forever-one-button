@@ -5,7 +5,7 @@ H.Equal(fields.Interface, "16001", "Forever interface (verified via GetBuildInfo
 H.Equal(fields.Title, "Forever One Button", "title")
 H.Equal(fields.SavedVariables, "ForeverOneButtonDB, ForeverOneButtonLog", "dedicated SavedVariables (settings, optional diagnostic log)")
 H.Equal(fields.SavedVariablesPerCharacter, "ForeverOneButtonCharDB", "per-character cells")
-H.Equal(fields.OptionalDeps, "JustAC", "JustAC optional: absence is a handled state")
+H.Equal(fields.OptionalDeps, nil, "no optional dependency: the engine is built in")
 H.Equal(fields.Dependencies, nil, "no hard dependency")
 H.Equal(fields.RequiredDeps, nil, "no hard dependency")
 H.Check(fields.Version:match("^%d+%.%d+%.%d+$"), "semantic version")

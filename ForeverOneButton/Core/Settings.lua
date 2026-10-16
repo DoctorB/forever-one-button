@@ -1,7 +1,7 @@
 -- Forever One Button: persistent settings with an explicit whitelist.
 -- ForeverOneButtonDB (account: keys, layout, pixel) and ForeverOneButtonCharDB
 -- (character: cell actions) are dedicated to this addon. They are never seeded
--- from HCOneButton saved data or JustAC profiles, and every unknown key is
+-- from HCOneButton saved data or other addons' profiles, and every unknown key is
 -- dropped on load, so excluded features cannot be revived through saved data.
 local ADDON_NAME, ns = ...
 
@@ -19,7 +19,7 @@ Settings.GRID_LIMITS = {
     cellSize = {min = 24, max = 64, default = 40},   -- cell edge, UI units
     spacing = {min = 0, max = 12, default = 4},      -- gap between cells
     scale = {min = 0.5, max = 2.0, default = 1.0},   -- grid frame scale
-    queueDepth = {min = 1, max = 5, default = 3},    -- JustAC positions labelled
+    queueDepth = {min = 1, max = 5, default = 3},    -- queue positions labelled
 }
 -- Schema 1 (0.1.0) defaults, replaced by the schema 2 ones when untouched.
 local SCHEMA1_DEFAULTS = {slots = 12, columns = 6}

@@ -12,27 +12,22 @@ ns.VERSION = "0.2.0"
 -- The grid therefore never exposes more than 20 cells.
 ns.MAX_SLOTS = 20
 
--- Snapshot states published by the JustAC adapter.
+-- Queue snapshot states (Engine/Queue.lua).
 ns.STATUS = {
-    OK = "ok",                 -- queue read; may still be empty
-    MISSING = "missing",       -- JustAC-SpellQueue not registered (yet)
-    NO_METHOD = "no_method",   -- library present without GetCurrentSpellQueue
-    ERROR = "error",           -- the call raised an error
-    INVALID = "invalid",       -- result does not match the verified contract
-    UNREADABLE = "unreadable", -- result table cannot be accessed (secret)
+    OK = "ok",           -- queue built; may still be empty
+    MISSING = "missing", -- no priority list for this class
+    ERROR = "error",     -- the build raised an error
 }
 
--- Queue entry kinds, as defined by JustAC SpellQueue.lua @ 431e9a2:
--- positive = spell ID, negative = -itemID, WAIT_SENTINEL = deliberate wait.
+-- Queue entry kinds: spell (spell ID), item (-itemID, so spells and items
+-- never share an ID) or a deliberate wait.
 ns.ENTRY = {
     SPELL = "spell",
     ITEM = "item",
     WAIT = "wait",
-    UNREADABLE = "unreadable",
 }
 
--- Position 1 when nothing can be pressed yet (the value JustAC used, so logs
--- stay comparable).
+-- ID logged for a wait (the value used since 0.1.0, so logs stay comparable).
 ns.WAIT_ID = -999999999
 
 local issecretvalue = issecretvalue

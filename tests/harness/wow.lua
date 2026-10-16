@@ -324,38 +324,39 @@ function LibStub:NewLibrary(major, minor)
     return H.libs[major].lib
 end
 
--- A JustAC-SpellQueue stand-in that mirrors the verified shape: one shared
--- table, wiped and refilled in place, returned by a dot-called function.
-function H.InstallJustAC(minor)
-    local lib = LibStub:NewLibrary("JustAC-SpellQueue", minor or 43)
-    lib.WAIT_SENTINEL = -999999999
-    local shared = {}
-    lib._shared = shared
-    lib.calls = 0
-    function lib.GetCurrentSpellQueue(...)
-        assert(select("#", ...) == 0, "GetCurrentSpellQueue takes no arguments")
-        lib.calls = lib.calls + 1
-        return shared
+-- A queue chosen by the test in place of the engine (Engine/Queue.lua), for
+-- suites about the panel and the pixel. Set(ids): positive spell IDs, -itemID
+-- for items, q.WAIT for a wait; all entries ready. Fail(message) makes the
+-- build raise; Remove() reports a class without a priority list. An
+-- unchanged queue returns the previous snapshot, like the engine.
+function H.InstallQueue()
+    local q = {WAIT = -999999999, ids = {}, calls = 0}
+    function q.Set(ids) q.ids, q.failure, q.missing = ids, nil, nil end
+    function q.Fail(message) q.failure = message or "failure" end
+    function q.Remove() q.missing = true end
+    H.ns.Queue.Build = function(previous)
+        q.calls = q.calls + 1
+        if q.failure then error(q.failure) end
+        local status = q.missing and "missing" or "ok"
+        if previous and previous.status == status and previous.count == #q.ids and not q.missing then
+            local same = true
+            for i, id in ipairs(q.ids) do
+                if previous.entries[i].id ~= id then same = false break end
+            end
+            if same then return previous end
+        elseif previous and q.missing and previous.status == status then
+            return previous
+        end
+        local snapshot = {status = status, entries = {}, count = 0, tree = "arms", context = "st"}
+        if q.missing then return snapshot end
+        for i, id in ipairs(q.ids) do
+            local kind = (id == q.WAIT and "wait") or (id < 0 and "item") or "spell"
+            snapshot.entries[i] = {kind = kind, id = id, ready = kind ~= "wait"}
+        end
+        snapshot.count = #q.ids
+        return snapshot
     end
-    function lib.SetQueue(ids)
-        wipe(shared)
-        for i, id in ipairs(ids) do shared[i] = id end
-    end
-    return lib
-end
-
--- JustAC-BlizzardAPI stand-in: only the pool function AutoFill reads.
-function H.InstallJustACPool(ids)
-    H.libs["JustAC-BlizzardAPI"] = H.libs["JustAC-BlizzardAPI"] or {lib = {}, minor = 36}
-    local lib = H.libs["JustAC-BlizzardAPI"].lib
-    lib.pool = ids
-    lib.poolCalls = 0
-    function lib.GetRotationSpells(...)
-        assert(select("#", ...) == 0, "GetRotationSpells called with arguments")
-        lib.poolCalls = lib.poolCalls + 1
-        return lib.pool
-    end
-    return lib
+    return q
 end
 
 -- Addon loader -------------------------------------------------------------

@@ -16,7 +16,7 @@ local LABELS = {
     cellSize = "Cell size",
     spacing = "Spacing",
     scale = "Scale",
-    queueDepth = "JustAC positions shown",
+    queueDepth = "Queue positions shown",
 }
 Options.NUMERIC_ORDER = {"slots", "columns", "cellSize", "spacing", "scale", "queueDepth"}
 
@@ -84,7 +84,7 @@ local function BuildLayoutPage(page)
     Check("Hide Blizzard's bottom bar (keys keep working; stance and XP bars stay)",
         function() return ns.Settings.Get().hideBlizzardBar end,
         function(v) return ns.BlizzardBar.SetHidden(v) end)
-    Check("Fill cells automatically with JustAC's spells", function() return ns.Settings.Get().autoFill end,
+    Check("Fill cells automatically from the priority list", function() return ns.Settings.Get().autoFill end,
         function(v) ns.AutoFill.SetEnabled(v); return true end)
 
     Button(page, "Reset grid layout", 150, function() Report(ns.Settings.ResetLayout()) end)

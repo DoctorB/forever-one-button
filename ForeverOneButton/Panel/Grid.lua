@@ -1,7 +1,7 @@
 -- Forever One Button: the Action Panel, a checkerboard grid of action buttons.
 --
 -- Designed from scratch (docs/ACTION_PANEL_DESIGN.md). Each cell is a secure
--- action button whose action and key the user chose. JustAC suggestions are
+-- action button whose action and key the user chose. Suggestions are
 -- shown as numbered marks on the cells and in the queue strip below the grid;
 -- they never change what a cell does or which key it has.
 --
@@ -16,7 +16,7 @@ Grid.buttons = {}
 Grid.pendingLayout = false
 
 local POSITION_COLORS = {
-    [1] = {1.00, 0.82, 0.10}, -- JustAC position 1: gold
+    [1] = {1.00, 0.82, 0.10}, -- queue position 1: gold
     other = {0.30, 0.80, 1.00}, -- positions 2+: cyan
 }
 local CHECKER = {{0.10, 0.12, 0.15, 0.92}, {0.17, 0.19, 0.23, 0.92}}
@@ -100,8 +100,8 @@ dragBar:SetScript("OnLeave", function()
     if GameTooltip then GameTooltip:Hide() end
 end)
 
--- Status line and JustAC queue strip, below the cells. The strip lists the
--- queue in JustAC order with the cell that holds each entry.
+-- Status line and queue strip, below the cells. The strip lists the queue in
+-- order with the cell that holds each entry.
 local strip = CreateFrame("Frame", "ForeverOneButtonQueueStrip", container)
 strip:SetHeight(STRIP_HEIGHT)
 strip:SetPoint("TOPLEFT", container, "BOTTOMLEFT", 0, -2)
@@ -193,7 +193,7 @@ local function OnEnter(button)
     local key = ns.Actions.appliedKeys[button.slot]
     GameTooltip:AddLine(key and ("Key: " .. key) or "No key bound", 0.8, 0.8, 0.8)
     if button.queuePosition then
-        GameTooltip:AddLine("JustAC position " .. button.queuePosition, 1, 0.82, 0.1)
+        GameTooltip:AddLine("Queue position " .. button.queuePosition, 1, 0.82, 0.1)
     end
     if not ns.Actions.applied[button.slot] then
         GameTooltip:AddLine("Drag a spell or item here (out of combat)", 0.6, 0.6, 0.6)
@@ -319,12 +319,16 @@ function Grid.Refresh()
 end
 
 local STATUS_TEXT = {
-    [ns.STATUS.MISSING] = "JustAC not loaded - no suggestions",
-    [ns.STATUS.NO_METHOD] = "JustAC queue API not found - no suggestions",
-    [ns.STATUS.ERROR] = "JustAC queue error - no suggestions",
-    [ns.STATUS.INVALID] = "JustAC returned unexpected data - no suggestions",
-    [ns.STATUS.UNREADABLE] = "JustAC queue unreadable - no suggestions",
+    [ns.STATUS.MISSING] = "No priority list for this class - no suggestions",
+    [ns.STATUS.ERROR] = "Suggestion error - no suggestions",
 }
+
+-- "Arms (single target)" from the snapshot's tree and context.
+local CONTEXT_TEXT = {st = "single target", cleave = "cleave", aoe = "aoe"}
+local function TreeText(snapshot)
+    local tree = snapshot.tree and snapshot.tree:gsub("_", " "):gsub("^%l", string.upper) or "?"
+    return tree .. " (" .. (CONTEXT_TEXT[snapshot.context] or "?") .. ")"
+end
 
 local function EntryVisual(entry)
     if entry.kind == ns.ENTRY.SPELL then return ns.SpellIcon(entry.id) end
@@ -332,7 +336,8 @@ local function EntryVisual(entry)
     return nil
 end
 
--- Marks JustAC positions on the cells and lists the queue in JustAC order.
+-- Marks queue positions on the cells and lists the queue in order; entries
+-- that are not ready yet are dimmed.
 -- Called on every queue change; touches regions only, so it is combat safe.
 function Grid.ShowQueue(snapshot, observation)
     snapshot = snapshot or {status = ns.STATUS.MISSING, entries = {}, count = 0}
@@ -356,10 +361,10 @@ function Grid.ShowQueue(snapshot, observation)
                 and ns.Actions.SlotFor(entry.id) or nil
             local label
             if entry.kind == ns.ENTRY.WAIT then label = position .. ": wait"
-            elseif entry.kind == ns.ENTRY.UNREADABLE then label = position .. ": ?"
             elseif slot then label = position .. ": c" .. slot
             else label = position .. ": --" end
             item.icon:SetTexture(EntryVisual(entry) or EMPTY_ICON)
+            item.icon:SetAlpha(entry.ready == false and 0.45 or 1)
             item.icon:Show()
             item.label:SetText(label)
             item.label:Show()
@@ -384,14 +389,13 @@ function Grid.ShowQueue(snapshot, observation)
     local text = STATUS_TEXT[snapshot.status]
     if not text then
         local first = snapshot.entries[1]
-        if not first then text = "JustAC: no suggestion"
-        elseif first.kind == ns.ENTRY.WAIT then text = "JustAC: wait"
-        elseif first.kind == ns.ENTRY.UNREADABLE then text = "JustAC suggestion unreadable"
-        elseif unmappedHead then text = "JustAC suggestion is not on the grid (--)"
-        elseif observation.casting then text = "JustAC: casting"
-        elseif observation.outOfRange then text = "JustAC: out of range"
-        else text = "JustAC" end
-        if snapshot.verifiedMinor == false then text = text .. " (untested JustAC version)" end
+        local tree = TreeText(snapshot)
+        if not first then text = tree .. ": no suggestion"
+        elseif first.kind == ns.ENTRY.WAIT then text = tree .. ": wait"
+        elseif unmappedHead then text = tree .. ": suggestion is not on the grid (--)"
+        elseif observation.casting then text = tree .. ": casting"
+        elseif observation.outOfRange then text = tree .. ": out of range"
+        else text = tree end
     end
     if Grid.pendingLayout or ns.Actions.pendingApply or (ns.AutoFill and ns.AutoFill.pending) then
         text = text .. " - changes apply after combat"

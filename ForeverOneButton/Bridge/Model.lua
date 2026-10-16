@@ -1,13 +1,9 @@
 -- Forever One Button: bridge model and refresh loop.
 --
--- Holds the latest JustAC snapshot and the observations the pixel protocol
--- needs, and hands both to the grid and the pixel. It contains no rotation:
--- it never picks, ranks or replaces a spell.
---
--- JustAC exposes no queue-change callback (its own renderer polls from an
--- OnUpdate loop, JustAC.lua:2322), so the model polls the public function.
--- POLL_SECONDS equals JustAC's out-of-combat build throttle (SpellQueue.lua:2350):
--- a faster poll would only return JustAC's cached table.
+-- Builds the suggestion queue (Engine/Queue.lua) on a fixed poll, derives
+-- the observations the pixel protocol needs, and hands both to the grid and
+-- the pixel. Game state changes without events for most of what the queue
+-- reads (resources, cooldowns, range), hence the poll.
 local ADDON_NAME, ns = ...
 
 local Model = {}
@@ -44,13 +40,19 @@ end
 
 local lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat = nil, nil, nil, nil
 
--- One refresh: read JustAC, derive the pixel head, notify consumers.
--- An unchanged JustAC queue yields the same snapshot object (no allocation).
+-- One refresh: build the queue, derive the pixel head, notify consumers.
+-- An unchanged queue yields the same snapshot object.
 function Model.Refresh()
-    local snapshot = ns.JustAC.Read(lastSnapshot)
+    local ok, snapshot = pcall(ns.Queue.Build, lastSnapshot)
+    if not ok then
+        snapshot = {status = ns.STATUS.ERROR, detail = tostring(snapshot), entries = {}, count = 0}
+        if lastSnapshot and lastSnapshot.status == ns.STATUS.ERROR and lastSnapshot.detail == snapshot.detail then
+            snapshot = lastSnapshot
+        end
+    end
     Model.snapshot = snapshot
 
-    local head = ns.JustAC.Head(snapshot)
+    local head = ns.Queue.Head(snapshot)
     local casting = PlayerIsCasting()
     local outOfRange = head ~= nil and not casting and ConfirmedOutOfRange(head)
     Model.observation.casting = casting
@@ -58,7 +60,7 @@ function Model.Refresh()
     -- Combat-only pixel (owner decision 2026-10-15, default on): out of combat
     -- the pixel publishes protocol black, "no executable recommendation". Only
     -- the moment changes; the encoder and its colours do not. The grid still
-    -- shows JustAC's suggestions.
+    -- shows the suggestions.
     local outOfCombat = ns.Settings.Get().pixel.combatOnly and not ns.InCombat()
     Model.observation.outOfCombat = outOfCombat
     if casting or outOfRange or outOfCombat then head = nil end

@@ -56,7 +56,7 @@ handlers.PLAYER_REGEN_ENABLED = function()
 end
 
 -- Icons follow spell overrides; learned spells, new ranks and spells put on
--- the action bars (part of JustAC's Forever pool) trigger the automatic fill.
+-- the action bars (their rank is the one a cell uses) trigger the automatic fill.
 local function SpellsChanged()
     ns.Grid.Refresh()
     ns.AutoFill.Request()

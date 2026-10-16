@@ -5,7 +5,7 @@
 -- write must be identical, in the same order.
 local H = dofile("tests/harness/wow.lua")
 local ns = H.Boot(nil)
-H.InstallJustAC(43)
+H.InstallQueue()
 
 -- Spells known to both sides. 1101 is a higher rank of 101 (same name).
 H.spells[101] = {name = "Heal"}

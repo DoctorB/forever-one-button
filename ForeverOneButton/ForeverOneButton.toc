@@ -1,11 +1,10 @@
 ## Interface: 16001
 ## Title: Forever One Button
-## Notes: Action Panel grid for WoW Forever. Shows JustAC suggestions on your own action buttons and keeps the HCOneButton diagnostic pixel protocol v3. You press every key yourself.
+## Notes: Action Panel grid for WoW Forever with its own suggestion engine: priority lists, burst, interrupts, defensives and pre-combat reminders on your own action buttons. You press every key yourself.
 ## Author: DoctorB
 ## Version: 0.2.0
 ## SavedVariables: ForeverOneButtonDB, ForeverOneButtonLog
 ## SavedVariablesPerCharacter: ForeverOneButtonCharDB
-## OptionalDeps: JustAC
 ## X-License: GPL-3.0-or-later
 
 Core\Init.lua
@@ -25,7 +24,6 @@ Core\Diagnostics.lua
 Core\Probe.lua
 Core\Settings.lua
 Panel\Keys.lua
-Bridge\JustACAdapter.lua
 Panel\Actions.lua
 Panel\AutoFill.lua
 Pixel\DiagnosticPixel.lua
