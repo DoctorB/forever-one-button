@@ -6,9 +6,14 @@
 ## SavedVariables: ForeverOneButtonDB, ForeverOneButtonLog
 ## SavedVariablesPerCharacter: ForeverOneButtonCharDB
 ## OptionalDeps: JustAC
-## X-License: MIT
+## X-License: GPL-3.0-or-later
 
 Core\Init.lua
+Data\Rotations.lua
+Data\Defaults.lua
+Data\Interrupts.lua
+Data\Consumables.lua
+Data\CCBreakers.lua
 Core\Diagnostics.lua
 Core\Probe.lua
 Core\Settings.lua

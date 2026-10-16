@@ -173,6 +173,8 @@ Documentation: [architecture](docs/ARCHITECTURE.md),
 
 ## License
 
-MIT, Copyright (c) 2026 DoctorB. Contains code ported from HCOneButton (MIT,
-same author); see [ForeverOneButton/NOTICE.md](ForeverOneButton/NOTICE.md).
-JustAC is a separate GPL-3.0-or-later addon and is not included.
+GPL-3.0-or-later, Copyright (c) 2026 DoctorB. The files in
+`ForeverOneButton/Data/` are imported from JustAC 6.0.0 (GPL-3.0-or-later,
+wealdly), whose priority lists derive from wowsims (MIT); the diagnostic pixel
+is ported from HCOneButton (MIT, same author). See
+[ForeverOneButton/NOTICE.md](ForeverOneButton/NOTICE.md).

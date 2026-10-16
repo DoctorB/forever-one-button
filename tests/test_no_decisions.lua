@@ -28,7 +28,12 @@ local ALLOWED = {'"JustAC%-BlizzardAPI"', "%.GetRotationSpells", '"JustAC%-Spell
     '"JustAC%-RotationImport"', "%.IsClassAbility"}
 local allowedUses = 0
 local hits = {}
+-- Data/ holds imported tables only (checked by test_data.lua).
+local codeFiles = {}
 for _, file in ipairs(files) do
+    if not file:match("^Data/") then codeFiles[#codeFiles + 1] = file end
+end
+for _, file in ipairs(codeFiles) do
     local handle = assert(io.open("ForeverOneButton/" .. file, "rb"))
     local code = StripComments(handle:read("*a"))
     handle:close()
