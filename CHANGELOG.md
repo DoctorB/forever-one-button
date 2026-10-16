@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.1 - 2026-10-16
+
+- Options window: the engine features no longer run past the bottom of the
+  window. They are now on two pages, *Combat* and *Reminders*, with the
+  buttons and values in their own column so no label is covered.
+
 ## 1.0.0 - 2026-10-16
 
 First public release for WoW Forever.

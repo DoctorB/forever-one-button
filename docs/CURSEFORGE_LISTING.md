@@ -98,7 +98,7 @@ pulling. You start every pull and choose every opener.
   lock again. The position is saved.
 - Optional: hide Blizzard's bottom bar while the stance and experience bars
   stay and the action bar keys keep working.
-- Every feature can be switched in the options (`/fob`, Features page).
+- Every feature can be switched in the options (`/fob`, Combat and Reminders pages).
 
 ## Getting started
 

@@ -62,7 +62,7 @@ Interruzioni, difensivi e promemoria non passano mai dal pixel; il segno
 | `Panel/Reminders.lua` | riga di pulsanti secure per i promemoria, sotto la striscia | configurata solo fuori combattimento; nascosta in combattimento da `RegisterStateDriver`; nessun tasto; agisce solo al clic del giocatore |
 | `Pixel/DiagnosticPixel.lua` | encoder/renderer v3, fronte ACK, posizione/visibilità | nessun pixel di debug, nessuna informazione aggiuntiva |
 | `Bridge/Model.lua` | ciclo di refresh, rilevazione cambi, cast/portata/combattimento, invio a griglia, pixel, colonna difensiva, icona di interruzione, promemoria (al più 1 volta al secondo) | nessuna decisione propria |
-| `UI/Options.lua` | finestra opzioni: pagine *Layout & pixel*, *Cells & keys*, *Features*; cattura tasti | — |
+| `UI/Options.lua` | finestra opzioni: pagine *Layout & pixel*, *Cells & keys*, *Combat*, *Reminders* (ogni pagina entro l'altezza della finestra); cattura tasti | — |
 | `UI/BlizzardBar.lua` | opzione "nascondi barra Blizzard" | — |
 | `Core/Commands.lua` | `/fob` | nessun comando spam/pull |
 | `Core/Events.lua` | ciclo di vita, differimento dopo il combattimento, ACK | nessun evento genera input |
