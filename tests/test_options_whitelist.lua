@@ -98,6 +98,20 @@ for text in pairs(labels) do
     H.Check(not text:lower():find("spam") and not text:lower():find("pull") and not text:lower():find("priorit"), "no excluded control: " .. text)
 end
 
+-- Layout: every feature appears once, and no page runs past the window.
+local seen, listedFeatures = {}, 0
+for _, row in ipairs(ns.Options.FEATURE_ORDER) do
+    H.Check(not seen[row[1]], "feature listed once: " .. row[1])
+    seen[row[1]] = true
+    listedFeatures = listedFeatures + 1
+end
+H.Equal(listedFeatures, #featureNames, "every feature has a row")
+H.Equal(#ns.Options.pageExtents, 2 + #ns.Options.FEATURE_PAGES, "extent recorded for every page")
+for index, extent in ipairs(ns.Options.pageExtents) do
+    H.Check(extent <= ns.Options.PAGE_HEIGHT,
+        string.format("page %d fits: %d <= %d", index, extent, ns.Options.PAGE_HEIGHT))
+end
+
 -- Key capture through the Bind button.
 H.spells[5] = {name = "Five"}
 local bind3

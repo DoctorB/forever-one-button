@@ -21,6 +21,14 @@ local LABELS = {
 }
 Options.NUMERIC_ORDER = {"slots", "columns", "cellSize", "spacing", "scale", "queueDepth"}
 
+-- Page geometry: each page sits PAGE_TOP below the window's top and
+-- PAGE_INSET inside its other edges; content must end within PAGE_HEIGHT.
+local FRAME_SIZE, PAGE_TOP, PAGE_INSET = 560, 58, 4
+Options.PAGE_HEIGHT = FRAME_SIZE - PAGE_TOP - PAGE_INSET
+Options.PAGE_WIDTH = FRAME_SIZE - 2 * PAGE_INSET
+-- Lowest point reached by each page's content, recorded while building.
+Options.pageExtents = {}
+
 local frame, pages, captureFrame
 local refreshers = {}
 
@@ -92,38 +100,49 @@ local function BuildLayoutPage(page)
         :SetPoint("TOPLEFT", 12, y - 6)
     Button(page, "Reset pixel position", 150, function() ns.Pixel.ResetPosition(); Report(true) end)
         :SetPoint("TOPLEFT", 172, y - 6)
+    return -(y - 6 - 20)
 end
 
--- Engine features, in display order: {setting, label}. Booleans are check
--- boxes, enums cycle through their values, numbers have -/+ buttons.
-Options.FEATURE_ORDER = {
-    {"burstCue", "Burst cue: a ready cooldown moves to position 2 (purple)"},
-    {"interrupts", "Interrupt icon when the target casts (red \"!\" on its cell)"},
-    {"interruptMode", "Interrupts: kickOnly, kickPrefer (CC on shielded casts), ccPrefer"},
-    {"interruptFears", "Interrupts may use fears"},
-    {"defensives", "Defensive column right of the grid (orange \"D\" on its cell)"},
-    {"holdEmergencies", "Hold immunities and big heals until health is low"},
-    {"healingItems", "Best healing potion or healthstone in the column"},
-    {"petCues", "Pet heal, revive and summon"},
-    {"petHealBelow", "Pet heal below health %"},
-    {"groupHeals", "Group heals when allies are low"},
-    {"ccBreak", "Escape from loss of control"},
-    {"precombat", "Reminder row out of combat (click to use)"},
-    {"classBuffs", "Reminders: class buffs"},
-    {"flask", "Reminders: flask or elixir"},
-    {"food", "Reminders: Well Fed food"},
-    {"scroll", "Reminders: scroll"},
-    {"weaponEnchant", "Reminders: weapon stone, oil or imbue"},
-    {"recovery", "Reminders: eat, drink or bandage after a fight"},
-    {"stealthReminder", "Reminders: stealth (rogue, feral druid)"},
-    {"topoffHeal", "Reminders: top-off heal (always below 35%)"},
-    {"topoffBelow", "Top-off heal below health %"},
+-- Engine features, split over two pages in display order: {setting, label}.
+-- Booleans are check boxes, enums cycle through their values, numbers have
+-- -/+ buttons; buttons and values sit in a column right of the labels.
+Options.FEATURE_PAGES = {
+    {title = "Combat", rows = {
+        {"burstCue", "Burst cue: a ready cooldown moves to position 2 (purple)"},
+        {"interrupts", "Interrupt icon when the target casts (red \"!\" on its cell)"},
+        {"interruptMode", "Interrupt style (kickPrefer: CC on shielded casts)"},
+        {"interruptFears", "Interrupts may use fears"},
+        {"defensives", "Defensive column right of the grid (orange \"D\" on its cell)"},
+        {"holdEmergencies", "Hold immunities and big heals until health is low"},
+        {"healingItems", "Best healing potion or healthstone in the column"},
+        {"petCues", "Pet heal, revive and summon"},
+        {"petHealBelow", "Pet heal below health %"},
+        {"groupHeals", "Group heals when allies are low"},
+        {"ccBreak", "Escape from loss of control"},
+    }},
+    {title = "Reminders", rows = {
+        {"precombat", "Reminder row out of combat (click to use)"},
+        {"classBuffs", "Class buffs"},
+        {"flask", "Flask or elixir"},
+        {"food", "Well Fed food"},
+        {"scroll", "Scroll"},
+        {"weaponEnchant", "Weapon stone, oil or imbue"},
+        {"recovery", "Eat, drink or bandage after a fight"},
+        {"stealthReminder", "Stealth (rogue, feral druid)"},
+        {"topoffHeal", "Top-off heal (always below 35%)"},
+        {"topoffBelow", "Top-off heal below health %"},
+    }},
 }
+Options.FEATURE_ORDER = {}
+for _, featurePage in ipairs(Options.FEATURE_PAGES) do
+    for _, row in ipairs(featurePage.rows) do Options.FEATURE_ORDER[#Options.FEATURE_ORDER + 1] = row end
+end
 local ENUM_ORDER = {interruptMode = {"kickOnly", "kickPrefer", "ccPrefer"}}
+local CONTROL_X = 410
 
-local function BuildFeaturesPage(page)
+local function BuildFeaturesPage(page, rows)
     local y = -8
-    for _, row in ipairs(Options.FEATURE_ORDER) do
+    for _, row in ipairs(rows) do
         local name, text = row[1], row[2]
         local spec = ns.Settings.FEATURES[name]
         if spec.kind == "boolean" then
@@ -131,6 +150,9 @@ local function BuildFeaturesPage(page)
             c:SetPoint("TOPLEFT", 8, y)
             local label = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
             label:SetPoint("LEFT", c, "RIGHT", 4, 0)
+            label:SetWidth(Options.PAGE_WIDTH - 52)
+            label:SetJustifyH("LEFT")
+            label:SetWordWrap(false)
             label:SetText(text)
             c:SetScript("OnClick", function(self) Report(ns.Settings.SetFeature(name, self:GetChecked() and true or false)) end)
             refreshers[#refreshers + 1] = function() c:SetChecked(ns.Settings.Feature(name)) end
@@ -138,9 +160,14 @@ local function BuildFeaturesPage(page)
         else
             local label = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
             label:SetPoint("TOPLEFT", 12, y - 3)
+            label:SetWidth(CONTROL_X - 20)
+            label:SetJustifyH("LEFT")
+            label:SetWordWrap(false)
             label:SetText(text)
             local value = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            value:SetPoint("TOPLEFT", 400, y - 3)
+            value:SetPoint("TOPLEFT", CONTROL_X + 60, y - 3)
+            value:SetWidth(Options.PAGE_WIDTH - CONTROL_X - 64)
+            value:SetJustifyH("LEFT")
             if spec.kind == "enum" then
                 Button(page, ">", 24, function()
                     local order = ENUM_ORDER[name]
@@ -148,17 +175,18 @@ local function BuildFeaturesPage(page)
                     for i, v in ipairs(order) do
                         if v == current then return Report(ns.Settings.SetFeature(name, order[i % #order + 1])) end
                     end
-                end):SetPoint("TOPLEFT", 370, y)
+                end):SetPoint("TOPLEFT", CONTROL_X + 30, y)
             else
                 Button(page, "-", 24, function() Report(ns.Settings.SetFeature(name, ns.Settings.Feature(name) - 5)) end)
-                    :SetPoint("TOPLEFT", 340, y)
+                    :SetPoint("TOPLEFT", CONTROL_X, y)
                 Button(page, "+", 24, function() Report(ns.Settings.SetFeature(name, ns.Settings.Feature(name) + 5)) end)
-                    :SetPoint("TOPLEFT", 370, y)
+                    :SetPoint("TOPLEFT", CONTROL_X + 30, y)
             end
             refreshers[#refreshers + 1] = function() value:SetText(tostring(ns.Settings.Feature(name))) end
             y = y - 26
         end
     end
+    return -y
 end
 
 local function ActionLabel(cell)
@@ -217,6 +245,8 @@ local function BuildCellsPage(page)
     note:SetWidth(530)
     note:SetJustifyH("LEFT")
     note:SetText("d = default key.  ! = this key also has a normal WoW binding; the cell overrides it while the addon is loaded. Clear removes a spell from the automatic fill.")
+    -- The note wraps to at most two lines of small text.
+    return 22 + ns.MAX_SLOTS * 21 + 4 + 28
 end
 
 local function BuildCapture()
@@ -261,7 +291,7 @@ end
 
 local function Build()
     frame = CreateFrame("Frame", "ForeverOneButtonOptions", UIParent, "BasicFrameTemplateWithInset")
-    frame:SetSize(560, 560)
+    frame:SetSize(FRAME_SIZE, FRAME_SIZE)
     frame:SetPoint("CENTER")
     frame:SetFrameStrata("DIALOG")
     frame:SetMovable(true)
@@ -277,18 +307,22 @@ local function Build()
     title:SetText(ns.TITLE .. " " .. ns.VERSION)
 
     pages = {}
-    for index, name in ipairs({"Layout & pixel", "Cells & keys", "Features"}) do
+    local titles = {"Layout & pixel", "Cells & keys"}
+    for _, featurePage in ipairs(Options.FEATURE_PAGES) do titles[#titles + 1] = featurePage.title end
+    for index, name in ipairs(titles) do
         local page = CreateFrame("Frame", nil, frame)
-        page:SetPoint("TOPLEFT", 4, -58)
-        page:SetPoint("BOTTOMRIGHT", -4, 4)
+        page:SetPoint("TOPLEFT", PAGE_INSET, -PAGE_TOP)
+        page:SetPoint("BOTTOMRIGHT", -PAGE_INSET, PAGE_INSET)
         page:Hide()
         pages[index] = page
-        Button(frame, name, 140, function() Options.ShowPage(index) end)
-            :SetPoint("TOPLEFT", 12 + (index - 1) * 146, -30)
+        Button(frame, name, 126, function() Options.ShowPage(index) end)
+            :SetPoint("TOPLEFT", 12 + (index - 1) * 133, -30)
     end
-    BuildLayoutPage(pages[1])
-    BuildCellsPage(pages[2])
-    BuildFeaturesPage(pages[3])
+    Options.pageExtents[1] = BuildLayoutPage(pages[1])
+    Options.pageExtents[2] = BuildCellsPage(pages[2])
+    for i, featurePage in ipairs(Options.FEATURE_PAGES) do
+        Options.pageExtents[2 + i] = BuildFeaturesPage(pages[2 + i], featurePage.rows)
+    end
     BuildCapture()
     Options.ShowPage(1)
 end

@@ -73,7 +73,7 @@ Open the options with `/fob`.
    (or `/fob blizzardbar hide|show`) makes the main action bar, the micro menu
    and the bags invisible and click-through. The stance and experience bars
    stay; the action bar keys keep working. Applied out of combat.
-6. **Features.** In *Features* (or `/fob features`,
+6. **Features.** In *Combat* and *Reminders* (or `/fob features`,
    `/fob feature <name> on|off|<value>`): burst cue; interrupts (mode: kicks
    only, kicks first, crowd control first; fears); defensive column (hold
    immunities and big heals until health is low, healing items, pet cues,

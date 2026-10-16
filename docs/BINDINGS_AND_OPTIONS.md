@@ -47,7 +47,7 @@ spostate.
 | Tasto di default | `Default`; `/fob defaultkey <n>` | — |
 | Elenco | pagina *Cells & keys* (`d` = default, `!` = binding WoW coperto, `auto`); `/fob bindings` | — |
 | Automatico | `/fob autofill on\|off\|now\|reset` | — |
-| Funzioni del motore | pagina *Features*; `/fob features` (elenco con i valori), `/fob feature <nome> on\|off\|<valore>` | nome senza distinzione di maiuscole; valori fuori dalla whitelist rifiutati, numeri riportati nei limiti |
+| Funzioni del motore | pagine *Combat* e *Reminders*; `/fob features` (elenco con i valori), `/fob feature <nome> on\|off\|<valore>` | nome senza distinzione di maiuscole; valori fuori dalla whitelist rifiutati, numeri riportati nei limiti |
 
 ### Conflitti
 
