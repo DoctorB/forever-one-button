@@ -115,4 +115,17 @@ H.Check(ns.Actions.Clear(slot), "clear the item cell")
 ns.AutoFill.Run()
 H.Equal(ns.Actions.SlotUsingAction("item", BETTER), nil, "not put back after clearing")
 
+-- The diagnostic log records every change of the column.
+ns.Commands.Handle("log on")
+H.inCombat = true
+H.units.player.health = 40
+H.Tick(0.2)
+local logged = false
+for _, line in ipairs(ForeverOneButtonLog.entries) do
+    if line:find("|defense|", 1, true) and line:find("12975", 1, true) then logged = true end
+end
+H.Check(logged, "defense line in the diagnostic log")
+H.inCombat = false
+ns.Commands.Handle("log off")
+
 H.Done("test_defensives")

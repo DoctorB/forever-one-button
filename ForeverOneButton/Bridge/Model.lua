@@ -103,6 +103,7 @@ function Model.Refresh()
     end
     if signature ~= Model.defenseSignature then
         Model.defenseSignature, Model.defenses = signature, row
+        ns.Log("defense", signature ~= "" and signature or "none", row and row.band or "-")
         if ns.Grid and ns.Grid.ShowDefensives then ns.Grid.ShowDefensives(row) end
     end
 
@@ -112,6 +113,7 @@ function Model.Refresh()
     local before = Model.interrupt
     if (interrupt and interrupt.id) ~= (before and before.id) then
         Model.interrupt = interrupt
+        ns.Log("interrupt", interrupt and interrupt.id or "none", interrupt and interrupt.kind or "-")
         if ns.Grid and ns.Grid.ShowInterrupt then ns.Grid.ShowInterrupt(interrupt) end
     end
     return changed

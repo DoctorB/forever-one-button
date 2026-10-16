@@ -14,6 +14,8 @@
 --   "<seconds>|cast|<spellID or secret>|<1 = acknowledged, 0 = not>"
 --   "<seconds>|head|<queue ID or none>|<flags: c casting, r out of range, o out of combat>"
 --   "<seconds>|queue|<status>|<tree>|<context>|<entries>|<candidates>|<ready>|<detail or error>"
+--   "<seconds>|defense|<id r(eady) w(aiting),... or none>|<health band 1-4 or ->"
+--   "<seconds>|interrupt|<spell ID or none>|<interrupt or cc>"
 --   "<seconds>|combat|in|out"
 --   "<seconds>|session|<addon version>|<client build>"
 -- <seconds> is GetTimePreciseSec (when the code ran). <frame time> is GetTime,
