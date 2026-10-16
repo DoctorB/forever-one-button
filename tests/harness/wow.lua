@@ -541,8 +541,9 @@ end
 
 -- Spells: H.spells[id] gains usable (default true), noResources, cooldown
 -- (true = real cooldown running), onGCD.
-function IsPlayerSpell(id) return H.known[id] == true end
-function IsSpellKnown(id) return H.known[id] == true end
+-- H.secretSpellbook: the spellbook answers are secret (as they can be in combat).
+function IsPlayerSpell(id) if H.secretSpellbook then return H.Secret() end return H.known[id] == true end
+function IsSpellKnown(id) if H.secretSpellbook then return H.Secret() end return H.known[id] == true end
 function GetActionInfo(slot) local id = H.actions[slot]; if id then return "spell", id end end
 function C_Spell.IsSpellUsable(id)
     local s = H.spells[id]
@@ -578,7 +579,7 @@ H.class = "WARRIOR"
 function UnitClass(unit) if unit == "player" then return H.class:sub(1, 1) .. H.class:sub(2):lower(), H.class end end
 function UnitGUID(unit) local u = Unit(unit); return u and (u.guid or ("guid-" .. unit)) end
 H.autoAttack = false
-function C_Spell.IsCurrentSpell(id) return id == 6603 and H.autoAttack end
+function C_Spell.IsCurrentSpell(id) if H.secretSpellbook then return H.Secret() end return id == 6603 and H.autoAttack end
 -- Talents: H.talents = {["Arms"] = points, ...}; nil = no talent API data.
 H.talents = nil
 C_ClassTalents = {

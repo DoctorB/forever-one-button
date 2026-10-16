@@ -27,7 +27,8 @@ local function Result(status, detail)
 end
 
 local function Same(a, b)
-    if not b or a.status ~= b.status or a.count ~= b.count or a.tree ~= b.tree or a.context ~= b.context then
+    if not b or a.status ~= b.status or a.count ~= b.count or a.tree ~= b.tree or a.context ~= b.context
+        or a.detail ~= b.detail then
         return false
     end
     for i = 1, a.count do
@@ -40,7 +41,7 @@ end
 local function Attacking()
     if not (C_Spell and C_Spell.IsCurrentSpell) then return false end
     local ok, on = pcall(C_Spell.IsCurrentSpell, ATTACK_SPELL)
-    return ok and on == true
+    return ok and not ns.IsSecret(on) and on == true
 end
 
 -- Ready or the tier it waits in: 1 cooldown/resources, 2 barred (wrong
@@ -107,6 +108,7 @@ function Queue.Build(previous)
     local result = Result(STATUS.OK)
     result.tree, result.context = tree, context
     if not list then
+        result.detail = "no list for " .. tostring(tree) .. " " .. tostring(context)
         if Same(result, previous) then return previous end
         return result
     end
@@ -136,6 +138,10 @@ function Queue.Build(previous)
     end
     ctx.starved = ctx.sawNoResources == true and not anyUsable
 
+    if #candidates == 0 then
+        result.detail = string.format("none of %d list entries known or usable here", #list)
+    end
+
     local ready, waiting = {}, {{}, {}, {}}
     for _, c in ipairs(candidates) do
         local ok, tier = Evaluate(c.entry, c.id, ctx)
@@ -161,6 +167,7 @@ function Queue.Build(previous)
     ApplyBurst(entries, class, ctx)
     for i = 1, math.min(#entries, Queue.MAX_ENTRIES) do result.entries[i] = entries[i] end
     result.count = #result.entries
+    result.candidates, result.ready = #candidates, #ready
     if Same(result, previous) then return previous end
     return result
 end

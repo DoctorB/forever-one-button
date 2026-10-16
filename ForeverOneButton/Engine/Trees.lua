@@ -57,7 +57,7 @@ end
 local function BearForm()
     if not GetShapeshiftFormID then return false end
     local ok, id = pcall(GetShapeshiftFormID)
-    return ok and (id == 5 or id == 8)
+    return ok and ns.Readable(id) and (id == 5 or id == 8)
 end
 
 local picked -- [class] = tree key, until talents or spells change

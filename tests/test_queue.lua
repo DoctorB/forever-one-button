@@ -175,6 +175,28 @@ H.units.target.health, H.units.target.classification = 100, nil
 H.inCombat = false
 H.auras.player[6673] = {expirationTime = H.now + 600}
 
+-- In-game 2026-10-16: the queue stayed empty for 18 s after a pull. With the
+-- spellbook answering in secrets in combat, the spells known out of combat
+-- stay known and nothing raises.
+s = Build()
+local before = s.count
+H.Check(before > 0, "queue out of combat")
+H.inCombat = true
+H.secretSpellbook = true
+s = Build()
+H.Equal(s.status, ns.STATUS.OK, "no error with a secret spellbook")
+H.Equal(s.count, before, "same entries with a secret spellbook")
+H.Equal(s.candidates > 0, true, "candidates counted")
+H.secretSpellbook = false
+H.inCombat = false
+-- A list where nothing is known says so.
+for id in pairs(NAMES) do H.known[id] = nil end
+for _, id in ipairs({284, 12328, 5308}) do H.known[id] = nil end
+s = Build()
+H.Check(s.detail and s.detail:find("none of"), "detail when no list entry is known")
+for id in pairs(NAMES) do H.known[id] = true end
+H.known[284], H.known[12328] = true, true
+
 -- A class without data.
 H.class = "DEATHKNIGHT"
 s = Build()

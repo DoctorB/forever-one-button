@@ -26,16 +26,25 @@ function Ranks.Chain(spellID)
     return ns.Data.Rotations.rankChains[Ranks.Base(spellID)]
 end
 
+-- Known spells do not change in a fight, but the client may answer with a
+-- secret there: the last plain answer is kept (every plain answer replaces
+-- it, so learning or unlearning a spell updates it) and used whenever the
+-- current one cannot be read.
+local knownCache = {}
+
+local function Ask(query, spellID)
+    if not query then return nil end
+    local ok, known = pcall(query, spellID)
+    if not ok or ns.IsSecret(known) or known == nil then return nil end
+    return known == true
+end
+
 function Ranks.Known(spellID)
-    if IsPlayerSpell then
-        local ok, known = pcall(IsPlayerSpell, spellID)
-        if ok and known == true then return true end
-    end
-    if IsSpellKnown then
-        local ok, known = pcall(IsSpellKnown, spellID)
-        if ok and known == true then return true end
-    end
-    return false
+    local player, book = Ask(IsPlayerSpell, spellID), Ask(IsSpellKnown, spellID)
+    if player == nil and book == nil then return knownCache[spellID] == true end
+    local known = player == true or book == true
+    knownCache[spellID] = known
+    return known
 end
 
 -- Highest known rank of the spell, or nil when no rank is known.
@@ -57,7 +66,7 @@ local function BarRanks()
     if not GetActionInfo then return barRank end
     for slot = 1, 180 do
         local ok, kind, id = pcall(GetActionInfo, slot)
-        if ok and kind == "spell" and ns.Readable(id) and type(id) == "number" then
+        if ok and ns.Readable(kind) and kind == "spell" and ns.Readable(id) and type(id) == "number" then
             local first = Ranks.Base(id)
             if not barRank[first] then barRank[first] = id end
         end

@@ -39,6 +39,7 @@ local function ConfirmedOutOfRange(queueID)
 end
 
 local lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat = nil, nil, nil, nil
+local lastLogged -- the snapshot last written to the diagnostic log
 
 -- One refresh: build the queue, derive the pixel head, notify consumers.
 -- An unchanged queue yields the same snapshot object.
@@ -71,6 +72,11 @@ function Model.Refresh()
 
     if head ~= Model.pixelHead or changed then
         if changed then
+            if snapshot ~= lastLogged then
+                lastLogged = snapshot
+                ns.Log("queue", snapshot.status, snapshot.tree or "-", snapshot.context or "-", snapshot.count or 0,
+                    snapshot.candidates or "-", snapshot.ready or "-", snapshot.detail or "-")
+            end
             local first = snapshot.entries[1]
             ns.Log("head", first and first.id or "none",
                 (casting and "c" or "") .. (outOfRange and "r" or "") .. (outOfCombat and "o" or "") .. "-")
