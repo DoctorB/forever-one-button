@@ -28,7 +28,7 @@ end
 
 local function Same(a, b)
     if not b or a.status ~= b.status or a.count ~= b.count or a.tree ~= b.tree or a.context ~= b.context
-        or a.detail ~= b.detail then
+        or a.detail ~= b.detail or a.leveling ~= b.leveling then
         return false
     end
     for i = 1, a.count do
@@ -41,6 +41,14 @@ end
 local function Attacking()
     if not (C_Spell and C_Spell.IsCurrentSpell) then return false end
     local ok, on = pcall(C_Spell.IsCurrentSpell, ATTACK_SPELL)
+    return ok and not ns.IsSecret(on) and on == true
+end
+
+-- Auto-repeat spells (Auto Shot, a wand's Shoot) toggle off when pressed
+-- again: never suggested while running.
+local function Repeating(spellID)
+    if not (C_Spell and C_Spell.IsAutoRepeatSpell) then return false end
+    local ok, on = pcall(C_Spell.IsAutoRepeatSpell, spellID)
     return ok and not ns.IsSecret(on) and on == true
 end
 
@@ -117,9 +125,9 @@ function Queue.Build(previous)
     ctx.enemies = enemies
     ctx.targetBoss = ctx.targetAttackable and ns.State.TargetIsBoss() == true
     local tree = ns.Trees.Pick(class)
-    local list, context = ns.Trees.List(class, tree, ns.Trees.Context(enemies))
+    local list, context, leveling = ns.Trees.List(class, tree, ns.Trees.Context(enemies))
     local result = Result(STATUS.OK)
-    result.tree, result.context = tree, context
+    result.tree, result.context, result.leveling = tree, context, leveling
     if not list then
         result.detail = "no list for " .. tostring(tree) .. " " .. tostring(context)
         if Same(result, previous) then return previous end
@@ -139,6 +147,7 @@ function Queue.Build(previous)
         if id and not seen[first] and (role == nil or role == "mixed")
             and not (activeForm and activeForm == first)
             and not (first == ATTACK_SPELL and attacking)
+            and not Repeating(id)
             and not (not ns.InCombat() and ns.Precombat.Offered(first)) then
             seen[first] = true
             candidates[#candidates + 1] = {entry = entry, id = id, first = first}

@@ -516,7 +516,12 @@ end
 function UnitCanAttack(_, unit) local u = Unit(unit); return u ~= nil and u.attackable == true end
 function UnitIsDeadOrGhost(unit) local u = Unit(unit); return u ~= nil and u.dead == true end
 function UnitClassification(unit) local u = Unit(unit); return u and (u.classification or "normal") end
-function UnitLevel(unit) local u = Unit(unit); return u and (u.level or 10) end
+-- The player is level 60 unless set (the level-60 lists); others level 10.
+function UnitLevel(unit)
+    local u = Unit(unit)
+    if unit == "player" then return u and u.level or 60 end
+    return u and (u.level or 10)
+end
 function UnitThreatSituation(_, unit) local u = Unit(unit); return u and u.threat end
 
 Enum = Enum or {}
@@ -591,6 +596,8 @@ function UnitClass(unit) if unit == "player" then return H.class:sub(1, 1) .. H.
 function UnitGUID(unit) local u = Unit(unit); return u and (u.guid or ("guid-" .. unit)) end
 H.autoAttack = false
 function C_Spell.IsCurrentSpell(id) if H.secretSpellbook then return H.Secret() end return id == 6603 and H.autoAttack end
+H.autoRepeat = {} -- spellID -> true while Auto Shot / Shoot runs
+function C_Spell.IsAutoRepeatSpell(id) return H.autoRepeat[id] == true end
 -- Talents: H.talents = {["Arms"] = points, ...}; nil = no talent API data.
 H.talents = nil
 C_ClassTalents = {

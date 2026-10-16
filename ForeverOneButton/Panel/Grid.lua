@@ -369,7 +369,7 @@ local STATUS_TEXT = {
 local CONTEXT_TEXT = {st = "single target", cleave = "cleave", aoe = "aoe"}
 local function TreeText(snapshot)
     local tree = snapshot.tree and snapshot.tree:gsub("_", " "):gsub("^%l", string.upper) or "?"
-    return tree .. " (" .. (CONTEXT_TEXT[snapshot.context] or "?") .. ")"
+    return tree .. " (" .. (CONTEXT_TEXT[snapshot.context] or "?") .. (snapshot.leveling and ", leveling" or "") .. ")"
 end
 
 local function EntryVisual(entry)

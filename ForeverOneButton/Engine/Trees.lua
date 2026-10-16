@@ -88,12 +88,35 @@ function Trees.Context(enemies)
     return "st"
 end
 
--- The list for class / tree / context, with the context actually used.
+-- Below level 60 the leveling lists (Data/Leveling.lua: the tree's own, or
+-- the class's base list); from 60 the imported level-60 lists.
+Trees.LEVELING_BELOW = 60
+function Trees.Leveling()
+    if not UnitLevel then return false end
+    local ok, level = pcall(UnitLevel, "player")
+    if not ok or not ns.Readable(level) or type(level) ~= "number" then return false end
+    return level < Trees.LEVELING_BELOW
+end
+
+-- The contexts (st / cleave / aoe lists) for class and tree, and whether
+-- they are the leveling ones.
+function Trees.Contexts(class, tree)
+    if Trees.Leveling() then
+        local leveling = ns.Data.Leveling[class]
+        local contexts = leveling and (leveling[tree] or leveling.base)
+        if contexts then return contexts, true end
+    end
+    local trees = ns.Data.Rotations.classes[class]
+    return trees and trees[tree], false
+end
+
+-- The list for class / tree / context, the context actually used and
+-- whether it is a leveling list.
 function Trees.List(class, tree, context)
-    local contexts = ns.Data.Rotations.classes[class] and ns.Data.Rotations.classes[class][tree]
+    local contexts, leveling = Trees.Contexts(class, tree)
     if not contexts then return nil end
     for _, key in ipairs(FALLBACK[context] or FALLBACK.st) do
-        if contexts[key] then return contexts[key], key end
+        if contexts[key] then return contexts[key], key, leveling end
     end
     return nil
 end

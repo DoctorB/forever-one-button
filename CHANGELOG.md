@@ -7,6 +7,10 @@
   imported from JustAC 6.0.0's Forever data (`scripts/import_justac_data.py`,
   source hashes pinned), with all 19 condition types evaluated secret-safely:
   an unknown value never holds a suggestion back.
+- Leveling lists of our own for every class and talent tree (levels 1-59,
+  `Data/Leveling.lua`): they grow with the abilities you learn and switch to
+  the level-60 lists at 60. Burst cooldowns are included.
+- Auto Shot and a wand's Shoot are never suggested while already running.
 - Only the active tree's list (plus gap closers) is suggested: the
   Defensive/Battle Stance loop seen with JustAC 6.0.0 cannot happen.
 - Wait when nothing can be pressed in a fight; Charge out of melee; DoTs

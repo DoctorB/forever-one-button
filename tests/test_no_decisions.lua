@@ -24,7 +24,8 @@ local FORBIDDEN = {
     "AssistedCombat", "GetNextCastSpell", "BlizzardAPI", "_Stage", "JustAC", "LibStub",
 }
 local hits = {}
--- Data/ holds imported tables only (checked by test_data.lua).
+-- Data/ holds data tables: imported (test_data.lua) and the leveling lists
+-- (test_leveling.lua).
 local codeFiles = {}
 for _, file in ipairs(files) do
     if not file:match("^Data/") then codeFiles[#codeFiles + 1] = file end

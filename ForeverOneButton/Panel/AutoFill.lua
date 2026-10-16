@@ -57,7 +57,7 @@ function AutoFill.ReadPool()
         if id then out[#out + 1] = id end
     end
     local roles = ns.Data.Defaults.abilityRoles
-    local contexts = trees[ns.Trees.Pick(class)] or {}
+    local contexts = ns.Trees.Contexts(class, ns.Trees.Pick(class)) or {}
     for _, key in ipairs(CONTEXTS) do
         for _, listed in ipairs(contexts[key] or {}) do
             local entry = ns.Queue.HomeStance(listed)

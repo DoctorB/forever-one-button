@@ -21,6 +21,8 @@ GPL-3.0-or-later, Copyright (C) 2024-2026 wealdly):
 - `Data/CCBreakers.lua` - crowd-control breakers (`Data/CCBreakers.lua`).
 
 Only the data is used; Forever One Button contains none of JustAC's code.
+`Data/Leveling.lua` (leveling lists, levels 1-59) is written for Forever One
+Button and is not imported.
 
 ## Data from wowsims
 

@@ -8,10 +8,11 @@ plus a burst cue, interrupts, defensives and out-of-combat reminders. It keeps
 the HCOneButton **Diagnostic Pixel protocol v3**.
 
 - **Built-in engine.** Priority lists for all nine classes and their talent
-  trees (single target, cleave, aoe), with secret-safe conditions on rage,
-  energy, mana, buffs, DoTs, cooldowns, stances, combo points, swing timer
-  and enemy count. Only the active list is suggested, so it never flips
-  between stances.
+  trees (single target, cleave, aoe): leveling lists from level 1 to 59 that
+  grow with the abilities you learn, the level-60 lists at 60. The conditions
+  (rage, energy, mana, buffs, DoTs, cooldowns, stances, combo points, swing
+  timer, enemy count) stay safe with Forever's hidden combat values. Only the
+  active list is suggested, so it never flips between stances.
 - **You press every key.** Cells are secure action buttons that run only when
   you click them or press their key. There is no spam button, no repeat, no
   pull automation and no pull advisor.

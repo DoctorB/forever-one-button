@@ -74,7 +74,8 @@ function Model.Refresh()
         if changed then
             if snapshot ~= lastLogged then
                 lastLogged = snapshot
-                ns.Log("queue", snapshot.status, snapshot.tree or "-", snapshot.context or "-", snapshot.count or 0,
+                ns.Log("queue", snapshot.status, (snapshot.tree or "-") .. (snapshot.leveling and "+leveling" or ""),
+                    snapshot.context or "-", snapshot.count or 0,
                     snapshot.candidates or "-", snapshot.ready or "-", snapshot.detail or "-")
             end
             local first = snapshot.entries[1]

@@ -47,6 +47,8 @@ shows which of your buttons to press next. No other addon is needed.
 - **Priority lists for all nine classes** and every talent tree, for single
   target, cleave and aoe. The list follows the tree you spent the most
   talent points in.
+- **Leveling lists from 1 to 59** that grow with every ability you learn,
+  and the level-60 lists once you reach 60.
 - **Conditions that work on Forever**: rage, energy and mana thresholds,
   buffs and DoTs, cooldowns, stances and forms, combo points, swing timer,
   execute range, number of engaged enemies. When the game keeps a value
@@ -145,8 +147,9 @@ General Public License version 3.
 1.0.0 - first public release for WoW Forever.
 
 - Built-in suggestion engine: priority lists for all nine classes and their
-  talent trees (single target, cleave, aoe), conditions that work with
-  Forever's hidden combat values; only your tree's list is suggested.
+  talent trees (single target, cleave, aoe), leveling lists from 1 to 59,
+  conditions that work with Forever's hidden combat values; only your tree's
+  list is suggested.
 - Burst cue: a ready big cooldown moves to position 2 (purple).
 - Interrupts: icon with the enemy cast and your key; crowd control on
   shielded casts.

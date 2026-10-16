@@ -22,7 +22,7 @@ local function Status()
     local snapshot = ns.Model.snapshot
     ns.Print(string.format("suggestions: %s%s, tree %s, context %s, queue length %d", snapshot.status,
         snapshot.detail and (" (" .. tostring(snapshot.detail) .. ")") or "", tostring(snapshot.tree or "-"),
-        tostring(snapshot.context or "-"), snapshot.count or 0))
+        tostring(snapshot.context or "-") .. (snapshot.leveling and " (leveling list)" or ""), snapshot.count or 0))
     local head = ns.Model.pixelHead
     ns.Print(string.format("pixel: %s, %s; head %s; %s", ns.Settings.Get().pixel.enabled and "shown" or "hidden",
         tostring(ns.Pixel.lastState), head and tostring(head) or "none",

@@ -13,6 +13,7 @@ Data\Defaults.lua
 Data\Interrupts.lua
 Data\Consumables.lua
 Data\CCBreakers.lua
+Data\Leveling.lua
 Engine\Secret.lua
 Engine\Ranks.lua
 Engine\State.lua
