@@ -104,23 +104,23 @@ local function FirstFreeCell(cells)
 end
 
 -- One automatic item cell for the best healing item owned; a better one
--- replaces it in the same cell. A healing item the user placed is left alone.
+-- replaces it in the same cell, and with none left the cell is emptied
+-- (not dismissed: the next healing item comes back). A healing item the
+-- user placed is left alone.
 local function PlaceHealingItem(cells, dismissed)
     if not ns.Settings.Feature("healingItems") or dismissed[ns.Actions.HEALING_ITEM_KEY] then return false end
     local best = ns.Defensives.BestHealingItem()
-    if not best then return false end
     local healing = {}
     for _, id in ipairs(ns.Data.Consumables.healingItems) do healing[id] = true end
     for slot = 1, ns.MAX_SLOTS do
         local cell = cells[slot]
         if cell and cell.kind == "item" and healing[cell.id] then
-            if cell.auto and cell.id ~= best then
-                ns.Actions.SetAutoItem(slot, best)
-                return true
-            end
-            return false
+            if not cell.auto or cell.id == best then return false end
+            if best then ns.Actions.SetAutoItem(slot, best) else ns.Actions.RemoveAuto(slot) end
+            return true
         end
     end
+    if not best then return false end
     local slot = FirstFreeCell(cells)
     if not slot then return false end
     ns.Actions.SetAutoItem(slot, best)

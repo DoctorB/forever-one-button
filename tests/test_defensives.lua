@@ -111,6 +111,17 @@ H.Check(slot and char.cells[slot].auto, "potion placed automatically")
 H.bags[BETTER] = 1
 ns.AutoFill.Run()
 H.Equal(char.cells[slot].id, BETTER, "better potion in the same cell")
+-- In game (2026-10-16): no potion left, the cell stayed. Now it empties and
+-- comes back with the next healing item.
+local savedBags = {[POTION] = H.bags[POTION], [BETTER] = H.bags[BETTER]}
+H.bags[POTION], H.bags[BETTER] = nil, nil
+ns.AutoFill.Run()
+H.Equal(char.cells[slot], nil, "no healing item left: the automatic cell is emptied")
+H.Equal(char.dismissed[ns.Actions.HEALING_ITEM_KEY], nil, "not dismissed")
+H.bags[POTION], H.bags[BETTER] = savedBags[POTION], savedBags[BETTER]
+ns.AutoFill.Run()
+slot = ns.Actions.SlotUsingAction("item", BETTER)
+H.Check(slot and char.cells[slot].auto, "the next healing item comes back")
 H.Check(ns.Actions.Clear(slot), "clear the item cell")
 ns.AutoFill.Run()
 H.Equal(ns.Actions.SlotUsingAction("item", BETTER), nil, "not put back after clearing")

@@ -111,6 +111,12 @@ function Actions.SetAutoItem(slot, itemID)
     cells()[slot] = {kind = "item", id = itemID, auto = true}
 end
 
+-- AutoFill only: empties an automatic cell without dismissing its action.
+function Actions.RemoveAuto(slot)
+    local cell = cells()[slot]
+    if cell and cell.auto then cells()[slot] = nil end
+end
+
 -- Bind a key to a cell. A key the user already gave another cell is refused;
 -- no alternative key or cell is chosen. A cell whose default key is taken
 -- loses it (reported). A key bound elsewhere in the client is reported: the
