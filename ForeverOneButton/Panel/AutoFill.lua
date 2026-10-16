@@ -59,7 +59,8 @@ function AutoFill.ReadPool()
     local roles = ns.Data.Defaults.abilityRoles
     local contexts = trees[ns.Trees.Pick(class)] or {}
     for _, key in ipairs(CONTEXTS) do
-        for _, entry in ipairs(contexts[key] or {}) do
+        for _, listed in ipairs(contexts[key] or {}) do
+            local entry = ns.Queue.HomeStance(listed)
             local role = roles[entry.id]
             if role == nil or role == "mixed" then Add(entry.id) end
         end

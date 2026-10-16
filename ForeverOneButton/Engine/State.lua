@@ -257,8 +257,14 @@ function State.BuffActive(spellID, duration)
 end
 
 -- At least `count` applications of the aura on unit, or nil when unknown.
+-- On the target, when the aura cannot be read, the player's own
+-- applications (Engine/Dots.lua) answer.
 function State.StacksAtLeast(unit, spellID, count)
-    if not C_UnitAuras then return nil end
+    local own = unit == "target" and ns.Dots.Stacks(spellID) or nil
+    if not C_UnitAuras then
+        if own then return own >= count end
+        return nil
+    end
     local aura
     if unit == "player" then
         aura = PlayerAura(spellID)
@@ -272,10 +278,14 @@ function State.StacksAtLeast(unit, spellID, count)
     end
     if aura then
         local applications = Plain(aura.applications)
-        if type(applications) ~= "number" then return nil end
-        return math.max(applications, 1) >= count
+        if type(applications) == "number" then return math.max(applications, 1) >= count end
+        if own then return math.max(own, 1) >= count end
+        return nil
     end
-    if ns.InCombat() then return nil end
+    if ns.InCombat() then
+        if own then return own >= count end
+        return nil
+    end
     return count <= 0
 end
 

@@ -123,7 +123,7 @@ H.Equal(S.StacksAtLeast("target", 7386, 5), false, "not five")
 H.auras.target[7386] = nil
 H.Equal(S.StacksAtLeast("target", 7386, 1), false, "none out of combat")
 H.inCombat = true
-H.Equal(S.StacksAtLeast("target", 7386, 1), nil, "unknown in combat")
+H.Equal(S.StacksAtLeast("target", 7386, 1), false, "in combat: own Sunders counted, none yet")
 H.inCombat = false
 
 -- Swing timer from PLAYER_SWING (duration, swingType).

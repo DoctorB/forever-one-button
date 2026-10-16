@@ -56,6 +56,19 @@ local function Evaluate(entry, id, ctx)
     return true
 end
 
+-- A list's home stance that is not learned yet (Berserker Stance before
+-- level 30) stands for the stance the abilities use until then, with the
+-- same "not already in it" gate.
+Queue.STANCE_FALLBACK = {[2458] = 2457}
+local fallbackEntries = {}
+function Queue.HomeStance(entry)
+    local fallback = Queue.STANCE_FALLBACK[entry.id]
+    if not fallback or ns.Ranks.HighestKnown(entry.id) then return entry end
+    fallbackEntries[fallback] = fallbackEntries[fallback]
+        or {id = fallback, gates = {{t = "buff", id = fallback, neg = true}}}
+    return fallbackEntries[fallback]
+end
+
 local function GapCloser(class, ctx)
     if not ctx.targetAttackable or ns.State.TargetWithin(Queue.GAP_CLOSER_MIN_YARDS) ~= false then return nil end
     for _, first in ipairs(ns.Data.Defaults.gapClosers[class] or {}) do
@@ -118,7 +131,8 @@ function Queue.Build(previous)
     local candidates, seen = {}, {}
     local roles, activeForm = ns.Data.Defaults.abilityRoles, ns.State.ActiveForm()
     local attacking = Attacking()
-    for _, entry in ipairs(list) do
+    for _, listed in ipairs(list) do
+        local entry = Queue.HomeStance(listed)
         local first = entry.id
         local id = ns.Ranks.Pressed(first)
         local role = roles[first]

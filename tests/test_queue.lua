@@ -197,6 +197,57 @@ H.Check(s.detail and s.detail:find("none of"), "detail when no list entry is kno
 for id in pairs(NAMES) do H.known[id] = true end
 H.known[284], H.known[12328] = true, true
 
+-- Fury before level 30: Berserker Stance is not known, so the list's home
+-- stance is Battle Stance. In Defensive Stance with everything barred it is
+-- suggested; in Battle Stance nothing stance-related appears.
+H.talents = {Arms = 0, Fury = 5, Protection = 0}
+ns.Trees.Invalidate()
+H.activeForm = 2
+for _, spell in pairs(H.spells) do spell.usable = false end
+H.spells[2457].usable = true
+s = Build()
+H.Equal(s.tree, "fury", "fury talents")
+H.Equal(s.entries[1].id, 2457, "Fury in Defensive Stance: back to Battle Stance")
+H.activeForm = 1
+for _, spell in pairs(H.spells) do spell.usable = nil end
+s = Build()
+H.Check(not Has(s, 2457) and not Has(s, 2458) and not Has(s, 71), "Fury in Battle Stance: no stance")
+H.known[2458] = true
+H.spells[2458] = {name = "Berserker Stance"}
+H.forms = {2457, 71, 2458}
+s = Build()
+H.Check(Has(s, 2458) and not Has(s, 2457), "Berserker Stance known: it is the home stance")
+H.known[2458], H.forms = nil, {2457, 71}
+H.talents = nil
+ns.Trees.Invalidate()
+
+-- Sunder Armor (Arms list: only while the target has none): counted from
+-- own casts while target debuffs are unreadable in combat.
+H.inCombat = true
+H.auras.target[7386] = nil
+s = Build()
+H.Check(Has(s, 7386) and s.entries[1].id ~= nil, "no Sunder yet")
+local sunderReady
+for i = 1, s.count do if s.entries[i].id == 7386 then sunderReady = s.entries[i].ready end end
+H.Equal(sunderReady, true, "Sunder ready before the first application")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 7386)
+s = Build()
+for i = 1, s.count do if s.entries[i].id == 7386 then sunderReady = s.entries[i].ready end end
+H.Equal(sunderReady, false, "one Sunder on the target: held back")
+H.Equal(ns.Dots.Stacks(7386), 1, "one application counted")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 7386)
+H.Equal(ns.Dots.Stacks(7386), 2, "two applications")
+-- A secret GUID in combat: the target counter still identifies the target.
+H.units.target.guid = H.Secret()
+H.Equal(ns.Dots.Stacks(7386), 2, "same target with a secret GUID")
+H.Fire("PLAYER_TARGET_CHANGED")
+H.Equal(ns.Dots.Stacks(7386), 0, "new target")
+H.units.target.guid = "mob-1"
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 7386)
+H.now = H.now + 31
+H.Equal(ns.Dots.Stacks(7386), 0, "expired after 30 s")
+H.inCombat = false
+
 -- A class without data.
 H.class = "DEATHKNIGHT"
 s = Build()

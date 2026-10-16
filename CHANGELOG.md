@@ -11,6 +11,11 @@
   Defensive/Battle Stance loop seen with JustAC 6.0.0 cannot happen.
 - Wait when nothing can be pressed in a fight; Charge out of melee; DoTs
   ticking on the target wait; ranks on the action bars are used.
+- Stances: each list's home stance is suggested when you are in another one;
+  before Berserker Stance is learned, Fury uses Battle Stance.
+- Sunder Armor and other target stacks are counted from your own casts in
+  combat (target debuffs are unreadable there), so Sunder is not suggested
+  again and again.
 - Burst cue: a ready burst cooldown moves to position 2 (purple frame).
 - Interrupts: icon left of the grid with the enemy cast and the key, red "!"
   on the cell; kicks first, crowd control on shielded casts; modes and fears
