@@ -115,6 +115,20 @@ H.Check(ns.Actions.Clear(slot), "clear the item cell")
 ns.AutoFill.Run()
 H.Equal(ns.Actions.SlotUsingAction("item", BETTER), nil, "not put back after clearing")
 
+-- In game (2026-10-16) the column stayed empty in combat: bag counts were
+-- secret there. The count read out of combat is kept.
+H.bags[BETTER] = nil
+H.inCombat = false
+H.units.player.health = 100
+H.Fire("BAG_UPDATE_DELAYED") -- the better potion is gone: counts refreshed
+H.Equal(D.ItemCount(POTION), 3, "count read out of combat")
+H.secretBags = true
+H.Fire("PLAYER_REGEN_DISABLED")
+H.inCombat = true
+H.Check(Ids():find("-" .. POTION, 1, true), "potion still offered with secret bag counts")
+H.secretBags = false
+H.inCombat = false
+
 -- The diagnostic log records every change of the column.
 ns.Commands.Handle("log on")
 H.inCombat = true

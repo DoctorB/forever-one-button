@@ -56,11 +56,17 @@ end
 -- Items ---------------------------------------------------------------------
 local usedThisFight = {}
 
+-- Bag counts can be secret in combat: the last plain count is kept per item
+-- and used then (a use seen in the fight takes one off).
+local lastCount = {}
 function Defensives.ItemCount(itemID)
     local count = Plain(Call(C_Item and C_Item.GetItemCount, itemID))
     if count == nil then count = Plain(Call(GetItemCount, itemID)) end
-    if type(count) ~= "number" then return 0 end
-    return count
+    if type(count) == "number" then
+        lastCount[itemID] = count
+        return count
+    end
+    return lastCount[itemID] or 0
 end
 
 -- Item cooldowns are secret in combat: a use seen this fight counts as on
@@ -222,12 +228,23 @@ local frame = CreateFrame("Frame")
 Defensives.frame = frame
 frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+pcall(frame.RegisterEvent, frame, "BAG_UPDATE_DELAYED")
+-- Every healing item counted while counts are plain: when the bags change
+-- and as a fight starts, so the counts kept for the fight are current.
+local function Recount()
+    for _, itemID in ipairs(ns.Data.Consumables.healingItems) do Defensives.ItemCount(itemID) end
+end
 frame:SetScript("OnEvent", function(_, event, ...)
-    if event == "PLAYER_REGEN_ENABLED" then wipe(usedThisFight) return end
+    if event == "PLAYER_REGEN_ENABLED" then wipe(usedThisFight) Recount() return end
+    if event == "PLAYER_REGEN_DISABLED" or event == "BAG_UPDATE_DELAYED" then Recount() return end
     local spellID = select(3, ...)
     if type(spellID) ~= "number" or ns.IsSecret(spellID) then return end
     for _, itemID in ipairs(ns.Data.Consumables.healingItems) do
         local _, itemSpell = Call(C_Item and C_Item.GetItemSpell, itemID)
-        if Plain(itemSpell) == spellID then usedThisFight[itemID] = true end
+        if Plain(itemSpell) == spellID then
+            usedThisFight[itemID] = true
+            if lastCount[itemID] and lastCount[itemID] > 0 then lastCount[itemID] = lastCount[itemID] - 1 end
+        end
     end
 end)

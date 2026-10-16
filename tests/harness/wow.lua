@@ -628,7 +628,11 @@ C_Traits = {
 -- Items and survival: H.bags[itemID] = count; H.itemCooldowns[itemID] =
 -- {start, duration}; H.baseCooldowns[spellID] = ms; H.lossOfControl = {{locType}}.
 H.bags, H.itemCooldowns, H.baseCooldowns, H.lossOfControl = {}, {}, {}, {}
-function C_Item.GetItemCount(id) return H.bags[id] or 0 end
+-- H.secretBags: bag counts are secret in combat (as seen on Forever).
+function C_Item.GetItemCount(id)
+    if H.secretBags and H.inCombat then return H.Secret() end
+    return H.bags[id] or 0
+end
 C_Container = {GetItemCooldown = function(id)
     local c = H.itemCooldowns[id]
     if c then return c[1], c[2], 1 end
