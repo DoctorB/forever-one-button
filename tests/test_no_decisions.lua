@@ -8,10 +8,12 @@ local function StripComments(source)
     return (source:gsub("%-%-[^\n]*", ""))
 end
 local files = H.ReadToc("ForeverOneButton/ForeverOneButton.toc")
+-- Decision vocabulary: allowed only in the suggestion engine (Engine/) and
+-- its imported data (Data/).
+local DECISION = {"Engine", "Recommend", "Rotation", "Priority", "Threat"}
 local FORBIDDEN = {
-    -- HCOneButton runtime, Advisor and decision modules.
-    "HCOB", "HCOneButton", "Advisor", "Engine", "Recommend", "Readiness", "Survival",
-    "Rotation", "Priority", "Threat",
+    -- HCOneButton runtime and modules.
+    "HCOB", "HCOneButton", "Advisor", "Readiness", "Survival",
     -- Excluded product features.
     "[Ss]pam", "[Pp]ull", "[Aa]uto[Aa]ttack", "[Aa]utoBind", "startattack",
     -- Input generation or action execution from Lua.
@@ -47,6 +49,11 @@ for _, file in ipairs(codeFiles) do
     end
     for _, pattern in ipairs(FORBIDDEN) do
         if code:find(pattern) then hits[#hits + 1] = file .. ": " .. pattern end
+    end
+    if not file:match("^Engine/") then
+        for _, pattern in ipairs(DECISION) do
+            if code:find(pattern) then hits[#hits + 1] = file .. ": " .. pattern end
+        end
     end
 end
 H.Check(#hits == 0, "forbidden symbols in shipped code: " .. table.concat(hits, ", "))

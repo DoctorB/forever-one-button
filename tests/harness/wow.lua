@@ -437,4 +437,134 @@ function H.Done(name)
     print(name .. ": PASS")
 end
 
+-- Game state for the suggestion engine -----------------------------------
+-- H.units[unit] = {health, healthMax, power = {[type] = n}, powerMax = {...},
+-- attackable, dead, classification, level, threat}. With H.secretStats the
+-- health/power reads return secrets that carry their value, which only the
+-- engine-side comparisons (curves, TruncateWhenZero) can use.
+H.units = {}
+H.secretStats = false
+H.known = {}            -- spellID -> true (IsPlayerSpell)
+H.actions = {}          -- slot -> spellID on the action bars
+H.forms = {}            -- shapeshift form index -> spellID
+H.activeForm = nil      -- active form index
+H.auras = {player = {}, target = {}}  -- unit -> spellID -> {applications, expirationTime}
+H.aurasHiddenInCombat = true
+H.stealthed = false
+H.comboPoints = 0
+H.totems = {}           -- slot -> true
+
+local hiddenValue = setmetatable({}, {__mode = "k"})
+function H.SecretOf(value)
+    local secret = H.Secret()
+    hiddenValue[secret] = value
+    return secret
+end
+local function Hidden(v) if issecretvalue(v) then return hiddenValue[v] end return v end
+local function MaybeSecret(v)
+    if H.secretStats and v ~= nil then return H.SecretOf(v) end
+    return v
+end
+
+local function Unit(unit) return H.units[unit] end
+function UnitExists(unit)
+    if H.units[unit] then return true end
+    return unit == "target" and H.target ~= nil
+end
+function UnitHealth(unit) local u = Unit(unit); return u and MaybeSecret(u.health) end
+function UnitHealthMax(unit) local u = Unit(unit); return u and u.healthMax end
+function UnitPower(unit, powerType) local u = Unit(unit); return u and u.power and MaybeSecret(u.power[powerType or 1]) end
+function UnitPowerMax(unit, powerType) local u = Unit(unit); return u and u.powerMax and u.powerMax[powerType or 1] end
+local function Fraction(current, max)
+    if type(current) ~= "number" or type(max) ~= "number" or max <= 0 then return nil end
+    return current / max
+end
+function UnitHealthPercent(unit, _, curve)
+    local u = Unit(unit)
+    local f = u and Fraction(u.health, u.healthMax)
+    if f == nil then return nil end
+    return MaybeSecret(curve and curve:Evaluate(f) or f)
+end
+function UnitPowerPercent(unit, powerType, _, curve)
+    local u = Unit(unit)
+    local f = u and u.power and Fraction(u.power[powerType or 1], u.powerMax[powerType or 1])
+    if f == nil then return nil end
+    return MaybeSecret(curve and curve:Evaluate(f) or f)
+end
+function UnitCanAttack(_, unit) local u = Unit(unit); return u ~= nil and u.attackable == true end
+function UnitIsDeadOrGhost(unit) local u = Unit(unit); return u ~= nil and u.dead == true end
+function UnitClassification(unit) local u = Unit(unit); return u and (u.classification or "normal") end
+function UnitLevel(unit) local u = Unit(unit); return u and (u.level or 10) end
+function UnitThreatSituation(_, unit) local u = Unit(unit); return u and u.threat end
+
+Enum = Enum or {}
+Enum.LuaCurveType = {Linear = 0, Step = 1}
+C_CurveUtil = {}
+function C_CurveUtil.CreateCurve()
+    local curve = {points = {}}
+    function curve:SetType(t) self.type = t end
+    function curve:AddPoint(x, y) self.points[#self.points + 1] = {x, y} end
+    function curve:Evaluate(x)
+        local p = self.points
+        if x <= p[1][1] then return p[1][2] end
+        for i = 2, #p do
+            if x <= p[i][1] then
+                local x0, y0, x1, y1 = p[i - 1][1], p[i - 1][2], p[i][1], p[i][2]
+                if x1 == x0 then return y1 end
+                return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+            end
+        end
+        return p[#p][2]
+    end
+    return curve
+end
+C_StringUtil = {}
+-- Integer text of the value rounded down, nil for zero; secret in, secret out.
+function C_StringUtil.TruncateWhenZero(v)
+    local n = Hidden(v)
+    if type(n) ~= "number" or math.floor(n) == 0 then return nil end
+    local text = tostring(math.floor(n))
+    if issecretvalue(v) then return H.SecretOf(text) end
+    return text
+end
+
+-- Spells: H.spells[id] gains usable (default true), noResources, cooldown
+-- (true = real cooldown running), onGCD.
+function IsPlayerSpell(id) return H.known[id] == true end
+function IsSpellKnown(id) return H.known[id] == true end
+function GetActionInfo(slot) local id = H.actions[slot]; if id then return "spell", id end end
+function C_Spell.IsSpellUsable(id)
+    local s = H.spells[id]
+    if not s then return false, false end
+    return s.usable ~= false, s.noResources == true
+end
+function C_Spell.GetSpellCooldownDuration(id)
+    local s = H.spells[id]
+    return {active = s ~= nil and s.cooldown == true}
+end
+function C_Spell.GetSpellCooldown(id)
+    local s = H.spells[id]
+    return {isOnGCD = s and s.onGCD or nil, isActive = s ~= nil and s.cooldown == true,
+        startTime = H.secretStats and H.Secret() or 0, duration = H.secretStats and H.Secret() or 0}
+end
+function Frame:SetCooldownFromDurationObject(d) self.shown = d ~= nil and d.active == true end
+function Frame:SetCooldown() self.shown = false end
+
+function GetNumShapeshiftForms() return #H.forms end
+function GetShapeshiftFormInfo(i) return nil, H.activeForm == i, true, H.forms[i] end
+function GetShapeshiftForm() return H.activeForm or 0 end
+C_UnitAuras = {}
+local function Aura(unit, id)
+    if H.aurasHiddenInCombat and H.inCombat then return nil end
+    local list = H.auras[unit]
+    local a = list and list[id]
+    if not a then return nil end
+    return {auraInstanceID = id, applications = a.applications or 0, expirationTime = a.expirationTime or 0}
+end
+function C_UnitAuras.GetPlayerAuraBySpellID(id) return Aura("player", id) end
+function C_UnitAuras.GetUnitAuraBySpellID(unit, id) return Aura(unit, id) end
+function IsStealthed() return H.stealthed end
+function GetComboPoints() return H.comboPoints end
+function GetTotemInfo(slot) return H.totems[slot] == true end
+
 return H

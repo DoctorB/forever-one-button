@@ -14,6 +14,9 @@ Data\Defaults.lua
 Data\Interrupts.lua
 Data\Consumables.lua
 Data\CCBreakers.lua
+Engine\Secret.lua
+Engine\Ranks.lua
+Engine\State.lua
 Core\Diagnostics.lua
 Core\Probe.lua
 Core\Settings.lua
