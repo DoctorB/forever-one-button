@@ -18,7 +18,7 @@ H.Equal(#ForeverOneButtonLog.entries, 0, "nothing logged while off")
 H.Equal(ForeverOneButtonLog.enabled, false, "off by default")
 
 ns.Commands.Handle("log on")
-H.Check(ForeverOneButtonLog.entries[1]:find("|session|0.2.0|1.60.1.70374"), "session header")
+H.Check(ForeverOneButtonLog.entries[1]:find("|session|1.0.0|1.60.1.70374"), "session header")
 
 -- Same spell suggested again and again ("spam"), each press succeeds.
 H.inCombat = true

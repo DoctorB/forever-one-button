@@ -16,8 +16,8 @@ secret CurseForge.
 | Name | `Forever One Button` |
 | Summary | vedi sotto |
 | Main category | Action Bars |
-| Additional categories (max 4) | Combat, HUDs (solo categorie pertinenti: quelle non pertinenti fanno rimandare indietro il progetto) |
-| License | MIT License |
+| Additional categories (max 4) | Combat, HUDs, Class (solo categorie pertinenti: quelle non pertinenti fanno rimandare indietro il progetto) |
+| License | GNU General Public License version 3 (GPLv3) |
 | Logo | `docs/logo.png` (1254×1254 PNG, 1:1; minimo richiesto 400×400) |
 | Source | `https://github.com/DoctorB/forever-one-button` |
 | Issues | `https://github.com/DoctorB/forever-one-button/issues` |
@@ -25,7 +25,7 @@ secret CurseForge.
 ### Summary
 
 ```text
-Shows JustAC's suggestions on a grid of secure action buttons that you bind and press yourself, built for WoW Forever.
+An action panel for WoW Forever with its own rotation engine: priority lists for every class, burst, interrupts, defensives and reminders on buttons you press yourself.
 ```
 
 ## 2. Description
@@ -36,136 +36,137 @@ solo visuale, incollare il testo e applicare i titoli a mano).
 ```markdown
 # Forever One Button
 
-**An Action Panel for WoW Forever, powered by Just Assisted Combat (JustAC).**
+**An action panel for WoW Forever with its own suggestion engine.**
 
-Forever One Button puts JustAC's suggestions on a grid of up to 20 action
+Forever One Button puts the right ability on a grid of up to 20 action
 buttons that you own: you choose the keys, you press every key, and the panel
-shows which of your buttons JustAC wants next.
+shows which of your buttons to press next. No other addon is needed.
 
-## Built on JustAC
+## A complete engine for every class
 
-Forever One Button has **no rotation logic of its own**. Every suggestion comes
-from [Just Assisted Combat](https://www.curseforge.com/wow/addons/just-assisted-combat)
-by wealdly, read through JustAC's public libraries:
+- **Priority lists for all nine classes** and every talent tree, for single
+  target, cleave and aoe. The list follows the tree you spent the most
+  talent points in.
+- **Conditions that work on Forever**: rage, energy and mana thresholds,
+  buffs and DoTs, cooldowns, stances and forms, combo points, swing timer,
+  execute range, number of engaged enemies. When the game keeps a value
+  hidden in combat, the engine never guesses: an unknown value never blocks
+  a suggestion.
+- **Only your tree's list is suggested**, so the panel never bounces between
+  stances.
+- **Ranks handled**: the rank on your action bars, or the highest you know.
+- **Charge** and other gap closers when you are out of melee; a clear **wait**
+  when nothing can be pressed yet.
 
-- **Suggestions** come from JustAC's public spell queue
-  (`JustAC-SpellQueue`, `GetCurrentSpellQueue`). The queue is shown exactly as
-  JustAC builds it: never reordered, filtered or replaced.
-- **Cells fill themselves from JustAC's ability pool**
-  (`JustAC-BlizzardAPI`, `GetRotationSpells`), plus JustAC's gap closers such as
-  Charge. Each spell takes the first free cell and **keeps it**: nothing is ever
-  moved, so your muscle memory stays valid. A new rank replaces the old one in
-  the same cell. Cells are saved per character.
-- **The panel follows JustAC's queue.** The cell holding JustAC's first
-  suggestion gets a gold frame and a "1"; the next suggestions get cyan frames
-  and their position numbers. A strip below the grid lists the whole queue in
-  JustAC order, with the cell that holds each entry.
-- **Honest states.** If JustAC suggests something that is not on the grid, the
-  panel says so instead of highlighting another cell. JustAC missing, waiting,
-  empty or unreadable is always shown as such.
+## More than a rotation
 
-Configure *what* gets suggested in JustAC's own options (profiles, visibility,
-custom queue). Forever One Button only decides *where* it appears and *which
-key* runs it.
-
-JustAC is a separate addon (GPL-3.0) and is not bundled. Install it alongside
-this one; without it the grid still works as plain action buttons and shows
-"JustAC not loaded".
+- **Burst cue**: when a big cooldown is ready, it moves to position 2 with a
+  purple frame.
+- **Interrupts**: when your target casts, an icon shows the right interrupt
+  (Pummel, Shield Bash, Kick, Counterspell...) with the enemy's cast and your
+  key; crowd control is offered on casts that cannot be kicked.
+- **Defensives**: a column orders your defensive cooldowns, healing potions
+  and healthstones by how hurt you are, and holds the big ones until you
+  really need them. Pet heal and revive for hunters and warlocks; optional
+  group heals and escapes from crowd control.
+- **Reminders out of combat**: a clickable row for missing class buffs,
+  flasks and elixirs, Well Fed food, scrolls, weapon stones and oils, shaman
+  imbues, stealth, and food, drink or bandages after a fight.
 
 ## You press every key
 
-Every cell is a secure action button that runs only when you click it or press
-its key. There is no one-key spam button, no repeat and no automatic pulling.
-You start every pull and choose every opener.
+Every cell is a secure action button that runs only when you click it or
+press its key. There is no one-key spam button, no repeat and no automatic
+pulling. You start every pull and choose every opener.
 
-## Features
+## The panel
 
 - Up to 20 cells (default 20 in 10 columns); columns, cell size, spacing and
   scale are adjustable.
+- Cells fill themselves from your priority list, gap closers, interrupts,
+  defensives and your best healing item. Nothing is ever moved, so your
+  muscle memory stays valid; new ranks replace old ones in the same cell.
+  Drag any spell or item onto a cell to change it.
 - Default keys: `SHIFT-1`...`SHIFT-0` for cells 1-10 and `CTRL-SHIFT-1`...
-  `CTRL-SHIFT-0` for cells 11-20. Rebind, unbind or reset any cell; conflicts
-  with your normal WoW bindings are marked.
-- Drag any spell or item onto a cell, or let the automatic fill do it.
+  `CTRL-SHIFT-0` for cells 11-20. Rebind, unbind or reset any cell.
+- Gold frame for the next ability, cyan for the ones after it, purple for
+  burst, red "!" for the interrupt, orange "D" for the defensive to use.
 - Movable panel: right-click the title bar to unlock, drag it, right-click to
   lock again. The position is saved.
-- Optional: hide Blizzard's bottom bar (main bar, micro menu, bags) while the
-  stance and experience bars stay and the action bar keys keep working.
-- Layout, cell and key changes are blocked in combat and applied safely
-  afterwards.
-- Optional diagnostic square (8x8 pixels, HCOneButton protocol v3) that shows
-  which cell holds JustAC's first suggestion. By default it is black outside
-  combat, and it can be hidden.
+- Optional: hide Blizzard's bottom bar while the stance and experience bars
+  stay and the action bar keys keep working.
+- Every feature can be switched in the options (`/fob`, Features page).
 
 ## Getting started
 
-1. Install **Forever One Button** and **Just Assisted Combat**.
-2. Log in: the cells fill from JustAC's ability pool.
-3. Type `/fob` to open the options (cells, keys, layout).
+1. Install **Forever One Button**.
+2. Log in: the cells fill from your priority list.
+3. Type `/fob` to open the options (cells, keys, layout, features).
 4. Fight: press the key of the cell with the gold frame.
 
 ## Commands
 
 - `/fob` - options
-- `/fob status` - JustAC state and current suggestion
+- `/fob status` - talent tree, context and current suggestion
 - `/fob bindings` - cells and keys
+- `/fob features` - feature switches; `/fob feature <name> on|off`
 - `/fob lock` / `/fob unlock` / `/fob reset` - panel position and layout
-- `/fob autofill on|off|now|reset` - automatic fill from JustAC
+- `/fob autofill on|off|now|reset` - automatic fill
 - `/fob blizzardbar hide|show` - Blizzard's bottom bar
 
-## Status
+## Feedback
 
-Alpha for the WoW Forever client. Feedback and bug reports are welcome on
+Bug reports and suggestions are welcome on
 [GitHub Issues](https://github.com/DoctorB/forever-one-button/issues).
 
 ## Credits
 
-Suggestions by [Just Assisted Combat](https://www.curseforge.com/wow/addons/just-assisted-combat)
-(wealdly). Forever One Button contains no JustAC code; it only calls JustAC's
-public libraries at run time. MIT License.
+The priority lists and class data come from
+[Just Assisted Combat](https://www.curseforge.com/wow/addons/just-assisted-combat)
+by wealdly (GPL-3.0), whose lists derive from the wowsims rotations
+(MIT, wowsims team). Forever One Button is free software under the GNU
+General Public License version 3.
 ```
 
 ## 3. File (Upload File)
 
 | Campo | Valore |
 |---|---|
-| File | `dist/ForeverOneButton-0.2.0.zip` da `python scripts/package.py build` (zip verificato) |
-| Display Name | `Forever One Button 0.2.0` |
-| Release Type | **Alpha** (vedi note: la verifica in gioco è parziale). L'app CurseForge sincronizza un progetto solo dopo il primo file Release |
+| File | `dist/ForeverOneButton-1.0.0.zip` da `python scripts/package.py build` (zip verificato) |
+| Display Name | `Forever One Button 1.0.0` |
+| Release Type | **Release** se la prova in gioco (sezione 4) è passata, altrimenti **Beta**. L'app CurseForge sincronizza un progetto solo dopo il primo file Release |
 | Supported Version | la versione **Forever** corrispondente al client 1.60.1 (Interface `16001`) |
-| Related Projects | `Just Assisted Combat` (slug `just-assisted-combat`, ID 1289544) come **Required Dependency**: l'app CurseForge lo installa insieme |
+| Related Projects | nessuno: l'addon non ha dipendenze |
 | Changelog | vedi sotto |
 
 ### Changelog
 
 ```markdown
-First public alpha for WoW Forever.
+1.0.0 - first public release for WoW Forever.
 
-- Action Panel of up to 20 secure action buttons; you bind and press every key.
-- JustAC's suggestions shown on your cells (gold "1", cyan 2+) and in a queue
-  strip, in JustAC order.
-- Cells fill automatically from JustAC's ability pool and gap closers; nothing
-  is ever moved; saved per character.
-- Default keys SHIFT-1...0 and CTRL-SHIFT-1...0, rebindable.
-- Movable panel: right-click the title bar to unlock or lock; position saved.
-- Option to hide Blizzard's bottom bar (stance and XP bars stay).
-- Optional diagnostic square (HCOneButton protocol v3), black out of combat by
-  default.
+- Built-in suggestion engine: priority lists for all nine classes and their
+  talent trees (single target, cleave, aoe), conditions that work with
+  Forever's hidden combat values; only your tree's list is suggested.
+- Burst cue: a ready big cooldown moves to position 2 (purple).
+- Interrupts: icon with the enemy cast and your key; crowd control on
+  shielded casts.
+- Defensive column: cooldowns, potions and healthstones ordered by how hurt
+  you are; pet heal and revive.
+- Clickable reminders out of combat: class buffs, consumables, weapon
+  enhancements, stealth, food, drink and bandages.
+- Action panel of up to 20 secure buttons that fill themselves and never
+  move; you bind and press every key.
+- Movable panel, optional hiding of Blizzard's bottom bar.
 ```
 
 ## 4. Prima di pubblicare
 
-- **Versione di JustAC.** L'integrazione è verificata su JustAC 5.9.0-beta2
-  (GitHub `431e9a2`). JustAC 6.0.0 (CurseForge, 15/10/2026, installata nella
-  beta il 16/10) è stata confrontata sul codice: stessi minor
-  (`JustAC-SpellQueue` 43, `JustAC-BlizzardAPI` 36, `JustAC-SpellDB` 20),
-  stesso `WAIT_SENTINEL`; `GetRotationSpells`, `ResolveKnownSpellID`,
-  `GetGapCloserDefaults` e la lista dei gap closer identici (la lista è passata
-  da `Data/ForeverDefaults.lua` a `Data/Forever/Defaults.lua`). Unica novità
-  nella coda: `_StageForeverWait` mette il wait in posizione 1, spostando le
-  altre voci, quando in combattimento nessuna voce è eseguibile; l'addon lo
-  mostra già come "wait" (pixel nero). Resta da provare in gioco
-  (`/fob status`) prima del caricamento.
-- **Verifiche in gioco ancora aperte** ([TEST_REPORT.md](TEST_REPORT.md)):
-  da qui il tipo Alpha.
-- **Versione nel pacchetto.** `## Version: 0.2.0` nel TOC e in `CHANGELOG.md`
-  (ancora "unreleased"); aggiornare la data nel CHANGELOG quando si pubblica.
+- **Prova in gioco** (fase 10, [RUNTIME_CHECKLIST.md](RUNTIME_CHECKLIST.md)):
+  rotazione del guerriero senza giro di posture, Charge fuori mischia,
+  interruzione su un lancio, burst in posizione 2, colonna difese sotto il
+  50%, riga dei promemoria fuori dal combattimento. Da qui la scelta tra
+  Release e Beta.
+- **Licenza**: su CurseForge selezionare GPLv3, la stessa del file
+  `LICENSE` nel pacchetto.
+- **Versione nel pacchetto**: `## Version: 1.0.0` nel TOC; aggiornare la data
+  della sezione 1.0.0 in `CHANGELOG.md` quando si pubblica.

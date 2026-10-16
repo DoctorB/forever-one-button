@@ -31,7 +31,7 @@ local cellsBefore = next(ForeverOneButtonCharDB.cells)
 ns.Commands.Handle("probe spellbook")
 local probe = ForeverOneButtonLog.probe
 H.Equal(#probe, 6, "header + 5 items")
-H.Equal(probe[1], "header|WARRIOR|1.60.1|level 12|0.2.0", "header")
+H.Equal(probe[1], "header|WARRIOR|1.60.1|level 12|1.0.0", "header")
 H.Equal(probe[2], "1|General|1|Spell|6603|6603|Attack|false|true|class", "learned spell, a class ability in the data")
 H.Equal(probe[3], "2|Arms|2|Spell|100|100|Charge|false|true|gap", "gap closer marked")
 H.Equal(probe[4], "2|Arms|3|FutureSpell|1464|1464|Slam|false|false|class", "future spell; a rank of a warrior class ability (Slam)")
