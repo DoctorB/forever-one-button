@@ -5,20 +5,20 @@ GetTimePreciseSec = function() return H.now end
 function GetBuildInfo() return "1.60.1", "70374", "Oct 12 2026", 16001 end
 
 local ns = H.Boot(nil, nil)
-local lib = H.InstallJustAC(43)
+local lib = H.InstallQueue()
 H.spells[6603] = {name = "Strike"}
 H.spells[2687] = {name = "Rend"}
 H.Check(ns.Actions.Assign(3, "spell", 6603), "Strike on 3")
 H.Check(ns.Actions.Assign(4, "spell", 2687), "Rend on 4")
 
 -- Off by default: nothing recorded.
-lib.SetQueue({6603})
+lib.Set({6603})
 H.Tick(0.2)
 H.Equal(#ForeverOneButtonLog.entries, 0, "nothing logged while off")
 H.Equal(ForeverOneButtonLog.enabled, false, "off by default")
 
 ns.Commands.Handle("log on")
-H.Check(ForeverOneButtonLog.entries[1]:find("|session|0.2.0|1.60.1.70374"), "session header")
+H.Check(ForeverOneButtonLog.entries[1]:find("|session|1.0.0|1.60.1.70374"), "session header")
 
 -- Same spell suggested again and again ("spam"), each press succeeds.
 H.inCombat = true
@@ -33,7 +33,7 @@ end
 H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "guid", 9999)
 H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "guid", H.Secret())
 H.Tick(0.1)
-lib.SetQueue({2687})
+lib.Set({2687})
 H.Tick(0.1)
 H.inCombat = false
 H.Fire("PLAYER_REGEN_ENABLED")

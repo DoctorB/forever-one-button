@@ -67,8 +67,19 @@ function Region:SetHeight(h) self.height = h end
 function Region:Show() self.shown = true end
 function Region:Hide() self.shown = false end
 function Region:IsShown() return self.shown end
-function Region:SetText(t) self.text = t end
-function Region:GetText() return self.text end
+-- As on the client, a font string that once held secret text returns any
+-- non-empty text as a secret from then on (empty text: nothing).
+function Region:SetText(t)
+    if issecretvalue(t) then self.heldSecret = true end
+    self.text = t
+end
+function Region:GetText()
+    if self.heldSecret and not issecretvalue(self.text) then
+        if self.text == nil or self.text == "" then return nil end
+        return H.SecretOf(self.text)
+    end
+    return self.text
+end
 function Region:SetTextColor() end
 function Region:SetJustifyH() end
 function Region:SetWordWrap() end
@@ -272,8 +283,18 @@ function IsControlKeyDown() return H.ctrl end
 function IsAltKeyDown() return H.alt end
 function UnitExists(unit) return unit == "target" and H.target ~= nil end
 H.casting, H.channeling = nil, nil
-function UnitCastingInfo(unit) if unit == "player" then return H.casting end end
-function UnitChannelInfo(unit) if unit == "player" then return H.channeling end end
+-- H.targetCast / H.targetChannel = {name, texture, notInterruptible}.
+function UnitCastingInfo(unit)
+    if unit == "player" then return H.casting end
+    local c = unit == "target" and H.targetCast
+    if c then return c.name, c.name, c.texture, 0, 1, false, "cast", c.notInterruptible end
+end
+function UnitChannelInfo(unit)
+    if unit == "player" then return H.channeling end
+    local c = unit == "target" and H.targetChannel
+    if c then return c.name, c.name, c.texture, 0, 1, false, c.notInterruptible end
+end
+function UnitIsMinion(unit) local u = H.units and H.units[unit]; return u ~= nil and u.minion == true end
 
 H.spells = {}   -- id -> {name, icon, override, inRange}
 H.items = {}    -- id -> {name, icon, spell}
@@ -324,38 +345,39 @@ function LibStub:NewLibrary(major, minor)
     return H.libs[major].lib
 end
 
--- A JustAC-SpellQueue stand-in that mirrors the verified shape: one shared
--- table, wiped and refilled in place, returned by a dot-called function.
-function H.InstallJustAC(minor)
-    local lib = LibStub:NewLibrary("JustAC-SpellQueue", minor or 43)
-    lib.WAIT_SENTINEL = -999999999
-    local shared = {}
-    lib._shared = shared
-    lib.calls = 0
-    function lib.GetCurrentSpellQueue(...)
-        assert(select("#", ...) == 0, "GetCurrentSpellQueue takes no arguments")
-        lib.calls = lib.calls + 1
-        return shared
+-- A queue chosen by the test in place of the engine (Engine/Queue.lua), for
+-- suites about the panel and the pixel. Set(ids): positive spell IDs, -itemID
+-- for items, q.WAIT for a wait; all entries ready. Fail(message) makes the
+-- build raise; Remove() reports a class without a priority list. An
+-- unchanged queue returns the previous snapshot, like the engine.
+function H.InstallQueue()
+    local q = {WAIT = -999999999, ids = {}, calls = 0}
+    function q.Set(ids) q.ids, q.failure, q.missing = ids, nil, nil end
+    function q.Fail(message) q.failure = message or "failure" end
+    function q.Remove() q.missing = true end
+    H.ns.Queue.Build = function(previous)
+        q.calls = q.calls + 1
+        if q.failure then error(q.failure) end
+        local status = q.missing and "missing" or "ok"
+        if previous and previous.status == status and previous.count == #q.ids and not q.missing then
+            local same = true
+            for i, id in ipairs(q.ids) do
+                if previous.entries[i].id ~= id then same = false break end
+            end
+            if same then return previous end
+        elseif previous and q.missing and previous.status == status then
+            return previous
+        end
+        local snapshot = {status = status, entries = {}, count = 0, tree = "arms", context = "st"}
+        if q.missing then return snapshot end
+        for i, id in ipairs(q.ids) do
+            local kind = (id == q.WAIT and "wait") or (id < 0 and "item") or "spell"
+            snapshot.entries[i] = {kind = kind, id = id, ready = kind ~= "wait"}
+        end
+        snapshot.count = #q.ids
+        return snapshot
     end
-    function lib.SetQueue(ids)
-        wipe(shared)
-        for i, id in ipairs(ids) do shared[i] = id end
-    end
-    return lib
-end
-
--- JustAC-BlizzardAPI stand-in: only the pool function AutoFill reads.
-function H.InstallJustACPool(ids)
-    H.libs["JustAC-BlizzardAPI"] = H.libs["JustAC-BlizzardAPI"] or {lib = {}, minor = 36}
-    local lib = H.libs["JustAC-BlizzardAPI"].lib
-    lib.pool = ids
-    lib.poolCalls = 0
-    function lib.GetRotationSpells(...)
-        assert(select("#", ...) == 0, "GetRotationSpells called with arguments")
-        lib.poolCalls = lib.poolCalls + 1
-        return lib.pool
-    end
-    return lib
+    return q
 end
 
 -- Addon loader -------------------------------------------------------------
@@ -436,5 +458,212 @@ function H.Done(name)
     for api, count in pairs(H.calls) do error("FAIL: forbidden API " .. api .. " called " .. count .. " times") end
     print(name .. ": PASS")
 end
+
+-- Game state for the suggestion engine -----------------------------------
+-- H.units[unit] = {health, healthMax, power = {[type] = n}, powerMax = {...},
+-- attackable, dead, classification, level, threat}. With H.secretStats the
+-- health/power reads return secrets that carry their value, which only the
+-- engine-side comparisons (curves, TruncateWhenZero) can use.
+H.units = {}
+H.secretStats = false
+H.known = {}            -- spellID -> true (IsPlayerSpell)
+H.actions = {}          -- slot -> spellID on the action bars
+H.forms = {}            -- shapeshift form index -> spellID
+H.activeForm = nil      -- active form index
+H.auras = {player = {}, target = {}}  -- unit -> spellID -> {applications, expirationTime}
+H.aurasHiddenInCombat = true
+H.stealthed = false
+H.comboPoints = 0
+H.totems = {}           -- slot -> true
+
+local hiddenValue = setmetatable({}, {__mode = "k"})
+function H.SecretOf(value)
+    local secret = H.Secret()
+    hiddenValue[secret] = value
+    return secret
+end
+local function Hidden(v) if issecretvalue(v) then return hiddenValue[v] end return v end
+local function MaybeSecret(v)
+    if H.secretStats and v ~= nil then return H.SecretOf(v) end
+    return v
+end
+
+local function Unit(unit) return H.units[unit] end
+function UnitExists(unit)
+    if H.units[unit] then return true end
+    return unit == "target" and H.target ~= nil
+end
+function UnitHealth(unit) local u = Unit(unit); return u and MaybeSecret(u.health) end
+function UnitHealthMax(unit) local u = Unit(unit); return u and u.healthMax end
+function UnitPower(unit, powerType) local u = Unit(unit); return u and u.power and MaybeSecret(u.power[powerType or 1]) end
+function UnitPowerMax(unit, powerType) local u = Unit(unit); return u and u.powerMax and u.powerMax[powerType or 1] end
+local function Fraction(current, max)
+    if type(current) ~= "number" or type(max) ~= "number" or max <= 0 then return nil end
+    return current / max
+end
+function UnitHealthPercent(unit, _, curve)
+    local u = Unit(unit)
+    local f = u and Fraction(u.health, u.healthMax)
+    if f == nil then return nil end
+    return MaybeSecret(curve and curve:Evaluate(f) or f)
+end
+function UnitPowerPercent(unit, powerType, _, curve)
+    local u = Unit(unit)
+    local f = u and u.power and Fraction(u.power[powerType or 1], u.powerMax[powerType or 1])
+    if f == nil then return nil end
+    return MaybeSecret(curve and curve:Evaluate(f) or f)
+end
+function UnitCanAttack(_, unit) local u = Unit(unit); return u ~= nil and u.attackable == true end
+function UnitIsDeadOrGhost(unit) local u = Unit(unit); return u ~= nil and u.dead == true end
+function UnitClassification(unit) local u = Unit(unit); return u and (u.classification or "normal") end
+-- The player is level 60 unless set (the level-60 lists); others level 10.
+function UnitLevel(unit)
+    local u = Unit(unit)
+    if unit == "player" then return u and u.level or 60 end
+    return u and (u.level or 10)
+end
+function UnitThreatSituation(_, unit) local u = Unit(unit); return u and u.threat end
+
+Enum = Enum or {}
+Enum.LuaCurveType = {Linear = 0, Step = 1}
+C_CurveUtil = {}
+function C_CurveUtil.CreateCurve()
+    local curve = {points = {}}
+    function curve:SetType(t) self.type = t end
+    function curve:AddPoint(x, y) self.points[#self.points + 1] = {x, y} end
+    function curve:Evaluate(x)
+        local p = self.points
+        if x <= p[1][1] then return p[1][2] end
+        for i = 2, #p do
+            if x <= p[i][1] then
+                local x0, y0, x1, y1 = p[i - 1][1], p[i - 1][2], p[i][1], p[i][2]
+                if x1 == x0 then return y1 end
+                return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+            end
+        end
+        return p[#p][2]
+    end
+    return curve
+end
+C_StringUtil = {}
+-- Integer text of the value rounded down, nil for zero; secret in, secret out.
+function C_StringUtil.TruncateWhenZero(v)
+    local n = Hidden(v)
+    if type(n) ~= "number" or math.floor(n) == 0 then return nil end
+    local text = tostring(math.floor(n))
+    if issecretvalue(v) then return H.SecretOf(text) end
+    return text
+end
+
+-- Spells: H.spells[id] gains usable (default true), noResources, cooldown
+-- (true = real cooldown running), onGCD.
+-- H.secretSpellbook: the spellbook answers are secret (as they can be in combat).
+function IsPlayerSpell(id) if H.secretSpellbook then return H.Secret() end return H.known[id] == true end
+function IsSpellKnown(id) if H.secretSpellbook then return H.Secret() end return H.known[id] == true end
+function GetActionInfo(slot) local id = H.actions[slot]; if id then return "spell", id end end
+function C_Spell.IsSpellUsable(id)
+    local s = H.spells[id]
+    if not s then return false, false end
+    return s.usable ~= false, s.noResources == true
+end
+function C_Spell.GetSpellCooldownDuration(id)
+    local s = H.spells[id]
+    return {active = s ~= nil and s.cooldown == true}
+end
+function C_Spell.GetSpellCooldown(id)
+    local s = H.spells[id]
+    return {isOnGCD = s and s.onGCD or nil, isActive = s ~= nil and s.cooldown == true,
+        startTime = H.secretStats and H.Secret() or 0, duration = H.secretStats and H.Secret() or 0}
+end
+function Frame:SetCooldownFromDurationObject(d) self.shown = d ~= nil and d.active == true end
+function Frame:SetCooldown() self.shown = false end
+
+function GetNumShapeshiftForms() return #H.forms end
+function GetShapeshiftFormInfo(i) return nil, H.activeForm == i, true, H.forms[i] end
+function GetShapeshiftForm() return H.activeForm or 0 end
+C_UnitAuras = {}
+local function Aura(unit, id)
+    if H.aurasHiddenInCombat and H.inCombat then return nil end
+    local list = H.auras[unit]
+    local a = list and list[id]
+    if not a then return nil end
+    return {auraInstanceID = id, applications = a.applications or 0, expirationTime = a.expirationTime or 0}
+end
+function C_UnitAuras.GetPlayerAuraBySpellID(id) return Aura("player", id) end
+function C_UnitAuras.GetUnitAuraBySpellID(unit, id) return Aura(unit, id) end
+H.class = "WARRIOR"
+function UnitClass(unit) if unit == "player" then return H.class:sub(1, 1) .. H.class:sub(2):lower(), H.class end end
+function UnitGUID(unit) local u = Unit(unit); return u and (u.guid or ("guid-" .. unit)) end
+H.autoAttack = false
+function C_Spell.IsCurrentSpell(id) if H.secretSpellbook then return H.Secret() end return id == 6603 and H.autoAttack end
+H.autoRepeat = {} -- spellID -> true while Auto Shot / Shoot runs
+function C_Spell.IsAutoRepeatSpell(id) return H.autoRepeat[id] == true end
+-- Talents: H.talents = {["Arms"] = points, ...}; nil = no talent API data.
+H.talents = nil
+C_ClassTalents = {
+    GetActiveConfigID = function() return H.talents and 1 end,
+    GetTraitTreeForSpec = function() return H.talents and 10 end,
+}
+C_SpecializationInfo = {
+    GetSpecialization = function() return 1 end,
+    GetSpecializationInfo = function() return 71 end,
+}
+C_Traits = {
+    GetGroupDisplayInfoByTreeID = function()
+        local out = {}
+        for name in pairs(H.talents or {}) do out[#out + 1] = {groupID = #out + 1, displayName = name} end
+        table.sort(out, function(a, b) return a.displayName < b.displayName end)
+        for i, d in ipairs(out) do d.groupID = i end
+        return out
+    end,
+    GetGroupCurrencyInfo = function(_, ids)
+        local displays = C_Traits.GetGroupDisplayInfoByTreeID()
+        local out = {}
+        for i, id in ipairs(ids) do
+            out[i] = {traitNodeGroupID = id, currencyInfos = {{spent = H.talents[displays[id].displayName]}}}
+        end
+        return out
+    end,
+}
+-- Items and survival: H.bags[itemID] = count; H.itemCooldowns[itemID] =
+-- {start, duration}; H.baseCooldowns[spellID] = ms; H.lossOfControl = {{locType}}.
+H.bags, H.itemCooldowns, H.baseCooldowns, H.lossOfControl = {}, {}, {}, {}
+-- H.secretBags: bag counts are secret in combat (as seen on Forever).
+function C_Item.GetItemCount(id)
+    if H.secretBags and H.inCombat then return H.Secret() end
+    return H.bags[id] or 0
+end
+C_Container = {GetItemCooldown = function(id)
+    local c = H.itemCooldowns[id]
+    if c then return c[1], c[2], 1 end
+    return 0, 0, 1
+end}
+function GetSpellBaseCooldown(id) return H.baseCooldowns[id] or 0, 0 end
+function UnitIsDead(unit) local u = Unit(unit); return u ~= nil and u.dead == true end
+C_LossOfControl = {
+    GetActiveLossOfControlDataCount = function() return #H.lossOfControl end,
+    GetActiveLossOfControlData = function(i) return H.lossOfControl[i] end,
+}
+-- Reminders: H.mounted, H.inGroup, H.mainHand = {id, classID, subclassID},
+-- H.mainHandEnchant = {imbue = bool, temporary = bool}.
+H.mounted, H.inGroup, H.mainHand, H.mainHandEnchant = false, false, nil, {}
+function IsMounted() return H.mounted end
+function IsInGroup() return H.inGroup end
+function UnitIsConnected(unit) return H.units[unit] ~= nil end
+function GetInventoryItemID(_, slot) return slot == 16 and H.mainHand and H.mainHand.id or nil end
+function C_Item.GetItemInfoInstant(id)
+    if H.mainHand and id == H.mainHand.id then return id, "Weapon", "", "", 0, H.mainHand.classID, H.mainHand.subclassID end
+end
+function C_Item.IsUsableItem() return true end
+Enum.ItemEnchantType = {Temporary = 0, Imbue = 1}
+function C_Item.GetWeaponEnchantInfo()
+    return {{hasEnchant = H.mainHandEnchant.temporary == true, enchantType = 0},
+        {hasEnchant = H.mainHandEnchant.imbue == true, enchantType = 1}}
+end
+H.stateDrivers = {}
+function RegisterStateDriver(frame, attribute, value) H.stateDrivers[frame] = {attribute = attribute, value = value} end
+function IsStealthed() return H.stealthed end
+function GetComboPoints() return H.comboPoints end
+function GetTotemInfo(slot) return H.totems[slot] == true end
 
 return H

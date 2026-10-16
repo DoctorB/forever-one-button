@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.0.0 - unreleased
+
+- Built-in suggestion engine; JustAC is no longer needed. Priority lists for
+  all nine classes and their talent trees (single target, cleave, aoe),
+  imported from JustAC 6.0.0's Forever data (`scripts/import_justac_data.py`,
+  source hashes pinned), with all 19 condition types evaluated secret-safely:
+  an unknown value never holds a suggestion back.
+- Leveling lists of our own for every class and talent tree (levels 1-59,
+  `Data/Leveling.lua`): they grow with the abilities you learn and switch to
+  the level-60 lists at 60. Burst cooldowns are included.
+- Auto Shot and a wand's Shoot are never suggested while already running.
+- Only the active tree's list (plus gap closers) is suggested: the
+  Defensive/Battle Stance loop seen with JustAC 6.0.0 cannot happen.
+- Wait when nothing can be pressed in a fight; Charge out of melee; DoTs
+  ticking on the target wait; ranks on the action bars are used.
+- Stances: each list's home stance is suggested when you are in another one;
+  before Berserker Stance is learned, Fury uses Battle Stance.
+- Sunder Armor and other target stacks are counted from your own casts in
+  combat (target debuffs are unreadable there), so Sunder is not suggested
+  again and again.
+- Burst cue: a ready burst cooldown moves to position 2 (purple frame).
+- Interrupts: icon left of the grid with the enemy cast and the key, red "!"
+  on the cell; kicks first, crowd control on shielded casts; modes and fears
+  configurable.
+- Defensive column right of the grid: class cooldowns and the best healing
+  item, ordered by health band and tier, emergencies held until health is
+  low; pet heal/revive, group heals and loss-of-control escapes (the last
+  two off by default).
+- Reminder row out of combat, clickable: class buffs, flask/elixir, food,
+  scroll, weapon stone/oil or shaman imbue, stealth, top-off heal, food,
+  drink and bandage after a fight. Hidden in combat.
+- Automatic fill also places interrupts, defensives and one healing-item
+  cell (replaced in place by a better item).
+- Options: a Features page; `/fob features`, `/fob feature <name> ...`.
+- License: GPL-3.0-or-later (imported data from JustAC, GPL; priority lists
+  derived from wowsims, MIT).
+
 ## 0.2.0 - unreleased
 
 - Cells fill automatically from JustAC's ability pool

@@ -16,7 +16,7 @@ Esito: **applicato / già equivalente / non pertinente / bloccato** per ogni voc
 | Workspace | esisteva, non vuoto (`docs/` con la specifica), **non** era un repository Git. Non clonato sopra: `git init -b main` nella cartella, file esistenti preservati |
 | Remoto | `origin` = `https://github.com/DoctorB/forever-one-button.git` (fetch e push). Il remote di HCOB e la sua `.git` non sono stati copiati |
 | Repository remoto | esisteva, pubblico e **vuoto** (`isEmpty: true`) |
-| Branch | `main` creato con il commit iniziale `0eb4942` e pubblicato; lavoro su `feat/forever-one-button` con tracking `origin/feat/forever-one-button` |
+| Branch | `main` creato con il commit iniziale `0eb4942` e pubblicato; lavoro su `feat/forever-one-button` con tracking `origin/feat/forever-one-button`; la 0.2.0 è su `main` (`1e20891`); il motore interno (1.0.0) è su `feat/internal-engine` con tracking `origin/feat/internal-engine` |
 
 ## 2. Matrice delle impostazioni
 
@@ -41,7 +41,7 @@ Esito: **applicato / già equivalente / non pertinente / bloccato** per ogni voc
 | `.editorconfig`, `CODEOWNERS`, template issue/PR, `CONTRIBUTING` | assenti | assenti | — | già equivalente |
 | Convenzione commit | Conventional Commits (`feat`, `fix`, `docs`, `chore`, `test` con scope) | stessa convenzione | — | applicato |
 | Flusso | push diretto su `main`, nessun merge commit, nessuna PR; tag `v<versione>` sulle release | `main` iniziale, poi branch `feat/…` + PR verso `main` | la specifica (§4.6.6, Fase 6) chiede push dei branch di lavoro e PR; merge e tag/release richiedono autorizzazione | applicato (adattato) |
-| Versionamento | `## Version` nel TOC, `CHANGELOG.md`, tag `vX.Y.Z` | `## Version: 0.1.0`, `CHANGELOG.md`; **nessun tag** | tag e release non autorizzati in questo incarico | applicato senza tag |
+| Versionamento | `## Version` nel TOC, `CHANGELOG.md`, tag `vX.Y.Z` | `## Version: 1.0.0` nel TOC (= `ns.VERSION`, controllato da `tests/test_toc.lua`), `CHANGELOG.md`; **nessun tag** | tag e release non autorizzati in questo incarico | applicato senza tag |
 | Changelog/release notes | `CHANGELOG.md`, `docs/releases/<ver>.md`, `docs/RELEASING.md` | `CHANGELOG.md` | processo CurseForge non pertinente finché non autorizzato | parziale |
 | Packaging | `scripts/curseforge_release.py prepare` (zip in `release/ci/`) | `scripts/package.py build` (zip in `dist/`, verificato, riproducibile) | nuovo nome/percorso, nessun upload | applicato (adattato) |
 | Workflow CI | `curseforge-release.yml`: su `release` e `workflow_dispatch`, `permissions: contents: read`, allowlist attori, action pinnate (checkout `3d3c42e5…` v7.0.1, upload-artifact `043fb46d…` v7.0.1), Lua 5.1 via apt, `tests/run.ps1`, upload CurseForge con `CF_API_TOKEN` | `ci.yml`: su push (`main`, `feat/**`, `fix/**`), PR e dispatch; stesse action pinnate, `contents: read`, Lua 5.1, `tests/run.ps1`, build+verifica pacchetto, artifact | nessun upload, nessun secret, quindi nessuna allowlist necessaria; trigger su push/PR per avere controlli prima del merge | applicato (adattato) |
@@ -64,8 +64,8 @@ Esito: **applicato / già equivalente / non pertinente / bloccato** per ogni voc
 | Variabili Actions | nessuna | nessuna | nessuna | già equivalente |
 | Secret scanning + push protection | abilitati | abilitati | abilitati | già equivalente |
 | Dependabot / vulnerability alerts | disabilitati | disabilitati | disabilitati | già equivalente |
-| Descrizione | presente | vuota | "WoW Forever Action Panel grid that shows JustAC suggestions…" | applicato |
-| Licenza rilevata | MIT | nessuna (repo vuoto) | MIT (file `LICENSE` sul branch) | applicato al merge di `main` |
+| Descrizione | presente | vuota | "WoW Forever Action Panel grid that shows JustAC suggestions…" | applicato; al 2026-10-16 non più attuale (JustAC non è usato dalla 1.0.0): da aggiornare, non modificata |
+| Licenza rilevata | MIT | nessuna (repo vuoto) | MIT (da `main`, 2026-10-16) | su `feat/internal-engine` `LICENSE` è GPL-3.0-or-later: GitHub la rileverà dopo il merge in `main` |
 | Collaboratori diretti | `DoctorB` (admin), `DrCalibano` (write) | `DoctorB` | `DoctorB` | **non applicato**: nessun accesso concesso automaticamente (specifica §4.6.4). Se desiderato, il proprietario può invitare `DrCalibano` |
 | Pages, autolink | assenti | assenti | assenti | già equivalente |
 
@@ -81,6 +81,9 @@ Esito: **applicato / già equivalente / non pertinente / bloccato** per ogni voc
 | CI remota | `gh run list` | run `38696430512` su `feat/forever-one-button`: **success** (tutti gli step) |
 | HCOneButton invariato | `git -C ../hc-one-button rev-parse HEAD`, `status` | HEAD `e973acb`; unico file non tracciato preesistente `docs/FOREVER_FEASIBILITY.md` intatto; vedi §5 |
 | Config global/system invariata | `stat` di `~/.gitconfig` e `etc/gitconfig` | ultima modifica 2026-10-06, nessun comando di scrittura eseguito |
+| Branch del motore (2026-10-16) | `git branch -vv` | `feat/internal-engine` → `origin/feat/internal-engine` (`37e2656`), `main` → `origin/main` (`1e20891`) |
+| Fine riga (2026-10-16) | `git ls-files --eol` | 83 file `i/lf w/lf`, 2 binari (`-text`) |
+| CI remota (2026-10-16) | `gh run list --branch feat/internal-engine` | run `38873883869` su `37e2656`: **success** |
 
 ## 5. Anomalia e azione residua su HCOneButton
 
@@ -101,7 +104,9 @@ aggiornati da un processo esterno (fetch/manutenzione automatica); ref e `HEAD` 
 ## 6. Prerequisiti mancanti / azioni residue
 
 - Merge della PR verso `main`: richiede autorizzazione del proprietario.
-- Tag `v0.1.0` e release: non autorizzati; da fare dopo le verifiche in gioco.
+- Merge di `feat/internal-engine` (1.0.0): richiede autorizzazione del proprietario.
+- Tag `v1.0.0` e release: non autorizzati; da fare dopo le verifiche in gioco.
+- Descrizione del repository GitHub: ancora riferita a JustAC; da aggiornare.
 - Pubblicazione CurseForge: richiederebbe un progetto CurseForge, il secret
   `CF_API_TOKEN` e un workflow di release adattato; non pertinente ora.
 - Controllo obbligatorio su `main` (`CI / test`): opzionale, assente in HCOB.

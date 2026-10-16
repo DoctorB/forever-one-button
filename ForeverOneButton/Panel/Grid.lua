@@ -1,7 +1,7 @@
 -- Forever One Button: the Action Panel, a checkerboard grid of action buttons.
 --
 -- Designed from scratch (docs/ACTION_PANEL_DESIGN.md). Each cell is a secure
--- action button whose action and key the user chose. JustAC suggestions are
+-- action button whose action and key the user chose. Suggestions are
 -- shown as numbered marks on the cells and in the queue strip below the grid;
 -- they never change what a cell does or which key it has.
 --
@@ -16,9 +16,12 @@ Grid.buttons = {}
 Grid.pendingLayout = false
 
 local POSITION_COLORS = {
-    [1] = {1.00, 0.82, 0.10}, -- JustAC position 1: gold
+    [1] = {1.00, 0.82, 0.10}, -- queue position 1: gold
     other = {0.30, 0.80, 1.00}, -- positions 2+: cyan
 }
+local BURST_COLOR = {0.75, 0.35, 1.00} -- burst cooldown ready: purple
+local INTERRUPT_COLOR = {1.00, 0.20, 0.20} -- interrupt now: red
+local DEFENSE_COLOR = {1.00, 0.55, 0.10} -- defensive to use now: orange
 local CHECKER = {{0.10, 0.12, 0.15, 0.92}, {0.17, 0.19, 0.23, 0.92}}
 local EMPTY_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local STRIP_HEIGHT = 44
@@ -100,12 +103,13 @@ dragBar:SetScript("OnLeave", function()
     if GameTooltip then GameTooltip:Hide() end
 end)
 
--- Status line and JustAC queue strip, below the cells. The strip lists the
--- queue in JustAC order with the cell that holds each entry.
+-- Status line and queue strip, below the cells. The strip lists the queue in
+-- order with the cell that holds each entry.
 local strip = CreateFrame("Frame", "ForeverOneButtonQueueStrip", container)
 strip:SetHeight(STRIP_HEIGHT)
 strip:SetPoint("TOPLEFT", container, "BOTTOMLEFT", 0, -2)
 strip:SetPoint("TOPRIGHT", container, "BOTTOMRIGHT", 0, -2)
+Grid.strip = strip
 local stripBg = strip:CreateTexture(nil, "BACKGROUND")
 stripBg:SetAllPoints()
 stripBg:SetColorTexture(0.02, 0.02, 0.03, 0.75)
@@ -126,6 +130,43 @@ for position = 1, MAX_QUEUE_ICONS do
     icon:Hide()
     label:Hide()
     Grid.queueIcons[position] = {icon = icon, label = label}
+end
+
+-- Interrupt icon, left of the grid: the spell to use, the enemy cast in the
+-- corner, the key of the cell holding the spell. Display only.
+local side = CreateFrame("Frame", "ForeverOneButtonSide", container)
+side:SetSize(44, 44)
+side:SetPoint("TOPRIGHT", container, "TOPLEFT", -4, 0)
+Grid.side = side
+local interruptIcon = side:CreateTexture(nil, "ARTWORK")
+interruptIcon:SetSize(40, 40)
+interruptIcon:SetPoint("TOP", side, "TOP", 0, -2)
+local interruptCast = side:CreateTexture(nil, "OVERLAY")
+interruptCast:SetSize(16, 16)
+interruptCast:SetPoint("BOTTOMRIGHT", interruptIcon, "BOTTOMRIGHT", 2, -2)
+local interruptKey = side:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+interruptKey:SetPoint("TOP", interruptIcon, "BOTTOM", 0, -1)
+Grid.interrupt = {icon = interruptIcon, cast = interruptCast, key = interruptKey}
+interruptIcon:Hide()
+interruptCast:Hide()
+interruptKey:Hide()
+
+-- Defensive column, right of the grid: up to four icons with the key of
+-- the cell holding each; waiting or not ready entries are dimmed.
+local defenses = CreateFrame("Frame", "ForeverOneButtonDefenses", container)
+defenses:SetSize(40, 4 * 46)
+defenses:SetPoint("TOPLEFT", container, "TOPRIGHT", 4, 0)
+Grid.defenses = defenses
+Grid.defenseIcons = {}
+for i = 1, 4 do
+    local icon = defenses:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(32, 32)
+    icon:SetPoint("TOP", defenses, "TOP", 0, -(i - 1) * 46)
+    local key = defenses:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    key:SetPoint("TOP", icon, "BOTTOM", 0, -1)
+    icon:Hide()
+    key:Hide()
+    Grid.defenseIcons[i] = {icon = icon, key = key}
 end
 
 local function Edge(button, layer)
@@ -193,7 +234,8 @@ local function OnEnter(button)
     local key = ns.Actions.appliedKeys[button.slot]
     GameTooltip:AddLine(key and ("Key: " .. key) or "No key bound", 0.8, 0.8, 0.8)
     if button.queuePosition then
-        GameTooltip:AddLine("JustAC position " .. button.queuePosition, 1, 0.82, 0.1)
+        GameTooltip:AddLine("Queue position " .. button.queuePosition, 1, 0.82, 0.1)
+        if button.burst then GameTooltip:AddLine("Burst cooldown ready", 0.75, 0.35, 1.0) end
     end
     if not ns.Actions.applied[button.slot] then
         GameTooltip:AddLine("Drag a spell or item here (out of combat)", 0.6, 0.6, 0.6)
@@ -319,12 +361,16 @@ function Grid.Refresh()
 end
 
 local STATUS_TEXT = {
-    [ns.STATUS.MISSING] = "JustAC not loaded - no suggestions",
-    [ns.STATUS.NO_METHOD] = "JustAC queue API not found - no suggestions",
-    [ns.STATUS.ERROR] = "JustAC queue error - no suggestions",
-    [ns.STATUS.INVALID] = "JustAC returned unexpected data - no suggestions",
-    [ns.STATUS.UNREADABLE] = "JustAC queue unreadable - no suggestions",
+    [ns.STATUS.MISSING] = "No priority list for this class - no suggestions",
+    [ns.STATUS.ERROR] = "Suggestion error - no suggestions",
 }
+
+-- "Arms (single target)" from the snapshot's tree and context.
+local CONTEXT_TEXT = {st = "single target", cleave = "cleave", aoe = "aoe"}
+local function TreeText(snapshot)
+    local tree = snapshot.tree and snapshot.tree:gsub("_", " "):gsub("^%l", string.upper) or "?"
+    return tree .. " (" .. (CONTEXT_TEXT[snapshot.context] or "?") .. (snapshot.leveling and ", leveling" or "") .. ")"
+end
 
 local function EntryVisual(entry)
     if entry.kind == ns.ENTRY.SPELL then return ns.SpellIcon(entry.id) end
@@ -332,7 +378,8 @@ local function EntryVisual(entry)
     return nil
 end
 
--- Marks JustAC positions on the cells and lists the queue in JustAC order.
+-- Marks queue positions on the cells and lists the queue in order; entries
+-- that are not ready yet are dimmed.
 -- Called on every queue change; touches regions only, so it is combat safe.
 function Grid.ShowQueue(snapshot, observation)
     snapshot = snapshot or {status = ns.STATUS.MISSING, entries = {}, count = 0}
@@ -342,6 +389,7 @@ function Grid.ShowQueue(snapshot, observation)
     for slot = 1, ns.MAX_SLOTS do
         local button = Grid.buttons[slot]
         button.queuePosition = nil
+        button.burst = nil
         button.positionText:SetText("")
         SetEdges(button.edges, nil)
         button.rangeTint:Hide()
@@ -356,10 +404,10 @@ function Grid.ShowQueue(snapshot, observation)
                 and ns.Actions.SlotFor(entry.id) or nil
             local label
             if entry.kind == ns.ENTRY.WAIT then label = position .. ": wait"
-            elseif entry.kind == ns.ENTRY.UNREADABLE then label = position .. ": ?"
             elseif slot then label = position .. ": c" .. slot
             else label = position .. ": --" end
             item.icon:SetTexture(EntryVisual(entry) or EMPTY_ICON)
+            item.icon:SetAlpha(entry.ready == false and 0.45 or 1)
             item.icon:Show()
             item.label:SetText(label)
             item.label:Show()
@@ -368,7 +416,8 @@ function Grid.ShowQueue(snapshot, observation)
                 if not button.queuePosition then
                     button.queuePosition = position
                     button.positionText:SetText(tostring(position))
-                    SetEdges(button.edges, POSITION_COLORS[position] or POSITION_COLORS.other)
+                    button.burst = entry.burst
+                    SetEdges(button.edges, entry.burst and BURST_COLOR or POSITION_COLORS[position] or POSITION_COLORS.other)
                     if position == 1 and observation.outOfRange then button.rangeTint:Show() end
                 end
                 if position == 1 then mappedHead = true end
@@ -384,14 +433,13 @@ function Grid.ShowQueue(snapshot, observation)
     local text = STATUS_TEXT[snapshot.status]
     if not text then
         local first = snapshot.entries[1]
-        if not first then text = "JustAC: no suggestion"
-        elseif first.kind == ns.ENTRY.WAIT then text = "JustAC: wait"
-        elseif first.kind == ns.ENTRY.UNREADABLE then text = "JustAC suggestion unreadable"
-        elseif unmappedHead then text = "JustAC suggestion is not on the grid (--)"
-        elseif observation.casting then text = "JustAC: casting"
-        elseif observation.outOfRange then text = "JustAC: out of range"
-        else text = "JustAC" end
-        if snapshot.verifiedMinor == false then text = text .. " (untested JustAC version)" end
+        local tree = TreeText(snapshot)
+        if not first then text = tree .. ": no suggestion"
+        elseif first.kind == ns.ENTRY.WAIT then text = tree .. ": wait"
+        elseif unmappedHead then text = tree .. ": suggestion is not on the grid (--)"
+        elseif observation.casting then text = tree .. ": casting"
+        elseif observation.outOfRange then text = tree .. ": out of range"
+        else text = tree end
     end
     if Grid.pendingLayout or ns.Actions.pendingApply or (ns.AutoFill and ns.AutoFill.pending) then
         text = text .. " - changes apply after combat"
@@ -400,6 +448,90 @@ function Grid.ShowQueue(snapshot, observation)
     if Grid.OverlapsPixel() then text = text .. " - grid covers the pixel!" end
     statusText:SetText(text)
     Grid.mappedHead, Grid.unmappedHead = mappedHead, unmappedHead
+    Grid.ShowInterrupt(Grid.interruptSuggestion)
+    Grid.ShowDefensives(Grid.defenseRow)
+end
+
+local function EntryIcon(entry)
+    if entry.kind == ns.ENTRY.ITEM then return ns.ItemIcon(-entry.id) end
+    return ns.SpellIcon(entry.id)
+end
+
+-- Shows the defensive row; the cell of the first live entry gets an orange
+-- frame and "D" unless the queue or the interrupt already marks it.
+function Grid.ShowDefensives(row)
+    local previous = Grid.defenseSlot
+    if previous and Grid.buttons[previous].defenseMark then
+        local button = Grid.buttons[previous]
+        button.defenseMark = nil
+        if not button.queuePosition and not button.interruptMark then
+            button.positionText:SetText("")
+            SetEdges(button.edges, nil)
+        end
+    end
+    Grid.defenseRow, Grid.defenseSlot = row, nil
+    local entries = row and row.entries or {}
+    for i, ui in ipairs(Grid.defenseIcons) do
+        local entry = entries[i]
+        if entry then
+            ui.icon:SetTexture(EntryIcon(entry) or EMPTY_ICON)
+            ui.icon:SetAlpha((entry.ready and not entry.waiting) and 1 or 0.4)
+            ui.icon:Show()
+            local slot = ns.Actions.SlotFor(entry.id)
+            ui.key:SetText(slot and (ns.Settings.KeyFor(slot) or ("c" .. slot)) or "--")
+            ui.key:Show()
+            if slot and not Grid.defenseSlot and entry.ready and not entry.waiting then
+                local button = Grid.buttons[slot]
+                if not button.interruptMark then
+                    Grid.defenseSlot = slot
+                    button.defenseMark = true
+                    if not button.queuePosition then button.positionText:SetText("D") end
+                    SetEdges(button.edges, DEFENSE_COLOR)
+                end
+            end
+        else
+            ui.icon:Hide()
+            ui.key:Hide()
+        end
+    end
+end
+
+-- Shows (or hides) the interrupt suggestion; its cell gets a red frame and
+-- "!" unless the queue already marks it. Combat safe: regions only.
+function Grid.ShowInterrupt(suggestion)
+    local previous = Grid.interruptSlot
+    if previous and Grid.buttons[previous].interruptMark then
+        local button = Grid.buttons[previous]
+        button.interruptMark = nil
+        if not button.queuePosition then
+            button.positionText:SetText("")
+            SetEdges(button.edges, nil)
+        end
+    end
+    Grid.interruptSuggestion, Grid.interruptSlot = suggestion, nil
+    local ui = Grid.interrupt
+    if not suggestion then
+        ui.icon:Hide(); ui.cast:Hide(); ui.key:Hide()
+        return
+    end
+    ui.icon:SetTexture(ns.SpellIcon(suggestion.id) or EMPTY_ICON)
+    ui.icon:Show()
+    if suggestion.castTexture ~= nil then
+        pcall(ui.cast.SetTexture, ui.cast, suggestion.castTexture)
+        ui.cast:Show()
+    else
+        ui.cast:Hide()
+    end
+    local slot = ns.Actions.SlotFor(suggestion.id)
+    ui.key:SetText(slot and (ns.Settings.KeyFor(slot) or ("c" .. slot)) or "--")
+    ui.key:Show()
+    if slot then
+        local button = Grid.buttons[slot]
+        Grid.interruptSlot = slot
+        button.interruptMark = true
+        if not button.queuePosition then button.positionText:SetText("!") end
+        SetEdges(button.edges, INTERRUPT_COLOR)
+    end
 end
 
 local function ScreenRect(frame)
@@ -414,7 +546,7 @@ end
 function Grid.OverlapsPixel()
     local pl, pb, pw, ph = ScreenRect(ns.Pixel and ns.Pixel.frame)
     if not pl then return false end
-    for _, frame in ipairs({container, strip, dragBar}) do
+    for _, frame in ipairs({container, strip, dragBar, side, defenses, ns.Reminders and ns.Reminders.row}) do
         local l, b, w, h = ScreenRect(frame)
         if l and l < pl + pw and pl < l + w and b < pb + ph and pb < b + h then return true end
     end

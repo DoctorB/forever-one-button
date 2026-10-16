@@ -1,10 +1,10 @@
 -- The grid never moves, scales, hides or covers the pixel (spec 4.4, criterion 12).
 local H = dofile("tests/harness/wow.lua")
 local ns = H.Boot(nil)
-local lib = H.InstallJustAC(43)
+local lib = H.InstallQueue()
 H.spells[100] = {name = "A"}
 H.Check(ns.Actions.Assign(1, "spell", 100), "assign")
-lib.SetQueue({100})
+lib.Set({100})
 H.Tick(0.1)
 
 local pixel = _G.ForeverOneButtonDiagPixel
@@ -65,7 +65,7 @@ ForeverOneButtonDB.grid.point = {"TOPLEFT", "TOPLEFT", 0, 0}
 ns.Grid.ApplyLayout()
 H.Check(ns.Grid.OverlapsPixel(), "grid over the pixel detected")
 H.Tick(0.1)
-lib.SetQueue({100, 100})
+lib.Set({100, 100})
 H.Tick(0.1)
 H.Check(ns.Grid.statusText:GetText():find("covers the pixel"), "overlap shown to the user")
 H.Check(ns.Settings.ResetLayout(), "reset layout")

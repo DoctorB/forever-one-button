@@ -3,7 +3,7 @@ local H = dofile("tests/harness/wow.lua")
 local saved, charSaved = {}, {}
 local ns = H.Boot(saved, charSaved)
 ForeverOneButtonDB.pixel.combatOnly = false -- encoding checked out of combat; gating in test_protocol_v3
-local lib = H.InstallJustAC(43)
+local lib = H.InstallQueue()
 local A = ns.Actions
 H.spells[2687] = {name = "Bloodrage", icon = "bloodrage"}
 H.spells[6603] = {name = "Auto Attack", icon = "attack"}
@@ -89,23 +89,23 @@ local emptyRow
 for _, row in ipairs(A.Report()) do if row.slot == 10 then emptyRow = row end end
 H.Check(emptyRow and emptyRow.emptyCell, "reported as key on empty cell")
 
--- JustAC suggestions mark cells; they never change cells or keys.
+-- Suggestions mark cells; they never change cells or keys.
 local cellsBefore, keysBefore = {}, {}
 for slot = 1, 20 do cellsBefore[slot] = ForeverOneButtonCharDB.cells[slot]; keysBefore[slot] = ForeverOneButtonDB.keys[slot] end
 local bindingsBefore = {}
 for key, binding in pairs(H.overrideBindings) do bindingsBefore[key] = binding.command end
-lib.SetQueue({284, 6546, 2687, 6603})
+lib.Set({284, 6546, 2687, 6603})
 H.Tick(0.1)
-H.Equal(ns.Grid.buttons[3].positionText:GetText(), "1", "cell 3 marked as JustAC position 1")
+H.Equal(ns.Grid.buttons[3].positionText:GetText(), "1", "cell 3 marked as queue position 1")
 H.Equal(ns.Grid.buttons[1].positionText:GetText(), "3", "cell 1 marked as position 3")
 H.Equal(ns.Grid.buttons[2].positionText:GetText(), "", "position 4 beyond the shown depth (3)")
 H.Equal(ns.Grid.queueIcons[2].label:GetText(), "2: --", "position 2 (Rend) is not on the grid")
-H.Equal(ns.Grid.queueIcons[1].label:GetText(), "1: c3", "strip lists JustAC order with the cell")
-lib.SetQueue({6546})
+H.Equal(ns.Grid.queueIcons[1].label:GetText(), "1: c3", "strip lists the queue order with the cell")
+lib.Set({6546})
 H.Tick(0.1)
 H.Check(ns.Grid.statusText:GetText():find("not on the grid"), "unmapped head stated explicitly")
 for slot = 1, 20 do H.Equal(ns.Grid.buttons[slot].positionText:GetText(), "", "no substitute highlight on " .. slot) end
-for _ = 1, 50 do lib.SetQueue({math.random(1, 3) == 1 and 284 or 6546, 2687}); H.Tick(0.05) end
+for _ = 1, 50 do lib.Set({math.random(1, 3) == 1 and 284 or 6546, 2687}); H.Tick(0.05) end
 for slot = 1, 20 do
     H.Equal(ForeverOneButtonCharDB.cells[slot], cellsBefore[slot], "cell " .. slot .. " unchanged by suggestions")
     H.Equal(ForeverOneButtonDB.keys[slot], keysBefore[slot], "key " .. slot .. " unchanged by suggestions")
@@ -127,7 +127,7 @@ H.cursor = {"spell", 1, "spell", 6546}
 ns.Grid.buttons[4].scripts.OnReceiveDrag(ns.Grid.buttons[4])
 H.Equal(ForeverOneButtonCharDB.cells[4], nil, "drop refused in combat")
 H.Check(H.cursor ~= nil, "cursor not consumed")
-lib.SetQueue({2687})
+lib.Set({2687})
 H.Tick(0.1)     -- marks and pixel still update in combat
 H.Equal(ns.Grid.buttons[1].positionText:GetText(), "1", "marks update in combat")
 H.inCombat = false
@@ -151,7 +151,7 @@ H.Check(ns.Settings.SetGridValue("slots", 8), "shrink to 8")
 H.Equal(ns.Grid.buttons[12].attributes.type1, nil, "hidden cell not executable")
 H.Equal(H.overrideBindings["CTRL-SHIFT-2"], nil, "hidden cell not bound")
 H.Equal(ForeverOneButtonCharDB.cells[12].id, 6546, "hidden cell keeps its saved action")
-lib.SetQueue({6546})
+lib.Set({6546})
 H.Tick(0.1)
 local r = H.Pixel255()
 H.Equal(r, 255, "action on a hidden cell is unmapped (white)")
@@ -173,8 +173,7 @@ H.Equal(H.overrideBindings["SHIFT-1"].command, "CLICK ForeverOneButtonCell1:Left
 H.overrideBindings = {}
 H.inCombat = true
 ns = H.Boot(savedCopy, charCopy)
-H.libs["JustAC-SpellQueue"] = nil
-H.InstallJustAC(43).SetQueue({2687})
+H.InstallQueue().Set({2687})
 H.Equal(next(H.overrideBindings), nil, "no binding applied in combat")
 H.Equal(ns.Grid.buttons[1].attributes.spell, nil, "no attribute set in combat")
 H.Tick(0.1)

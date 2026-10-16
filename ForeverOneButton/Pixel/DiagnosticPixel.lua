@@ -9,7 +9,7 @@
 --     OVERLAY colour texture filling the frame, black at creation;
 --   * the 60 ms black acknowledgement edge and its release timer.
 -- Adapted, with the reason:
---   * slot source: the cell that executes the JustAC position-1 action
+--   * slot source: the cell that executes the queue's position-1 action
 --     (ns.Actions.SlotFor) replaces HCOB.UI.ActionPanel.idToSlot;
 --   * anchor: an independent anchor frame instead of HCOneButton's Advisor
 --     frame, which does not exist here; never the grid (see ARCHITECTURE.md);
@@ -97,7 +97,7 @@ local function NameOfSpell(spellID)
     return nil
 end
 
--- The spell a JustAC item entry casts, so its UNIT_SPELLCAST_SUCCEEDED can be
+-- The spell a queue item entry casts, so its UNIT_SPELLCAST_SUCCEEDED can be
 -- recognised. C_Item.GetItemSpell returns name, spellID.
 local function ItemSpellID(itemID)
     if not C_Item or type(C_Item.GetItemSpell) ~= "function" then return nil end

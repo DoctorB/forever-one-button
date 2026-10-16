@@ -52,11 +52,12 @@ handlers.PLAYER_REGEN_ENABLED = function()
     end
     if ns.AutoFill.pending then ns.AutoFill.Run() end
     if ns.BlizzardBar.pending then ns.BlizzardBar.Apply() end
+    ns.Model.remindersAt = nil -- reminders right after the fight
     ns.Model.Refresh() -- combat-only pixel goes black at once
 end
 
 -- Icons follow spell overrides; learned spells, new ranks and spells put on
--- the action bars (part of JustAC's Forever pool) trigger the automatic fill.
+-- the action bars (their rank is the one a cell uses) trigger the automatic fill.
 local function SpellsChanged()
     ns.Grid.Refresh()
     ns.AutoFill.Request()
@@ -64,6 +65,8 @@ end
 handlers.SPELLS_CHANGED = SpellsChanged
 handlers.PLAYER_SPECIALIZATION_CHANGED = SpellsChanged
 handlers.ACTIONBAR_SLOT_CHANGED = function() ns.AutoFill.Request() end
+-- Bags changed: the best healing item may be another one now.
+handlers.BAG_UPDATE_DELAYED = function() ns.AutoFill.Request() end
 
 -- Diagnostic Pixel acknowledgement edge (HCOneButton Core/Events.lua:144-145).
 handlers.UNIT_SPELLCAST_SUCCEEDED = function(unit, _, spellID)
@@ -91,7 +94,7 @@ local function Register(event, unit)
 end
 for _, event in ipairs({"ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_REGEN_DISABLED",
     "PLAYER_REGEN_ENABLED", "SPELLS_CHANGED", "PLAYER_SPECIALIZATION_CHANGED", "ACTIONBAR_SLOT_CHANGED", "PLAYER_ENTERING_WORLD",
-    "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR"}) do
+    "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "BAG_UPDATE_DELAYED"}) do
     Register(event)
 end
 Register("UNIT_SPELLCAST_SUCCEEDED", "player")

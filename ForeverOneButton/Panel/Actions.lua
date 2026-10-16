@@ -1,8 +1,8 @@
 -- Forever One Button: cell -> action -> key associations.
 --
 -- Cells are filled by the user (drag and drop, /fob assign) or by AutoFill
--- from JustAC's ability pool (Panel/AutoFill.lua). Keys are the user's or the
--- fixed default scheme. Nothing here reacts to the JustAC queue: a
+-- from the engine's priority list (Panel/AutoFill.lua). Keys are the user's or
+-- the fixed default scheme. Nothing here reacts to the queue: a
 -- recommendation never assigns, moves or rebinds a cell.
 -- Secure attributes and override bindings are protected, so every change is
 -- refused in combat; the initial apply after a /reload in combat is deferred
@@ -93,6 +93,7 @@ function Actions.Clear(slot)
     if ns.InCombat() then return false, COMBAT_MESSAGE end
     local cell = cells()[slot]
     if cell and cell.kind == "spell" then dismissed()[Actions.DismissKey(cell.id)] = true end
+    if cell and cell.kind == "item" and cell.auto then dismissed()[Actions.HEALING_ITEM_KEY] = true end
     cells()[slot] = nil
     Actions.Apply()
     return true
@@ -102,6 +103,18 @@ end
 -- spell at another rank in its own cell. The caller applies.
 function Actions.SetAuto(slot, spellID)
     cells()[slot] = {kind = "spell", id = spellID, auto = true}
+end
+
+-- The automatic healing-item cell; clearing it removes it from the fill.
+Actions.HEALING_ITEM_KEY = "item:healing"
+function Actions.SetAutoItem(slot, itemID)
+    cells()[slot] = {kind = "item", id = itemID, auto = true}
+end
+
+-- AutoFill only: empties an automatic cell without dismissing its action.
+function Actions.RemoveAuto(slot)
+    local cell = cells()[slot]
+    if cell and cell.auto then cells()[slot] = nil end
 end
 
 -- Bind a key to a cell. A key the user already gave another cell is refused;
@@ -227,11 +240,11 @@ function Actions.Apply()
     return true
 end
 
--- Maps a JustAC queue ID to the grid slot that executes the same action.
--- Spells match the assigned ID, or, as JustAC itself does, the assigned
--- spell's current override (BlizzardAPI.GetDisplaySpellID), or else another
--- rank of it (same localized name, as HCOneButton's acknowledgement matches
--- ranks). Items match by item ID (JustAC encodes them as -itemID). Returns nil
+-- Maps a queue ID to the grid slot that executes the same action.
+-- Spells match the assigned ID, or the assigned spell's current override, or
+-- else another rank of it (same localized name, as HCOneButton's
+-- acknowledgement matches ranks). Items match by item ID (the queue encodes
+-- them as -itemID). Returns nil
 -- when no cell holds it.
 function Actions.SlotFor(queueID)
     if type(queueID) ~= "number" then return nil end

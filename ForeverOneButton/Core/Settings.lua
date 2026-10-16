@@ -1,7 +1,7 @@
 -- Forever One Button: persistent settings with an explicit whitelist.
 -- ForeverOneButtonDB (account: keys, layout, pixel) and ForeverOneButtonCharDB
 -- (character: cell actions) are dedicated to this addon. They are never seeded
--- from HCOneButton saved data or JustAC profiles, and every unknown key is
+-- from HCOneButton saved data or other addons' profiles, and every unknown key is
 -- dropped on load, so excluded features cannot be revived through saved data.
 local ADDON_NAME, ns = ...
 
@@ -19,8 +19,48 @@ Settings.GRID_LIMITS = {
     cellSize = {min = 24, max = 64, default = 40},   -- cell edge, UI units
     spacing = {min = 0, max = 12, default = 4},      -- gap between cells
     scale = {min = 0.5, max = 2.0, default = 1.0},   -- grid frame scale
-    queueDepth = {min = 1, max = 5, default = 3},    -- JustAC positions labelled
+    queueDepth = {min = 1, max = 5, default = 3},    -- queue positions labelled
 }
+-- Engine features beyond the priority list (docs/BINDINGS_AND_OPTIONS.md).
+-- Defaults follow JustAC 6.0.0, whose data the engine uses. They choose what
+-- the panel shows, never what a cell does or when a key is pressed.
+Settings.FEATURES = {
+    burstCue = {kind = "boolean", default = true},          -- a ready cooldown moves to position 2
+    interrupts = {kind = "boolean", default = true},        -- interrupt icon on enemy casts
+    interruptMode = {kind = "enum", default = "kickPrefer", values = {kickOnly = true, kickPrefer = true, ccPrefer = true}},
+    interruptFears = {kind = "boolean", default = false},   -- fears count as crowd control
+    defensives = {kind = "boolean", default = true},        -- defensive row
+    holdEmergencies = {kind = "boolean", default = true},   -- big cooldowns wait for low health
+    healingItems = {kind = "boolean", default = true},      -- best potion / healthstone in the row
+    petCues = {kind = "boolean", default = true},           -- pet heal, revive and summon
+    petHealBelow = {kind = "number", default = 50, min = 10, max = 90},
+    groupHeals = {kind = "boolean", default = false},       -- group heals when allies are low
+    ccBreak = {kind = "boolean", default = false},          -- escape from loss of control
+    precombat = {kind = "boolean", default = true},         -- reminders out of combat
+    classBuffs = {kind = "boolean", default = true},
+    flask = {kind = "boolean", default = true},
+    food = {kind = "boolean", default = true},
+    scroll = {kind = "boolean", default = true},
+    weaponEnchant = {kind = "boolean", default = true},
+    recovery = {kind = "boolean", default = true},          -- eat, drink or bandage after a fight
+    stealthReminder = {kind = "boolean", default = true},
+    topoffHeal = {kind = "boolean", default = false},
+    topoffBelow = {kind = "number", default = 90, min = 40, max = 99},
+}
+
+local function SanitizeFeature(value, spec)
+    if spec.kind == "boolean" then
+        if value == nil then return spec.default end
+        return value == true
+    elseif spec.kind == "enum" then
+        if spec.values[value] then return value end
+        return spec.default
+    end
+    value = tonumber(value)
+    if not value or value ~= value then return spec.default end
+    return math.floor(math.min(spec.max, math.max(spec.min, value)) + 0.5)
+end
+
 -- Schema 1 (0.1.0) defaults, replaced by the schema 2 ones when untouched.
 local SCHEMA1_DEFAULTS = {slots = 12, columns = 6}
 
@@ -129,6 +169,9 @@ function Settings.Sanitize(raw)
     -- Owner decision 2026-10-15: optionally hide Blizzard's bottom bar
     -- (stance and experience bars stay). Off by default.
     db.hideBlizzardBar = raw.hideBlizzardBar == true
+    local features = type(raw.features) == "table" and raw.features or {}
+    db.features = {}
+    for name, spec in pairs(Settings.FEATURES) do db.features[name] = SanitizeFeature(features[name], spec) end
     return db
 end
 
@@ -193,6 +236,20 @@ function Settings.SetGridValue(name, value)
     Settings.db.grid[name] = clamped
     if ns.Grid and ns.Grid.ApplyLayout then ns.Grid.ApplyLayout() end
     return true
+end
+
+-- One feature setting. Returns ok, message.
+function Settings.SetFeature(name, value)
+    local spec = Settings.FEATURES[name]
+    if not spec then return false, "unknown feature" end
+    if spec.kind == "boolean" and type(value) ~= "boolean" then return false, "on or off expected" end
+    if spec.kind == "enum" and not spec.values[value] then return false, "unknown value" end
+    Settings.db.features[name] = SanitizeFeature(value, spec)
+    return true
+end
+
+function Settings.Feature(name)
+    return Settings.db.features[name]
 end
 
 function Settings.ResetLayout()

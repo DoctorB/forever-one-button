@@ -8,44 +8,44 @@ local function StripComments(source)
     return (source:gsub("%-%-[^\n]*", ""))
 end
 local files = H.ReadToc("ForeverOneButton/ForeverOneButton.toc")
+-- Decision vocabulary: allowed only in the suggestion engine (Engine/) and
+-- its imported data (Data/).
+local DECISION = {"Engine", "Recommend", "Rotation", "Priority", "Threat"}
 local FORBIDDEN = {
-    -- HCOneButton runtime, Advisor and decision modules.
-    "HCOB", "HCOneButton", "Advisor", "Engine", "Recommend", "Readiness", "Survival",
-    "Rotation", "Priority", "Threat",
+    -- HCOneButton runtime and modules.
+    "HCOB", "HCOneButton", "Advisor", "Readiness", "Survival",
     -- Excluded product features.
     "[Ss]pam", "[Pp]ull", "[Aa]uto[Aa]ttack", "[Aa]utoBind", "startattack",
     -- Input generation or action execution from Lua.
     "CastSpell", "UseAction", "RunMacro", "UseItemByName", "SpellStopCasting", "AttackTarget",
     "TargetNearest", "[^%w]SetBinding[%s%(C]", "SaveBindings", "SetOverrideBindingSpell",
     "SetOverrideBindingMacro", "macrotext", "C_Timer.NewTicker",
-    -- A second advisor: Blizzard's assistant or JustAC internals.
-    "AssistedCombat", "GetNextCastSpell", "BlizzardAPI", "_Stage", "JustAC%-[^S]",
+    -- Another advisor: Blizzard's assistant, JustAC or any shared library.
+    "AssistedCombat", "GetNextCastSpell", "BlizzardAPI", "_Stage", "JustAC", "LibStub",
 }
--- The only permitted JustAC reads outside JustAC-SpellQueue: AutoFill reads
--- the ability pool and the gap-closer list (owner decision, 2026-10-15). Exactly these tokens are
--- removed before the scan, so any other JustAC library or function still fails.
-local ALLOWED = {'"JustAC%-BlizzardAPI"', "%.GetRotationSpells", '"JustAC%-SpellDB"', "%.GetGapCloserDefaults", "%.ResolveKnownSpellID",
-    '"JustAC%-RotationImport"', "%.IsClassAbility"}
-local allowedUses = 0
 local hits = {}
+-- Data/ holds data tables: imported (test_data.lua) and the leveling lists
+-- (test_leveling.lua).
+local codeFiles = {}
 for _, file in ipairs(files) do
+    if not file:match("^Data/") then codeFiles[#codeFiles + 1] = file end
+end
+for _, file in ipairs(codeFiles) do
     local handle = assert(io.open("ForeverOneButton/" .. file, "rb"))
     local code = StripComments(handle:read("*a"))
     handle:close()
-    for _, token in ipairs(ALLOWED) do
-        local n
-        code, n = code:gsub(token, "")
-        if n > 0 then
-            H.Check(file == "Panel/AutoFill.lua" or file == "Core/Probe.lua", "JustAC data read only by AutoFill and the probe")
-            allowedUses = allowedUses + n
-        end
-    end
     for _, pattern in ipairs(FORBIDDEN) do
         if code:find(pattern) then hits[#hits + 1] = file .. ": " .. pattern end
     end
+    if not file:match("^Engine/") then
+        -- Reading the imported lists (AutoFill, the probe) is not deciding.
+        local outside = code:gsub("ns%.Data%.Rotations", "")
+        for _, pattern in ipairs(DECISION) do
+            if outside:find(pattern) then hits[#hits + 1] = file .. ": " .. pattern end
+        end
+    end
 end
 H.Check(#hits == 0, "forbidden symbols in shipped code: " .. table.concat(hits, ", "))
-H.Equal(allowedUses, 12, "AutoFill: 8 (two libraries; pool, gap closers, rank resolver checked and called); probe: 4 (two libraries, gap closers, IsClassAbility)")
 
 -- Only the timers/loops that exist, none of which runs an action:
 -- the pixel ACK release and the AutoFill coalescing (C_Timer.After), and the
@@ -74,16 +74,15 @@ H.spells[2687] = {name = "Bloodrage"}
 H.Check(ns.Actions.Assign(1, "spell", 2687), "assign")
 H.Check(ns.Actions.Bind(1, "SHIFT-1"), "bind")
 
--- JustAC absent, erroring, malformed, then working; login, combat, casts.
+-- No list, a failing build, then working queues; login, combat, casts.
 H.Tick(0.2)
-local lib = H.InstallJustAC(43)
-lib.GetCurrentSpellQueue = function() error("JustAC failure") end
+local lib = H.InstallQueue()
+lib.Remove()
 H.Tick(0.2)
-lib.GetCurrentSpellQueue = function() return "garbage" end
+lib.Fail("engine failure")
 H.Tick(0.2)
-lib.GetCurrentSpellQueue = function() return lib._shared end
-for _, queue in ipairs({{2687}, {}, {lib.WAIT_SENTINEL}, {9999}, {2687, 6603, 284, 6546}}) do
-    lib.SetQueue(queue)
+for _, queue in ipairs({{2687}, {}, {lib.WAIT}, {9999}, {2687, 6603, 284, 6546}}) do
+    lib.Set(queue)
     H.Tick(0.1)
     H.inCombat = true
     H.Fire("PLAYER_REGEN_DISABLED")
@@ -94,10 +93,10 @@ for _, queue in ipairs({{2687}, {}, {lib.WAIT_SENTINEL}, {9999}, {2687, 6603, 28
     H.Fire("PLAYER_REGEN_ENABLED")
     H.Fire("SPELLS_CHANGED")
 end
--- When JustAC fails, nothing is recommended by the bridge: no marks, black pixel.
-lib.GetCurrentSpellQueue = function() error("JustAC failure") end
+-- When the build fails, nothing is recommended: no marks, black pixel.
+lib.Fail("engine failure")
 H.Tick(0.2)
-for slot = 1, 20 do H.Equal(ns.Grid.buttons[slot].positionText:GetText(), "", "no bridge suggestion on cell " .. slot) end
+for slot = 1, 20 do H.Equal(ns.Grid.buttons[slot].positionText:GetText(), "", "no suggestion on cell " .. slot) end
 local r, g, b = H.Pixel255()
 H.Equal(r + g + b, 0, "no fallback recommendation in the pixel")
 

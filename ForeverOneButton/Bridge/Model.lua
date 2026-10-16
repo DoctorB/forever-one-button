@@ -1,13 +1,9 @@
 -- Forever One Button: bridge model and refresh loop.
 --
--- Holds the latest JustAC snapshot and the observations the pixel protocol
--- needs, and hands both to the grid and the pixel. It contains no rotation:
--- it never picks, ranks or replaces a spell.
---
--- JustAC exposes no queue-change callback (its own renderer polls from an
--- OnUpdate loop, JustAC.lua:2322), so the model polls the public function.
--- POLL_SECONDS equals JustAC's out-of-combat build throttle (SpellQueue.lua:2350):
--- a faster poll would only return JustAC's cached table.
+-- Builds the suggestion queue (Engine/Queue.lua) on a fixed poll, derives
+-- the observations the pixel protocol needs, and hands both to the grid and
+-- the pixel. Game state changes without events for most of what the queue
+-- reads (resources, cooldowns, range), hence the poll.
 local ADDON_NAME, ns = ...
 
 local Model = {}
@@ -43,14 +39,21 @@ local function ConfirmedOutOfRange(queueID)
 end
 
 local lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat = nil, nil, nil, nil
+local lastLogged -- the snapshot last written to the diagnostic log
 
--- One refresh: read JustAC, derive the pixel head, notify consumers.
--- An unchanged JustAC queue yields the same snapshot object (no allocation).
+-- One refresh: build the queue, derive the pixel head, notify consumers.
+-- An unchanged queue yields the same snapshot object.
 function Model.Refresh()
-    local snapshot = ns.JustAC.Read(lastSnapshot)
+    local ok, snapshot = pcall(ns.Queue.Build, lastSnapshot)
+    if not ok then
+        snapshot = {status = ns.STATUS.ERROR, detail = tostring(snapshot), entries = {}, count = 0}
+        if lastSnapshot and lastSnapshot.status == ns.STATUS.ERROR and lastSnapshot.detail == snapshot.detail then
+            snapshot = lastSnapshot
+        end
+    end
     Model.snapshot = snapshot
 
-    local head = ns.JustAC.Head(snapshot)
+    local head = ns.Queue.Head(snapshot)
     local casting = PlayerIsCasting()
     local outOfRange = head ~= nil and not casting and ConfirmedOutOfRange(head)
     Model.observation.casting = casting
@@ -58,7 +61,7 @@ function Model.Refresh()
     -- Combat-only pixel (owner decision 2026-10-15, default on): out of combat
     -- the pixel publishes protocol black, "no executable recommendation". Only
     -- the moment changes; the encoder and its colours do not. The grid still
-    -- shows JustAC's suggestions.
+    -- shows the suggestions.
     local outOfCombat = ns.Settings.Get().pixel.combatOnly and not ns.InCombat()
     Model.observation.outOfCombat = outOfCombat
     if casting or outOfRange or outOfCombat then head = nil end
@@ -69,6 +72,12 @@ function Model.Refresh()
 
     if head ~= Model.pixelHead or changed then
         if changed then
+            if snapshot ~= lastLogged then
+                lastLogged = snapshot
+                ns.Log("queue", snapshot.status, (snapshot.tree or "-") .. (snapshot.leveling and "+leveling" or ""),
+                    snapshot.context or "-", snapshot.count or 0,
+                    snapshot.candidates or "-", snapshot.ready or "-", snapshot.detail or "-")
+            end
             local first = snapshot.entries[1]
             ns.Log("head", first and first.id or "none",
                 (casting and "c" or "") .. (outOfRange and "r" or "") .. (outOfCombat and "o" or "") .. "-")
@@ -77,6 +86,36 @@ function Model.Refresh()
         ns.Pixel.Update(head)
     end
     if changed and ns.Grid and ns.Grid.ShowQueue then ns.Grid.ShowQueue(snapshot, Model.observation) end
+
+    -- Reminder row, out of combat, at most once a second.
+    local now = GetTime()
+    if not ns.InCombat() and ns.Reminders and now - (Model.remindersAt or -math.huge) >= ns.Reminders.REFRESH_SECONDS then
+        Model.remindersAt = now
+        ns.Reminders.Update()
+    end
+
+    -- Defensive row: beside the grid, never in the pixel.
+    local okDefense, row = pcall(ns.Defensives.Suggest)
+    if not okDefense then row = nil end
+    local signature = ""
+    for _, entry in ipairs(row and row.entries or {}) do
+        signature = signature .. entry.id .. (entry.ready and "r" or "") .. (entry.waiting and "w" or "") .. ","
+    end
+    if signature ~= Model.defenseSignature then
+        Model.defenseSignature, Model.defenses = signature, row
+        ns.Log("defense", signature ~= "" and signature or "none", row and row.band or "-")
+        if ns.Grid and ns.Grid.ShowDefensives then ns.Grid.ShowDefensives(row) end
+    end
+
+    -- Interrupt suggestion: shown beside the grid, never in the pixel.
+    local okInterrupt, interrupt = pcall(ns.Interrupts.Suggest)
+    if not okInterrupt then interrupt = nil end
+    local before = Model.interrupt
+    if (interrupt and interrupt.id) ~= (before and before.id) then
+        Model.interrupt = interrupt
+        ns.Log("interrupt", interrupt and interrupt.id or "none", interrupt and interrupt.kind or "-")
+        if ns.Grid and ns.Grid.ShowInterrupt then ns.Grid.ShowInterrupt(interrupt) end
+    end
     return changed
 end
 
@@ -86,6 +125,10 @@ function Model.Reset()
     lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat = nil, nil, nil, nil
     Model.snapshot = {status = ns.STATUS.MISSING, entries = {}, count = 0}
     Model.pixelHead = nil
+    Model.interrupt = nil
+    if ns.Grid and ns.Grid.ShowInterrupt then ns.Grid.ShowInterrupt(nil) end
+    Model.defenses, Model.defenseSignature = nil, ""
+    if ns.Grid and ns.Grid.ShowDefensives then ns.Grid.ShowDefensives(nil) end
     ns.Pixel.Update(nil)
 end
 

@@ -5,10 +5,9 @@
 -- tables. Nothing is changed, cast or bound. Output goes to
 -- ForeverOneButtonLog.probe (written to disk on /reload or logout), one string
 -- per spellbook item:
---   "<line>|<line name>|<index>|<item type>|<spell ID>|<action ID>|<name>|<passive>|<known>|<justac>"
--- <justac>: "class" when JustAC lists it as a Forever class ability
--- (RotationImport.IsClassAbility), "gap" when it is a JustAC gap-closer default,
--- "-" otherwise. Secret or missing values are written as "secret" / "none".
+--   "<line>|<line name>|<index>|<item type>|<spell ID>|<action ID>|<name>|<passive>|<known>|<data>"
+-- <data>: "gap" for a gap closer of the class, "class" for a class ability of
+-- the imported data (Data/Rotations.lua classAbilities, any rank), "-" otherwise. Secret or missing values are written as "secret" / "none".
 local ADDON_NAME, ns = ...
 
 local Probe = {}
@@ -85,17 +84,12 @@ function Probe.Spellbook()
         return false, "C_SpellBook not available"
     end
     local bank = Enum and Enum.SpellBookSpellBank and Enum.SpellBookSpellBank.Player or 0
-    local stub = LibStub
-    local rotation = stub and Call(stub.GetLibrary, stub, "JustAC-RotationImport", true)
-    local spellDB = stub and Call(stub.GetLibrary, stub, "JustAC-SpellDB", true)
-    local gap = {}
-    local defaults = spellDB and Call(spellDB.GetGapCloserDefaults)
-    if type(defaults) == "table" then
-        for _, id in ipairs(defaults) do gap[id] = true end
-    end
-
     local lines = {}
     local _, class = Call(UnitClass, "player")
+    local gap, ability = {}, {}
+    local readableClass = ns.Readable(class) and class or nil
+    for _, id in ipairs(readableClass and ns.Data.Defaults.gapClosers[readableClass] or {}) do gap[id] = true end
+    for _, id in ipairs(readableClass and ns.Data.Rotations.classAbilities[readableClass] or {}) do ability[id] = true end
     local build = Call(GetBuildInfo)
     lines[#lines + 1] = string.format("header|%s|%s|level %s|%s", Text(class), Text(build),
         Text(Call(UnitLevel, "player")), Text(ns.VERSION))
@@ -116,14 +110,15 @@ function Probe.Spellbook()
                     actionID = actionID or item.actionID
                     itemType = itemType or item.itemType
                 end
-                local known, justac = nil, "-"
+                local known, data = nil, "-"
                 if ns.Readable(spellID) and type(spellID) == "number" then
                     known = Call(IsSpellKnown, spellID)
-                    if gap[spellID] then justac = "gap"
-                    elseif rotation and Call(rotation.IsClassAbility, spellID) == true then justac = "class" end
+                    local first = ns.Ranks.Base(spellID)
+                    if gap[first] then data = "gap"
+                    elseif ability[first] then data = "class" end
                 end
                 lines[#lines + 1] = table.concat({lineIndex, Text(info.name), index, ItemTypeName(itemType),
-                    Text(spellID), Text(actionID), Text(name), Text(passive), Text(known), justac}, "|")
+                    Text(spellID), Text(actionID), Text(name), Text(passive), Text(known), data}, "|")
             end
         end
     end
