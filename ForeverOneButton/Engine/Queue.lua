@@ -32,7 +32,7 @@ local function Same(a, b)
     end
     for i = 1, a.count do
         local x, y = a.entries[i], b.entries[i]
-        if x.kind ~= y.kind or x.id ~= y.id or x.ready ~= y.ready then return false end
+        if x.kind ~= y.kind or x.id ~= y.id or x.ready ~= y.ready or x.burst ~= y.burst then return false end
     end
     return true
 end
@@ -66,6 +66,28 @@ local function GapCloser(class, ctx)
         end
     end
     return nil
+end
+
+-- Burst cue: in a fight, the first ready burst cooldown of the class
+-- (Defaults.burstTriggers) that the list itself calls moves to position 2,
+-- or stays at 1 when it already leads, and is marked. Never on a lone
+-- non-boss target about to die.
+Queue.DYING_PCT = 20
+local function ApplyBurst(entries, class, ctx)
+    if not (ns.Settings.Feature("burstCue") and ns.InCombat()) then return end
+    if ctx.enemies == 1 and not ctx.targetBoss and ns.State.HealthBelow("target", Queue.DYING_PCT) == true then return end
+    local triggers = {}
+    for _, id in ipairs(ns.Data.Defaults.burstTriggers[class] or {}) do triggers[id] = true end
+    for index, item in ipairs(entries) do
+        if item.ready and triggers[item.base] then
+            item.burst = true
+            if index > 2 then
+                table.remove(entries, index)
+                table.insert(entries, 2, item)
+            end
+            return
+        end
+    end
 end
 
 function Queue.Build(previous)
@@ -135,6 +157,7 @@ function Queue.Build(previous)
             if item.base ~= gapFirst then entries[#entries + 1] = item end
         end
     end
+    ApplyBurst(entries, class, ctx)
     for i = 1, math.min(#entries, Queue.MAX_ENTRIES) do result.entries[i] = entries[i] end
     result.count = #result.entries
     if Same(result, previous) then return previous end

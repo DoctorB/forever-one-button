@@ -23,8 +23,27 @@ local function Keys(t)
     table.sort(list)
     return table.concat(list, ",")
 end
-H.Equal(Keys(db), "autoFill,grid,hideBlizzardBar,keys,pixel,schema", "top-level whitelist: no cells, no spam/pull/priority")
+H.Equal(Keys(db), "autoFill,features,grid,hideBlizzardBar,keys,pixel,schema", "top-level whitelist: no cells, no spam/pull")
 H.Equal(db.hideBlizzardBar, false, "Blizzard bar visible by default")
+-- Features: every key from Settings.FEATURES with its default; nothing else.
+local featureNames = {}
+for name in pairs(ns.Settings.FEATURES) do featureNames[#featureNames + 1] = name end
+table.sort(featureNames)
+H.Equal(Keys(db.features), table.concat(featureNames, ","), "feature whitelist")
+H.Equal(db.features.burstCue, true, "burst cue on by default")
+H.Equal(db.features.groupHeals, false, "group heals off by default")
+H.Equal(db.features.interruptMode, "kickPrefer", "interrupt mode default")
+local again = ns.Settings.Sanitize({features = {burstCue = "yes", interruptMode = "spam", petHealBelow = 500,
+    autoInterrupt = true}})
+H.Equal(again.features.burstCue, false, "non-boolean -> off")
+H.Equal(again.features.interruptMode, "kickPrefer", "unknown mode -> default")
+H.Equal(again.features.petHealBelow, 90, "number clamped")
+H.Equal(again.features.autoInterrupt, nil, "unknown feature dropped")
+H.Check(not ns.Settings.SetFeature("burstCue", "maybe"), "boolean feature refuses other values")
+H.Check(not ns.Settings.SetFeature("autoCast", true), "unknown feature refused")
+ns.Commands.Handle("feature burstcue off")
+H.Equal(ns.Settings.Feature("burstCue"), false, "/fob feature, any case")
+ns.Commands.Handle("feature burstCue on")
 local char = ForeverOneButtonCharDB
 H.Equal(Keys(char), "cells,dismissed,schema", "character whitelist")
 H.Equal(db.schema, 2, "schema upgraded")
@@ -61,14 +80,20 @@ for _, f in ipairs(H.frames) do
     if f.template == "UICheckButtonTemplate" then checks = checks + 1 end
     if f.template == "UIPanelButtonTemplate" then buttons[#buttons + 1] = f end
 end
-H.Equal(checks, 7, "seven checkboxes: grid shown/locked, pixel shown/locked/combat only, Blizzard bar, automatic fill")
+-- Features page: a check box per boolean feature, -/+ per number.
+local featureChecks, featureNumbers = 0, 0
+for _, row in ipairs(ns.Options.FEATURE_ORDER) do
+    local kind = ns.Settings.FEATURES[row[1]].kind
+    if kind == "boolean" then featureChecks = featureChecks + 1 elseif kind == "number" then featureNumbers = featureNumbers + 1 end
+end
+H.Equal(checks, 7 + featureChecks, "grid shown/locked, pixel shown/locked/combat only, Blizzard bar, automatic fill, features")
 local labels = {}
 for _, b in ipairs(buttons) do labels[b.text] = (labels[b.text] or 0) + 1 end
 H.Equal(labels["Bind"], 20, "one Bind per cell")
 H.Equal(labels["Unbind"], 20, "one Unbind per cell")
 H.Equal(labels["Clear"], 20, "one Clear per cell")
 H.Equal(labels["Default"], 20, "one Default key per cell")
-H.Equal(labels["-"], 6, "six decrement buttons")
+H.Equal(labels["-"], 6 + featureNumbers, "six layout decrement buttons plus the feature numbers")
 for text in pairs(labels) do
     H.Check(not text:lower():find("spam") and not text:lower():find("pull") and not text:lower():find("priorit"), "no excluded control: " .. text)
 end

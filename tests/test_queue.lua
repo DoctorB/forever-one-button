@@ -147,6 +147,34 @@ for id in pairs(NAMES) do H.spells[id].usable = nil end
 s = Build()
 H.Check(not Has(s, 71), "Arms in Battle Stance never suggests Defensive Stance")
 
+-- Burst cue: a ready Death Wish (on the Arms list) moves to position 2 in a
+-- fight; not out of combat, not when switched off, not on a lone dying mob.
+H.spells[12328] = {name = "Death Wish"}
+H.known[12328] = true
+H.auras.player[6673] = nil -- Battle Shout missing: it leads
+Build() -- read as absent out of combat, so no remembered expiry
+H.inCombat = true
+s = Build()
+H.Equal(Ids(s):sub(1, 16), "6673,12328,7386,", "Death Wish at position 2")
+H.Check(s.entries[2].burst, "marked as burst")
+H.inCombat = false
+s = Build()
+H.Equal(Ids(s):sub(1, 16), "6673,7386,12328,", "no burst cue out of combat")
+H.inCombat = true
+ns.Settings.SetFeature("burstCue", false)
+s = Build()
+H.Check(not s.entries[3].burst and s.entries[2].id == 7386, "burst cue off")
+ns.Settings.SetFeature("burstCue", true)
+H.units.target.health = 10
+s = Build()
+H.Check(s.entries[2].id ~= 12328, "no burst on a dying non-boss")
+H.units.target.classification = "worldboss"
+s = Build()
+H.Equal(s.entries[2].id, 12328, "burst on a dying boss")
+H.units.target.health, H.units.target.classification = 100, nil
+H.inCombat = false
+H.auras.player[6673] = {expirationTime = H.now + 600}
+
 -- A class without data.
 H.class = "DEATHKNIGHT"
 s = Build()

@@ -55,12 +55,40 @@ local HELP = {
     "/fob assign <cell> spell <id|name> | assign <cell> item <id> | clear <cell>",
     "/fob bind <cell> <key> | unbind <cell> | defaultkey <cell>",
     "/fob autofill on | off | now | reset",
+    "/fob features | feature <name> on | off | <value>  (engine features)",
     "/fob log on | off | show | clear  (diagnostic log of pixel and casts)",
     "/fob probe spellbook | probe frames  (read-only client data for development)",
     "/fob blizzardbar hide | show  (Blizzard's bottom bar; stance and XP bars stay)",
     "/fob show | hide | lock | unlock | reset",
     "/fob pixel on | off | lock | unlock | reset | combat on | combat off",
 }
+
+local function Features()
+    local names = {}
+    for name in pairs(ns.Settings.FEATURES) do names[#names + 1] = name end
+    table.sort(names)
+    for _, name in ipairs(names) do
+        local value = ns.Settings.Feature(name)
+        if type(value) == "boolean" then value = value and "on" or "off" end
+        ns.Print(name .. ": " .. tostring(value))
+    end
+end
+
+local function SetFeature(typed, text)
+    local name
+    for key in pairs(ns.Settings.FEATURES) do
+        if key:lower() == tostring(typed):lower() then name = key end
+    end
+    local spec = name and ns.Settings.FEATURES[name]
+    if not spec then return ns.Print("unknown feature; /fob features lists them") end
+    local value = text
+    if spec.kind == "boolean" then
+        if text == "on" then value = true elseif text == "off" then value = false else value = nil end
+    elseif spec.kind == "number" then
+        value = tonumber(text)
+    end
+    Done(ns.Settings.SetFeature(name, value))
+end
 
 function Commands.Handle(input)
     local args = {}
@@ -69,6 +97,10 @@ function Commands.Handle(input)
 
     if command == "" or command == "options" or command == "config" then
         ns.Options.Open()
+    elseif command == "features" then
+        Features()
+    elseif command == "feature" then
+        SetFeature(args[2], args[3])
     elseif command == "status" then
         Status()
     elseif command == "bindings" or command == "keys" then

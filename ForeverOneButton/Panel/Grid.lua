@@ -19,6 +19,7 @@ local POSITION_COLORS = {
     [1] = {1.00, 0.82, 0.10}, -- queue position 1: gold
     other = {0.30, 0.80, 1.00}, -- positions 2+: cyan
 }
+local BURST_COLOR = {0.75, 0.35, 1.00} -- burst cooldown ready: purple
 local CHECKER = {{0.10, 0.12, 0.15, 0.92}, {0.17, 0.19, 0.23, 0.92}}
 local EMPTY_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local STRIP_HEIGHT = 44
@@ -194,6 +195,7 @@ local function OnEnter(button)
     GameTooltip:AddLine(key and ("Key: " .. key) or "No key bound", 0.8, 0.8, 0.8)
     if button.queuePosition then
         GameTooltip:AddLine("Queue position " .. button.queuePosition, 1, 0.82, 0.1)
+        if button.burst then GameTooltip:AddLine("Burst cooldown ready", 0.75, 0.35, 1.0) end
     end
     if not ns.Actions.applied[button.slot] then
         GameTooltip:AddLine("Drag a spell or item here (out of combat)", 0.6, 0.6, 0.6)
@@ -347,6 +349,7 @@ function Grid.ShowQueue(snapshot, observation)
     for slot = 1, ns.MAX_SLOTS do
         local button = Grid.buttons[slot]
         button.queuePosition = nil
+        button.burst = nil
         button.positionText:SetText("")
         SetEdges(button.edges, nil)
         button.rangeTint:Hide()
@@ -373,7 +376,8 @@ function Grid.ShowQueue(snapshot, observation)
                 if not button.queuePosition then
                     button.queuePosition = position
                     button.positionText:SetText(tostring(position))
-                    SetEdges(button.edges, POSITION_COLORS[position] or POSITION_COLORS.other)
+                    button.burst = entry.burst
+                    SetEdges(button.edges, entry.burst and BURST_COLOR or POSITION_COLORS[position] or POSITION_COLORS.other)
                     if position == 1 and observation.outOfRange then button.rangeTint:Show() end
                 end
                 if position == 1 then mappedHead = true end

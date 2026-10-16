@@ -1,7 +1,8 @@
 -- Forever One Button: options window.
 --
 -- Exposes exactly the whitelist in docs/BINDINGS_AND_OPTIONS.md: grid layout,
--- pixel position/visibility, and the cell -> action -> key associations.
+-- pixel position/visibility, the cell -> action -> key associations and the
+-- engine features (burst cue, interrupts, defensives, reminders).
 -- Uses only templates verified on Forever 1.60.1.70374
 -- (BasicFrameTemplateWithInset, UIPanelButtonTemplate, UICheckButtonTemplate).
 -- Closed on entering combat; refuses to open in combat.
@@ -91,6 +92,53 @@ local function BuildLayoutPage(page)
         :SetPoint("TOPLEFT", 12, y - 6)
     Button(page, "Reset pixel position", 150, function() ns.Pixel.ResetPosition(); Report(true) end)
         :SetPoint("TOPLEFT", 172, y - 6)
+end
+
+-- Engine features, in display order: {setting, label}. Booleans are check
+-- boxes, enums cycle through their values, numbers have -/+ buttons.
+Options.FEATURE_ORDER = {
+    {"burstCue", "Burst cue: a ready cooldown moves to position 2 (purple)"},
+}
+local ENUM_ORDER = {interruptMode = {"kickOnly", "kickPrefer", "ccPrefer"}}
+
+local function BuildFeaturesPage(page)
+    local y = -8
+    for _, row in ipairs(Options.FEATURE_ORDER) do
+        local name, text = row[1], row[2]
+        local spec = ns.Settings.FEATURES[name]
+        if spec.kind == "boolean" then
+            local c = CreateFrame("CheckButton", nil, page, "UICheckButtonTemplate")
+            c:SetPoint("TOPLEFT", 8, y)
+            local label = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            label:SetPoint("LEFT", c, "RIGHT", 4, 0)
+            label:SetText(text)
+            c:SetScript("OnClick", function(self) Report(ns.Settings.SetFeature(name, self:GetChecked() and true or false)) end)
+            refreshers[#refreshers + 1] = function() c:SetChecked(ns.Settings.Feature(name)) end
+            y = y - 28
+        else
+            local label = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            label:SetPoint("TOPLEFT", 12, y - 3)
+            label:SetText(text)
+            local value = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+            value:SetPoint("TOPLEFT", 400, y - 3)
+            if spec.kind == "enum" then
+                Button(page, ">", 24, function()
+                    local order = ENUM_ORDER[name]
+                    local current = ns.Settings.Feature(name)
+                    for i, v in ipairs(order) do
+                        if v == current then return Report(ns.Settings.SetFeature(name, order[i % #order + 1])) end
+                    end
+                end):SetPoint("TOPLEFT", 370, y)
+            else
+                Button(page, "-", 24, function() Report(ns.Settings.SetFeature(name, ns.Settings.Feature(name) - 5)) end)
+                    :SetPoint("TOPLEFT", 340, y)
+                Button(page, "+", 24, function() Report(ns.Settings.SetFeature(name, ns.Settings.Feature(name) + 5)) end)
+                    :SetPoint("TOPLEFT", 370, y)
+            end
+            refreshers[#refreshers + 1] = function() value:SetText(tostring(ns.Settings.Feature(name))) end
+            y = y - 26
+        end
+    end
 end
 
 local function ActionLabel(cell)
@@ -209,7 +257,7 @@ local function Build()
     title:SetText(ns.TITLE .. " " .. ns.VERSION)
 
     pages = {}
-    for index, name in ipairs({"Layout & pixel", "Cells & keys"}) do
+    for index, name in ipairs({"Layout & pixel", "Cells & keys", "Features"}) do
         local page = CreateFrame("Frame", nil, frame)
         page:SetPoint("TOPLEFT", 4, -58)
         page:SetPoint("BOTTOMRIGHT", -4, 4)
@@ -220,6 +268,7 @@ local function Build()
     end
     BuildLayoutPage(pages[1])
     BuildCellsPage(pages[2])
+    BuildFeaturesPage(pages[3])
     BuildCapture()
     Options.ShowPage(1)
 end
