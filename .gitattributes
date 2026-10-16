@@ -1,0 +1,6 @@
+# Keep the repository LF-only, as HCOneButton's index already is, regardless of
+# the machine-wide core.autocrlf setting.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.zip binary

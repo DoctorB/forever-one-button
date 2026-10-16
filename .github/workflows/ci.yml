@@ -1,0 +1,48 @@
+# Adapted from HCOneButton .github/workflows/curseforge-release.yml (see
+# docs/GIT_CONFIGURATION.md): same pinned actions, read-only token, Lua 5.1 and
+# tests/run.ps1. It only validates and packages; it never publishes anything
+# and uses no secrets.
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**", "fix/**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (Node 24)
+        with:
+          persist-credentials: false
+
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y lua5.1
+
+      - name: Parse addon and run all suites
+        shell: pwsh
+        run: ./tests/run.ps1 -LuaPath /usr/bin/lua5.1 -LuacPath /usr/bin/luac5.1 -PythonPath /usr/bin/python3
+
+      - name: Build and verify the package
+        run: python3 -B scripts/package.py build
+
+      - name: Save the package
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1 (Node 24)
+        with:
+          name: ForeverOneButton-${{ github.sha }}
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 14
