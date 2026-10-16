@@ -79,6 +79,15 @@ function Model.Refresh()
         ns.Pixel.Update(head)
     end
     if changed and ns.Grid and ns.Grid.ShowQueue then ns.Grid.ShowQueue(snapshot, Model.observation) end
+
+    -- Interrupt suggestion: shown beside the grid, never in the pixel.
+    local okInterrupt, interrupt = pcall(ns.Interrupts.Suggest)
+    if not okInterrupt then interrupt = nil end
+    local before = Model.interrupt
+    if (interrupt and interrupt.id) ~= (before and before.id) then
+        Model.interrupt = interrupt
+        if ns.Grid and ns.Grid.ShowInterrupt then ns.Grid.ShowInterrupt(interrupt) end
+    end
     return changed
 end
 
@@ -88,6 +97,8 @@ function Model.Reset()
     lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat = nil, nil, nil, nil
     Model.snapshot = {status = ns.STATUS.MISSING, entries = {}, count = 0}
     Model.pixelHead = nil
+    Model.interrupt = nil
+    if ns.Grid and ns.Grid.ShowInterrupt then ns.Grid.ShowInterrupt(nil) end
     ns.Pixel.Update(nil)
 end
 

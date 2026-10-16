@@ -272,8 +272,18 @@ function IsControlKeyDown() return H.ctrl end
 function IsAltKeyDown() return H.alt end
 function UnitExists(unit) return unit == "target" and H.target ~= nil end
 H.casting, H.channeling = nil, nil
-function UnitCastingInfo(unit) if unit == "player" then return H.casting end end
-function UnitChannelInfo(unit) if unit == "player" then return H.channeling end end
+-- H.targetCast / H.targetChannel = {name, texture, notInterruptible}.
+function UnitCastingInfo(unit)
+    if unit == "player" then return H.casting end
+    local c = unit == "target" and H.targetCast
+    if c then return c.name, c.name, c.texture, 0, 1, false, "cast", c.notInterruptible end
+end
+function UnitChannelInfo(unit)
+    if unit == "player" then return H.channeling end
+    local c = unit == "target" and H.targetChannel
+    if c then return c.name, c.name, c.texture, 0, 1, false, c.notInterruptible end
+end
+function UnitIsMinion(unit) local u = H.units and H.units[unit]; return u ~= nil and u.minion == true end
 
 H.spells = {}   -- id -> {name, icon, override, inRange}
 H.items = {}    -- id -> {name, icon, spell}

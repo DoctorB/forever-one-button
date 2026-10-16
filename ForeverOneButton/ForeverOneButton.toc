@@ -20,6 +20,7 @@ Engine\Gates.lua
 Engine\Dots.lua
 Engine\Trees.lua
 Engine\Queue.lua
+Engine\Interrupts.lua
 Core\Diagnostics.lua
 Core\Probe.lua
 Core\Settings.lua

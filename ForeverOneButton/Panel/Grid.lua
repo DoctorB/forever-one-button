@@ -20,6 +20,7 @@ local POSITION_COLORS = {
     other = {0.30, 0.80, 1.00}, -- positions 2+: cyan
 }
 local BURST_COLOR = {0.75, 0.35, 1.00} -- burst cooldown ready: purple
+local INTERRUPT_COLOR = {1.00, 0.20, 0.20} -- interrupt now: red
 local CHECKER = {{0.10, 0.12, 0.15, 0.92}, {0.17, 0.19, 0.23, 0.92}}
 local EMPTY_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local STRIP_HEIGHT = 44
@@ -128,6 +129,25 @@ for position = 1, MAX_QUEUE_ICONS do
     label:Hide()
     Grid.queueIcons[position] = {icon = icon, label = label}
 end
+
+-- Interrupt icon, left of the grid: the spell to use, the enemy cast in the
+-- corner, the key of the cell holding the spell. Display only.
+local side = CreateFrame("Frame", "ForeverOneButtonSide", container)
+side:SetSize(44, 44)
+side:SetPoint("TOPRIGHT", container, "TOPLEFT", -4, 0)
+Grid.side = side
+local interruptIcon = side:CreateTexture(nil, "ARTWORK")
+interruptIcon:SetSize(40, 40)
+interruptIcon:SetPoint("TOP", side, "TOP", 0, -2)
+local interruptCast = side:CreateTexture(nil, "OVERLAY")
+interruptCast:SetSize(16, 16)
+interruptCast:SetPoint("BOTTOMRIGHT", interruptIcon, "BOTTOMRIGHT", 2, -2)
+local interruptKey = side:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+interruptKey:SetPoint("TOP", interruptIcon, "BOTTOM", 0, -1)
+Grid.interrupt = {icon = interruptIcon, cast = interruptCast, key = interruptKey}
+interruptIcon:Hide()
+interruptCast:Hide()
+interruptKey:Hide()
 
 local function Edge(button, layer)
     local edges = {}
@@ -408,6 +428,45 @@ function Grid.ShowQueue(snapshot, observation)
     if Grid.OverlapsPixel() then text = text .. " - grid covers the pixel!" end
     statusText:SetText(text)
     Grid.mappedHead, Grid.unmappedHead = mappedHead, unmappedHead
+    Grid.ShowInterrupt(Grid.interruptSuggestion)
+end
+
+-- Shows (or hides) the interrupt suggestion; its cell gets a red frame and
+-- "!" unless the queue already marks it. Combat safe: regions only.
+function Grid.ShowInterrupt(suggestion)
+    local previous = Grid.interruptSlot
+    if previous and Grid.buttons[previous].interruptMark then
+        local button = Grid.buttons[previous]
+        button.interruptMark = nil
+        if not button.queuePosition then
+            button.positionText:SetText("")
+            SetEdges(button.edges, nil)
+        end
+    end
+    Grid.interruptSuggestion, Grid.interruptSlot = suggestion, nil
+    local ui = Grid.interrupt
+    if not suggestion then
+        ui.icon:Hide(); ui.cast:Hide(); ui.key:Hide()
+        return
+    end
+    ui.icon:SetTexture(ns.SpellIcon(suggestion.id) or EMPTY_ICON)
+    ui.icon:Show()
+    if suggestion.castTexture ~= nil then
+        pcall(ui.cast.SetTexture, ui.cast, suggestion.castTexture)
+        ui.cast:Show()
+    else
+        ui.cast:Hide()
+    end
+    local slot = ns.Actions.SlotFor(suggestion.id)
+    ui.key:SetText(slot and (ns.Settings.KeyFor(slot) or ("c" .. slot)) or "--")
+    ui.key:Show()
+    if slot then
+        local button = Grid.buttons[slot]
+        Grid.interruptSlot = slot
+        button.interruptMark = true
+        if not button.queuePosition then button.positionText:SetText("!") end
+        SetEdges(button.edges, INTERRUPT_COLOR)
+    end
 end
 
 local function ScreenRect(frame)
@@ -422,7 +481,7 @@ end
 function Grid.OverlapsPixel()
     local pl, pb, pw, ph = ScreenRect(ns.Pixel and ns.Pixel.frame)
     if not pl then return false end
-    for _, frame in ipairs({container, strip, dragBar}) do
+    for _, frame in ipairs({container, strip, dragBar, side}) do
         local l, b, w, h = ScreenRect(frame)
         if l and l < pl + pw and pl < l + w and b < pb + ph and pb < b + h then return true end
     end

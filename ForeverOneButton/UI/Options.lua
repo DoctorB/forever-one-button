@@ -98,6 +98,9 @@ end
 -- boxes, enums cycle through their values, numbers have -/+ buttons.
 Options.FEATURE_ORDER = {
     {"burstCue", "Burst cue: a ready cooldown moves to position 2 (purple)"},
+    {"interrupts", "Interrupt icon when the target casts (red \"!\" on its cell)"},
+    {"interruptMode", "Interrupts: kickOnly, kickPrefer (CC on shielded casts), ccPrefer"},
+    {"interruptFears", "Interrupts may use fears"},
 }
 local ENUM_ORDER = {interruptMode = {"kickOnly", "kickPrefer", "ccPrefer"}}
 
