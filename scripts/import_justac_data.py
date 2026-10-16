@@ -18,7 +18,8 @@ import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "ForeverOneButton" / "Data"
-DEFAULT_JUSTAC = r"C:\Program Files (x86)\World of Warcraft\_classic_beta_\Interface\AddOns\JustAC"
+# Local copy of JustAC 6.0.0 (local/ is not versioned); --justac points elsewhere.
+DEFAULT_JUSTAC = str(ROOT / "local" / "justac-6.0.0")
 VERSION = "6.0.0"
 SOURCES = {
     "Data/Forever/Rotations.lua": "3febf631366848e05d58e3a7ba629f2a6aa545022dc0f8ac2d8adc485f618706",
