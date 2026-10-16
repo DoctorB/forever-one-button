@@ -8,7 +8,8 @@ H.Equal(fields.SavedVariablesPerCharacter, "ForeverOneButtonCharDB", "per-charac
 H.Equal(fields.OptionalDeps, nil, "no optional dependency: the engine is built in")
 H.Equal(fields.Dependencies, nil, "no hard dependency")
 H.Equal(fields.RequiredDeps, nil, "no hard dependency")
-H.Check(fields.Version:match("^%d+%.%d+%.%d+$"), "semantic version")
+H.Check(fields.Version:match("^%d+%.%d+%.%d+$") or fields.Version:match("^%d+%.%d+%.%d+%-alpha%.%d+$")
+    or fields.Version:match("^%d+%.%d+%.%d+%-beta%.%d+$"), "semantic version (optional -alpha.N / -beta.N)")
 
 local ns = H.Boot(nil)
 H.Equal(ns.VERSION, fields.Version, "runtime version matches TOC")

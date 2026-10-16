@@ -203,7 +203,8 @@ Documentation: [architecture](docs/ARCHITECTURE.md),
 [Forever API](docs/FOREVER_API_COMPATIBILITY.md),
 [tests](docs/TEST_REPORT.md), [milestones](docs/MILESTONES.md),
 [repository audit](docs/REPOSITORY_AUDIT.md),
-[Git configuration](docs/GIT_CONFIGURATION.md).
+[Git configuration](docs/GIT_CONFIGURATION.md),
+[releasing](docs/RELEASING.md).
 
 ## License
 

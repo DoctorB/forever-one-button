@@ -1,7 +1,7 @@
 # Adapted from HCOneButton .github/workflows/curseforge-release.yml (see
 # docs/GIT_CONFIGURATION.md): same pinned actions, read-only token, Lua 5.1 and
 # tests/run.ps1. It only validates and packages; it never publishes anything
-# and uses no secrets.
+# and uses no secrets. Publishing is .github/workflows/release.yml (tags only).
 name: CI
 
 on:
@@ -25,6 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 (Node 24)
         with:
+          fetch-depth: 0 # the authorship check reads every commit
           persist-credentials: false
 
       - name: Install Lua 5.1
@@ -35,6 +36,9 @@ jobs:
       - name: Parse addon and run all suites
         shell: pwsh
         run: ./tests/run.ps1 -LuaPath /usr/bin/lua5.1 -LuacPath /usr/bin/luac5.1 -PythonPath /usr/bin/python3
+
+      - name: Authorship check (commit metadata and distributed fields)
+        run: python3 -B scripts/check_attribution.py HEAD
 
       - name: Build and verify the package
         run: python3 -B scripts/package.py build
