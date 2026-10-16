@@ -10,9 +10,10 @@ riproducibile di `scripts/package.py`), pacchetto verificabile byte per byte
 
 ## Prerequisiti (una tantum)
 
-1. **Progetto CurseForge** creato con i dati di `docs/CURSEFORGE_LISTING.md`
-   (World of Warcraft → Addons, licenza GPLv3). Annotare l'**ID del progetto**
-   (numero nella pagina del progetto, "Project ID").
+1. **Progetto CurseForge** `1747980`, creato il 2026-10-16 con i dati di
+   `docs/CURSEFORGE_LISTING.md` (World of Warcraft → Addons, licenza GPLv3).
+   Il controllo in sola lettura del catalogo ha risolto WoW Forever 1.60.1 →
+   game version id 17053 lo stesso giorno.
 2. Repository `DoctorB/forever-one-button`, **Settings → Secrets and variables → Actions**:
    - secret `CF_API_TOKEN`: token API di CurseForge dell'autore
      (curseforge.com → account → API Tokens; lo stesso usato per gli altri progetti va bene);

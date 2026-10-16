@@ -140,7 +140,7 @@ caricamento a mano.
 |---|---|
 | File | ZIP verificato costruito dal workflow (`scripts/release.py package`) |
 | Display Name | `Forever One Button 1.0.0` |
-| Release Type | **Release** se la prova in gioco (sezione 4) è passata, altrimenti **Beta**. L'app CurseForge sincronizza un progetto solo dopo il primo file Release |
+| Release Type | dal suffisso della versione: `1.0.0` **Release** (scelta del proprietario per la prima uscita), `-beta.N` Beta, `-alpha.N` Alpha. L'app CurseForge sincronizza un progetto solo dopo il primo file Release |
 | Supported Version | la versione **Forever** corrispondente al client 1.60.1 (Interface `16001`) |
 | Related Projects | nessuno: l'addon non ha dipendenze |
 | Changelog | vedi sotto |
