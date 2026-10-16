@@ -50,7 +50,7 @@ def expected_entries(addon_dir):
 def source_for(entry, addon_dir):
     relative = entry[len(ADDON) + 1:]
     if relative == "README.md":
-        return ROOT / "README.md"
+        return addon_dir.parent / "README.md"
     return addon_dir / relative
 
 

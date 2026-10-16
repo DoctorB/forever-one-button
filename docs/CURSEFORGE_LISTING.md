@@ -4,8 +4,9 @@ Testi pronti da incollare nel modulo di CurseForge (Create Project, poi Upload
 File). CurseForge richiede titoli e descrizioni **in inglese**: i campi da
 incollare sono in inglese, le note per chi pubblica in italiano.
 
-Il caricamento è manuale: questo repository non ha workflow di upload né
-secret CurseForge.
+Il progetto si crea a mano sul sito (sezioni 1 e 2). I file li carica il
+workflow `.github/workflows/release.yml` al push di un tag `v*`
+(`docs/RELEASING.md`); la sezione 3 riporta cosa imposta.
 
 ## 1. Progetto
 
@@ -130,11 +131,14 @@ by wealdly (GPL-3.0), whose lists derive from the wowsims rotations
 General Public License version 3.
 ```
 
-## 3. File (Upload File)
+## 3. File (caricato dal workflow)
+
+Il workflow imposta questi campi da solo; servono solo per un eventuale
+caricamento a mano.
 
 | Campo | Valore |
 |---|---|
-| File | `dist/ForeverOneButton-1.0.0.zip` da `python scripts/package.py build` (zip verificato) |
+| File | ZIP verificato costruito dal workflow (`scripts/release.py package`) |
 | Display Name | `Forever One Button 1.0.0` |
 | Release Type | **Release** se la prova in gioco (sezione 4) è passata, altrimenti **Beta**. L'app CurseForge sincronizza un progetto solo dopo il primo file Release |
 | Supported Version | la versione **Forever** corrispondente al client 1.60.1 (Interface `16001`) |

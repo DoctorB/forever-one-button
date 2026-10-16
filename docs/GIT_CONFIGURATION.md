@@ -42,7 +42,7 @@ Esito: **applicato / già equivalente / non pertinente / bloccato** per ogni voc
 | Convenzione commit | Conventional Commits (`feat`, `fix`, `docs`, `chore`, `test` con scope) | stessa convenzione | — | applicato |
 | Flusso | push diretto su `main`, nessun merge commit, nessuna PR; tag `v<versione>` sulle release | `main` iniziale, poi branch `feat/…` + PR verso `main` | la specifica (§4.6.6, Fase 6) chiede push dei branch di lavoro e PR; merge e tag/release richiedono autorizzazione | applicato (adattato) |
 | Versionamento | `## Version` nel TOC, `CHANGELOG.md`, tag `vX.Y.Z` | `## Version: 1.0.0` nel TOC (= `ns.VERSION`, controllato da `tests/test_toc.lua`), `CHANGELOG.md`; **nessun tag** | tag e release non autorizzati in questo incarico | applicato senza tag |
-| Changelog/release notes | `CHANGELOG.md`, `docs/releases/<ver>.md`, `docs/RELEASING.md` | `CHANGELOG.md` | processo CurseForge non pertinente finché non autorizzato | parziale |
+| Changelog/release notes | `CHANGELOG.md`, `docs/releases/<ver>.md`, `docs/RELEASING.md` | `CHANGELOG.md`, `docs/RELEASING.md` | sezione del CHANGELOG = note pubbliche | applicato |
 | Packaging | `scripts/curseforge_release.py prepare` (zip in `release/ci/`) | `scripts/package.py build` (zip in `dist/`, verificato, riproducibile) | nuovo nome/percorso, nessun upload | applicato (adattato) |
 | Workflow CI | `curseforge-release.yml`: su `release` e `workflow_dispatch`, `permissions: contents: read`, allowlist attori, action pinnate (checkout `3d3c42e5…` v7.0.1, upload-artifact `043fb46d…` v7.0.1), Lua 5.1 via apt, `tests/run.ps1`, upload CurseForge con `CF_API_TOKEN` | `ci.yml`: su push (`main`, `feat/**`, `fix/**`), PR e dispatch; stesse action pinnate, `contents: read`, Lua 5.1, `tests/run.ps1`, build+verifica pacchetto, artifact | nessun upload, nessun secret, quindi nessuna allowlist necessaria; trigger su push/PR per avere controlli prima del merge | applicato (adattato) |
 
@@ -60,7 +60,7 @@ Esito: **applicato / già equivalente / non pertinente / bloccato** per ogni voc
 | Actions abilitate, azioni consentite | `all`, SHA pinning non obbligatorio | idem | idem | già equivalente |
 | Permessi `GITHUB_TOKEN` di default | `read`, approvazione PR no | idem | idem | già equivalente |
 | Ambienti | nessuno | nessuno | nessuno | già equivalente |
-| Secret Actions | `CF_API_TOKEN` (solo nome letto) | nessuno | nessuno | non pertinente (nessun upload). Prerequisito se in futuro si pubblica su CurseForge |
+| Secret Actions | `CF_API_TOKEN` (solo nome letto) | `CF_API_TOKEN` (secret) e `CF_PROJECT_ID` (variable), da impostare dal proprietario | usati solo da `release.yml` e `curseforge-catalog.yml` | da impostare (`docs/RELEASING.md`) |
 | Variabili Actions | nessuna | nessuna | nessuna | già equivalente |
 | Secret scanning + push protection | abilitati | abilitati | abilitati | già equivalente |
 | Dependabot / vulnerability alerts | disabilitati | disabilitati | disabilitati | già equivalente |
@@ -107,6 +107,7 @@ aggiornati da un processo esterno (fetch/manutenzione automatica); ref e `HEAD` 
 - Merge di `feat/internal-engine` (1.0.0): richiede autorizzazione del proprietario.
 - Tag `v1.0.0` e release: non autorizzati; da fare dopo le verifiche in gioco.
 - Descrizione del repository GitHub: ancora riferita a JustAC; da aggiornare.
-- Pubblicazione CurseForge: richiederebbe un progetto CurseForge, il secret
-  `CF_API_TOKEN` e un workflow di release adattato; non pertinente ora.
+- Pubblicazione CurseForge: workflow `release.yml` (tag `v*`, come Forever
+  ChatGuard) pronto; servono il progetto CurseForge, il secret `CF_API_TOKEN`
+  e la variable `CF_PROJECT_ID` (`docs/RELEASING.md`).
 - Controllo obbligatorio su `main` (`CI / test`): opzionale, assente in HCOB.
