@@ -606,6 +606,21 @@ C_Traits = {
         return out
     end,
 }
+-- Items and survival: H.bags[itemID] = count; H.itemCooldowns[itemID] =
+-- {start, duration}; H.baseCooldowns[spellID] = ms; H.lossOfControl = {{locType}}.
+H.bags, H.itemCooldowns, H.baseCooldowns, H.lossOfControl = {}, {}, {}, {}
+function C_Item.GetItemCount(id) return H.bags[id] or 0 end
+C_Container = {GetItemCooldown = function(id)
+    local c = H.itemCooldowns[id]
+    if c then return c[1], c[2], 1 end
+    return 0, 0, 1
+end}
+function GetSpellBaseCooldown(id) return H.baseCooldowns[id] or 0, 0 end
+function UnitIsDead(unit) local u = Unit(unit); return u ~= nil and u.dead == true end
+C_LossOfControl = {
+    GetActiveLossOfControlDataCount = function() return #H.lossOfControl end,
+    GetActiveLossOfControlData = function(i) return H.lossOfControl[i] end,
+}
 function IsStealthed() return H.stealthed end
 function GetComboPoints() return H.comboPoints end
 function GetTotemInfo(slot) return H.totems[slot] == true end

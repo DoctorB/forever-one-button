@@ -21,6 +21,7 @@ local POSITION_COLORS = {
 }
 local BURST_COLOR = {0.75, 0.35, 1.00} -- burst cooldown ready: purple
 local INTERRUPT_COLOR = {1.00, 0.20, 0.20} -- interrupt now: red
+local DEFENSE_COLOR = {1.00, 0.55, 0.10} -- defensive to use now: orange
 local CHECKER = {{0.10, 0.12, 0.15, 0.92}, {0.17, 0.19, 0.23, 0.92}}
 local EMPTY_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local STRIP_HEIGHT = 44
@@ -148,6 +149,24 @@ Grid.interrupt = {icon = interruptIcon, cast = interruptCast, key = interruptKey
 interruptIcon:Hide()
 interruptCast:Hide()
 interruptKey:Hide()
+
+-- Defensive column, right of the grid: up to four icons with the key of
+-- the cell holding each; waiting or not ready entries are dimmed.
+local defenses = CreateFrame("Frame", "ForeverOneButtonDefenses", container)
+defenses:SetSize(40, 4 * 46)
+defenses:SetPoint("TOPLEFT", container, "TOPRIGHT", 4, 0)
+Grid.defenses = defenses
+Grid.defenseIcons = {}
+for i = 1, 4 do
+    local icon = defenses:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(32, 32)
+    icon:SetPoint("TOP", defenses, "TOP", 0, -(i - 1) * 46)
+    local key = defenses:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    key:SetPoint("TOP", icon, "BOTTOM", 0, -1)
+    icon:Hide()
+    key:Hide()
+    Grid.defenseIcons[i] = {icon = icon, key = key}
+end
 
 local function Edge(button, layer)
     local edges = {}
@@ -429,6 +448,51 @@ function Grid.ShowQueue(snapshot, observation)
     statusText:SetText(text)
     Grid.mappedHead, Grid.unmappedHead = mappedHead, unmappedHead
     Grid.ShowInterrupt(Grid.interruptSuggestion)
+    Grid.ShowDefensives(Grid.defenseRow)
+end
+
+local function EntryIcon(entry)
+    if entry.kind == ns.ENTRY.ITEM then return ns.ItemIcon(-entry.id) end
+    return ns.SpellIcon(entry.id)
+end
+
+-- Shows the defensive row; the cell of the first live entry gets an orange
+-- frame and "D" unless the queue or the interrupt already marks it.
+function Grid.ShowDefensives(row)
+    local previous = Grid.defenseSlot
+    if previous and Grid.buttons[previous].defenseMark then
+        local button = Grid.buttons[previous]
+        button.defenseMark = nil
+        if not button.queuePosition and not button.interruptMark then
+            button.positionText:SetText("")
+            SetEdges(button.edges, nil)
+        end
+    end
+    Grid.defenseRow, Grid.defenseSlot = row, nil
+    local entries = row and row.entries or {}
+    for i, ui in ipairs(Grid.defenseIcons) do
+        local entry = entries[i]
+        if entry then
+            ui.icon:SetTexture(EntryIcon(entry) or EMPTY_ICON)
+            ui.icon:SetAlpha((entry.ready and not entry.waiting) and 1 or 0.4)
+            ui.icon:Show()
+            local slot = ns.Actions.SlotFor(entry.id)
+            ui.key:SetText(slot and (ns.Settings.KeyFor(slot) or ("c" .. slot)) or "--")
+            ui.key:Show()
+            if slot and not Grid.defenseSlot and entry.ready and not entry.waiting then
+                local button = Grid.buttons[slot]
+                if not button.interruptMark then
+                    Grid.defenseSlot = slot
+                    button.defenseMark = true
+                    if not button.queuePosition then button.positionText:SetText("D") end
+                    SetEdges(button.edges, DEFENSE_COLOR)
+                end
+            end
+        else
+            ui.icon:Hide()
+            ui.key:Hide()
+        end
+    end
 end
 
 -- Shows (or hides) the interrupt suggestion; its cell gets a red frame and
@@ -481,7 +545,7 @@ end
 function Grid.OverlapsPixel()
     local pl, pb, pw, ph = ScreenRect(ns.Pixel and ns.Pixel.frame)
     if not pl then return false end
-    for _, frame in ipairs({container, strip, dragBar, side}) do
+    for _, frame in ipairs({container, strip, dragBar, side, defenses}) do
         local l, b, w, h = ScreenRect(frame)
         if l and l < pl + pw and pl < l + w and b < pb + ph and pb < b + h then return true end
     end

@@ -93,6 +93,7 @@ function Actions.Clear(slot)
     if ns.InCombat() then return false, COMBAT_MESSAGE end
     local cell = cells()[slot]
     if cell and cell.kind == "spell" then dismissed()[Actions.DismissKey(cell.id)] = true end
+    if cell and cell.kind == "item" and cell.auto then dismissed()[Actions.HEALING_ITEM_KEY] = true end
     cells()[slot] = nil
     Actions.Apply()
     return true
@@ -102,6 +103,12 @@ end
 -- spell at another rank in its own cell. The caller applies.
 function Actions.SetAuto(slot, spellID)
     cells()[slot] = {kind = "spell", id = spellID, auto = true}
+end
+
+-- The automatic healing-item cell; clearing it removes it from the fill.
+Actions.HEALING_ITEM_KEY = "item:healing"
+function Actions.SetAutoItem(slot, itemID)
+    cells()[slot] = {kind = "item", id = itemID, auto = true}
 end
 
 -- Bind a key to a cell. A key the user already gave another cell is refused;

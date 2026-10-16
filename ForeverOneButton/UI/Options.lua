@@ -101,6 +101,13 @@ Options.FEATURE_ORDER = {
     {"interrupts", "Interrupt icon when the target casts (red \"!\" on its cell)"},
     {"interruptMode", "Interrupts: kickOnly, kickPrefer (CC on shielded casts), ccPrefer"},
     {"interruptFears", "Interrupts may use fears"},
+    {"defensives", "Defensive column right of the grid (orange \"D\" on its cell)"},
+    {"holdEmergencies", "Hold immunities and big heals until health is low"},
+    {"healingItems", "Best healing potion or healthstone in the column"},
+    {"petCues", "Pet heal, revive and summon"},
+    {"petHealBelow", "Pet heal below health %"},
+    {"groupHeals", "Group heals when allies are low"},
+    {"ccBreak", "Escape from loss of control"},
 }
 local ENUM_ORDER = {interruptMode = {"kickOnly", "kickPrefer", "ccPrefer"}}
 

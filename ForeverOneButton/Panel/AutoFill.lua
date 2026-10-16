@@ -102,6 +102,30 @@ local function FirstFreeCell(cells)
     return nil
 end
 
+-- One automatic item cell for the best healing item owned; a better one
+-- replaces it in the same cell. A healing item the user placed is left alone.
+local function PlaceHealingItem(cells, dismissed)
+    if not ns.Settings.Feature("healingItems") or dismissed[ns.Actions.HEALING_ITEM_KEY] then return false end
+    local best = ns.Defensives.BestHealingItem()
+    if not best then return false end
+    local healing = {}
+    for _, id in ipairs(ns.Data.Consumables.healingItems) do healing[id] = true end
+    for slot = 1, ns.MAX_SLOTS do
+        local cell = cells[slot]
+        if cell and cell.kind == "item" and healing[cell.id] then
+            if cell.auto and cell.id ~= best then
+                ns.Actions.SetAutoItem(slot, best)
+                return true
+            end
+            return false
+        end
+    end
+    local slot = FirstFreeCell(cells)
+    if not slot then return false end
+    ns.Actions.SetAutoItem(slot, best)
+    return true
+end
+
 function AutoFill.Run()
     if not ns.Settings.Get().autoFill then
         AutoFill.status = "off"
@@ -139,6 +163,7 @@ function AutoFill.Run()
             end
         end
     end
+    if PlaceHealingItem(cells, dismissed) then changed = true end
     AutoFill.overflow = overflow
     if changed then ns.Actions.Apply() end
     return changed

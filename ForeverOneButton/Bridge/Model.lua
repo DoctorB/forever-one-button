@@ -80,6 +80,18 @@ function Model.Refresh()
     end
     if changed and ns.Grid and ns.Grid.ShowQueue then ns.Grid.ShowQueue(snapshot, Model.observation) end
 
+    -- Defensive row: beside the grid, never in the pixel.
+    local okDefense, row = pcall(ns.Defensives.Suggest)
+    if not okDefense then row = nil end
+    local signature = ""
+    for _, entry in ipairs(row and row.entries or {}) do
+        signature = signature .. entry.id .. (entry.ready and "r" or "") .. (entry.waiting and "w" or "") .. ","
+    end
+    if signature ~= Model.defenseSignature then
+        Model.defenseSignature, Model.defenses = signature, row
+        if ns.Grid and ns.Grid.ShowDefensives then ns.Grid.ShowDefensives(row) end
+    end
+
     -- Interrupt suggestion: shown beside the grid, never in the pixel.
     local okInterrupt, interrupt = pcall(ns.Interrupts.Suggest)
     if not okInterrupt then interrupt = nil end
@@ -99,6 +111,8 @@ function Model.Reset()
     Model.pixelHead = nil
     Model.interrupt = nil
     if ns.Grid and ns.Grid.ShowInterrupt then ns.Grid.ShowInterrupt(nil) end
+    Model.defenses, Model.defenseSignature = nil, ""
+    if ns.Grid and ns.Grid.ShowDefensives then ns.Grid.ShowDefensives(nil) end
     ns.Pixel.Update(nil)
 end
 
