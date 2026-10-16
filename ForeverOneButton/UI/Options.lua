@@ -108,6 +108,16 @@ Options.FEATURE_ORDER = {
     {"petHealBelow", "Pet heal below health %"},
     {"groupHeals", "Group heals when allies are low"},
     {"ccBreak", "Escape from loss of control"},
+    {"precombat", "Reminder row out of combat (click to use)"},
+    {"classBuffs", "Reminders: class buffs"},
+    {"flask", "Reminders: flask or elixir"},
+    {"food", "Reminders: Well Fed food"},
+    {"scroll", "Reminders: scroll"},
+    {"weaponEnchant", "Reminders: weapon stone, oil or imbue"},
+    {"recovery", "Reminders: eat, drink or bandage after a fight"},
+    {"stealthReminder", "Reminders: stealth (rogue, feral druid)"},
+    {"topoffHeal", "Reminders: top-off heal (always below 35%)"},
+    {"topoffBelow", "Top-off heal below health %"},
 }
 local ENUM_ORDER = {interruptMode = {"kickOnly", "kickPrefer", "ccPrefer"}}
 

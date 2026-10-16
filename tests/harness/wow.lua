@@ -621,6 +621,24 @@ C_LossOfControl = {
     GetActiveLossOfControlDataCount = function() return #H.lossOfControl end,
     GetActiveLossOfControlData = function(i) return H.lossOfControl[i] end,
 }
+-- Reminders: H.mounted, H.inGroup, H.mainHand = {id, classID, subclassID},
+-- H.mainHandEnchant = {imbue = bool, temporary = bool}.
+H.mounted, H.inGroup, H.mainHand, H.mainHandEnchant = false, false, nil, {}
+function IsMounted() return H.mounted end
+function IsInGroup() return H.inGroup end
+function UnitIsConnected(unit) return H.units[unit] ~= nil end
+function GetInventoryItemID(_, slot) return slot == 16 and H.mainHand and H.mainHand.id or nil end
+function C_Item.GetItemInfoInstant(id)
+    if H.mainHand and id == H.mainHand.id then return id, "Weapon", "", "", 0, H.mainHand.classID, H.mainHand.subclassID end
+end
+function C_Item.IsUsableItem() return true end
+Enum.ItemEnchantType = {Temporary = 0, Imbue = 1}
+function C_Item.GetWeaponEnchantInfo()
+    return {{hasEnchant = H.mainHandEnchant.temporary == true, enchantType = 0},
+        {hasEnchant = H.mainHandEnchant.imbue == true, enchantType = 1}}
+end
+H.stateDrivers = {}
+function RegisterStateDriver(frame, attribute, value) H.stateDrivers[frame] = {attribute = attribute, value = value} end
 function IsStealthed() return H.stealthed end
 function GetComboPoints() return H.comboPoints end
 function GetTotemInfo(slot) return H.totems[slot] == true end

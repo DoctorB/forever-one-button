@@ -109,6 +109,7 @@ local strip = CreateFrame("Frame", "ForeverOneButtonQueueStrip", container)
 strip:SetHeight(STRIP_HEIGHT)
 strip:SetPoint("TOPLEFT", container, "BOTTOMLEFT", 0, -2)
 strip:SetPoint("TOPRIGHT", container, "BOTTOMRIGHT", 0, -2)
+Grid.strip = strip
 local stripBg = strip:CreateTexture(nil, "BACKGROUND")
 stripBg:SetAllPoints()
 stripBg:SetColorTexture(0.02, 0.02, 0.03, 0.75)
@@ -545,7 +546,7 @@ end
 function Grid.OverlapsPixel()
     local pl, pb, pw, ph = ScreenRect(ns.Pixel and ns.Pixel.frame)
     if not pl then return false end
-    for _, frame in ipairs({container, strip, dragBar, side, defenses}) do
+    for _, frame in ipairs({container, strip, dragBar, side, defenses, ns.Reminders and ns.Reminders.row}) do
         local l, b, w, h = ScreenRect(frame)
         if l and l < pl + pw and pl < l + w and b < pb + ph and pb < b + h then return true end
     end

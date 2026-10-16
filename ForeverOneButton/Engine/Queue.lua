@@ -122,7 +122,8 @@ function Queue.Build(previous)
         local role = roles[first]
         if id and not seen[first] and (role == nil or role == "mixed")
             and not (activeForm and activeForm == first)
-            and not (first == ATTACK_SPELL and attacking) then
+            and not (first == ATTACK_SPELL and attacking)
+            and not (not ns.InCombat() and ns.Precombat.Offered(first)) then
             seen[first] = true
             candidates[#candidates + 1] = {entry = entry, id = id, first = first}
         end

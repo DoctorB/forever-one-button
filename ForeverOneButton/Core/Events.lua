@@ -52,6 +52,7 @@ handlers.PLAYER_REGEN_ENABLED = function()
     end
     if ns.AutoFill.pending then ns.AutoFill.Run() end
     if ns.BlizzardBar.pending then ns.BlizzardBar.Apply() end
+    ns.Model.remindersAt = nil -- reminders right after the fight
     ns.Model.Refresh() -- combat-only pixel goes black at once
 end
 

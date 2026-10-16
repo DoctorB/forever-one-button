@@ -80,6 +80,13 @@ function Model.Refresh()
     end
     if changed and ns.Grid and ns.Grid.ShowQueue then ns.Grid.ShowQueue(snapshot, Model.observation) end
 
+    -- Reminder row, out of combat, at most once a second.
+    local now = GetTime()
+    if not ns.InCombat() and ns.Reminders and now - (Model.remindersAt or -math.huge) >= ns.Reminders.REFRESH_SECONDS then
+        Model.remindersAt = now
+        ns.Reminders.Update()
+    end
+
     -- Defensive row: beside the grid, never in the pixel.
     local okDefense, row = pcall(ns.Defensives.Suggest)
     if not okDefense then row = nil end

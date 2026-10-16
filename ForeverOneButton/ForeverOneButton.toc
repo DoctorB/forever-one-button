@@ -22,6 +22,7 @@ Engine\Trees.lua
 Engine\Queue.lua
 Engine\Interrupts.lua
 Engine\Defensives.lua
+Engine\Precombat.lua
 Core\Diagnostics.lua
 Core\Probe.lua
 Core\Settings.lua
@@ -30,6 +31,7 @@ Panel\Actions.lua
 Panel\AutoFill.lua
 Pixel\DiagnosticPixel.lua
 Panel\Grid.lua
+Panel\Reminders.lua
 Bridge\Model.lua
 UI\Options.lua
 UI\BlizzardBar.lua
