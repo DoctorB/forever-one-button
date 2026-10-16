@@ -83,10 +83,19 @@ H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 7386)
 H.now = H.now + 1
 s = ns.Queue.Build(nil)
 H.Equal(s.entries[1].id, 284, "Rend ticking and one Sunder: Heroic Strike")
+-- 16 rage: Heroic Strike (15) is affordable and suggested (in game a
+-- 20-rage threshold waited here).
+H.units.player.power[RAGE] = 16
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 284, "Heroic Strike with 16 rage")
+-- 10 rage: the client says not enough rage for everything left: wait.
 H.units.player.power[RAGE] = 10
+for _, id in ipairs({284, 7386, 6343}) do H.spells[id].noResources = true end
 H.now = H.now + 1
 s = ns.Queue.Build(nil)
 H.Equal(s.entries[1].kind, ns.ENTRY.WAIT, "no rage: wait")
+for _, id in ipairs({284, 7386, 6343}) do H.spells[id].noResources = nil end
 -- Overpower after a dodge leads.
 H.units.player.power[RAGE] = 20
 H.spells[7384].usable = nil

@@ -38,9 +38,11 @@ local function e(id, ...) return {id = id, gates = {...}} end
 -- Warrior ----------------------------------------------------------------
 local BATTLE_SHOUT = e(6673, buffMissing(6673, 120))
 local BLOODRAGE = e(2687, rageBelow(30), healthAbove(50))
--- Heroic Strike: early, any spare rage; once Bloodthirst or Mortal Strike
--- is known, only the excess.
-local HEROIC_STRIKE = e(78, any(all(unknown(23881), unknown(12294), rageAtLeast(20)), rageAtLeast(45)))
+-- Heroic Strike: early, whenever affordable (it comes after Rend, Sunder and
+-- Thunder Clap in the lists); once Bloodthirst or Mortal Strike is known,
+-- only the excess. In game (2026-10-16, level 13) a 20-rage threshold left
+-- the queue waiting with 15-19 rage.
+local HEROIC_STRIKE = e(78, any(all(unknown(23881), unknown(12294)), rageAtLeast(45)))
 local WARRIOR_AOE_HEAD = {
     BATTLE_SHOUT, BLOODRAGE,
     e(6343, targetsAtLeast(2)),           -- Thunder Clap
