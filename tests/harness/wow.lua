@@ -563,6 +563,38 @@ local function Aura(unit, id)
 end
 function C_UnitAuras.GetPlayerAuraBySpellID(id) return Aura("player", id) end
 function C_UnitAuras.GetUnitAuraBySpellID(unit, id) return Aura(unit, id) end
+H.class = "WARRIOR"
+function UnitClass(unit) if unit == "player" then return H.class:sub(1, 1) .. H.class:sub(2):lower(), H.class end end
+function UnitGUID(unit) local u = Unit(unit); return u and (u.guid or ("guid-" .. unit)) end
+H.autoAttack = false
+function C_Spell.IsCurrentSpell(id) return id == 6603 and H.autoAttack end
+-- Talents: H.talents = {["Arms"] = points, ...}; nil = no talent API data.
+H.talents = nil
+C_ClassTalents = {
+    GetActiveConfigID = function() return H.talents and 1 end,
+    GetTraitTreeForSpec = function() return H.talents and 10 end,
+}
+C_SpecializationInfo = {
+    GetSpecialization = function() return 1 end,
+    GetSpecializationInfo = function() return 71 end,
+}
+C_Traits = {
+    GetGroupDisplayInfoByTreeID = function()
+        local out = {}
+        for name in pairs(H.talents or {}) do out[#out + 1] = {groupID = #out + 1, displayName = name} end
+        table.sort(out, function(a, b) return a.displayName < b.displayName end)
+        for i, d in ipairs(out) do d.groupID = i end
+        return out
+    end,
+    GetGroupCurrencyInfo = function(_, ids)
+        local displays = C_Traits.GetGroupDisplayInfoByTreeID()
+        local out = {}
+        for i, id in ipairs(ids) do
+            out[i] = {traitNodeGroupID = id, currencyInfos = {{spent = H.talents[displays[id].displayName]}}}
+        end
+        return out
+    end,
+}
 function IsStealthed() return H.stealthed end
 function GetComboPoints() return H.comboPoints end
 function GetTotemInfo(slot) return H.totems[slot] == true end

@@ -31,6 +31,10 @@ ns.ENTRY = {
     UNREADABLE = "unreadable",
 }
 
+-- Position 1 when nothing can be pressed yet (the value JustAC used, so logs
+-- stay comparable).
+ns.WAIT_ID = -999999999
+
 local issecretvalue = issecretvalue
 
 -- True only when the client says the value is secret. `issecretvalue` is

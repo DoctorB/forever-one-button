@@ -17,6 +17,10 @@ Data\CCBreakers.lua
 Engine\Secret.lua
 Engine\Ranks.lua
 Engine\State.lua
+Engine\Gates.lua
+Engine\Dots.lua
+Engine\Trees.lua
+Engine\Queue.lua
 Core\Diagnostics.lua
 Core\Probe.lua
 Core\Settings.lua
