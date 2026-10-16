@@ -134,5 +134,12 @@ H.Equal(R.buttons[1]:GetAttribute("item"), "item:13453", "item button first (con
 H.Equal(R.buttons[1]:GetAttribute("type1"), "item", "item type")
 H.Equal(R.buttons[2]:GetAttribute("spell"), 1784, "Stealth second")
 H.Equal(b1.scripts.OnClick, nil, "no Lua click handler: the secure button acts on the player's click only")
+-- In game (2026-10-16) a click did nothing: only the release was registered
+-- while the client acts on the press (ActionButtonUseKeyDown). As the cells:
+H.Equal(table.concat(b1.clickButtons, ","), "AnyDown,AnyUp", "press and release registered")
+H.useKeyDown = true
+R.Reset()
+R.Update()
+H.Equal(R.buttons[1]:GetAttribute("useOnKeyDown"), true, "follows ActionButtonUseKeyDown")
 
 H.Done("test_reminders")

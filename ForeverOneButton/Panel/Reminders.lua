@@ -53,7 +53,9 @@ function Reminders.Layout()
     for i, button in ipairs(Reminders.buttons) do
         button:SetSize(Reminders.SIZE, Reminders.SIZE)
         button:SetPoint("TOPLEFT", row, "TOPLEFT", (i - 1) * (Reminders.SIZE + 4), 0)
-        button:RegisterForClicks("AnyUp")
+        -- As the grid's cells: both edges, acting on the one the client's
+        -- ActionButtonUseKeyDown setting picks (a click otherwise does nothing).
+        button:RegisterForClicks("AnyDown", "AnyUp")
         button:Hide()
     end
     if RegisterStateDriver then RegisterStateDriver(row, "visibility", "[combat] hide; show") end
@@ -64,6 +66,7 @@ Reminders.Layout()
 
 local function Configure(button, entry)
     button.entry = entry
+    button:SetAttribute("useOnKeyDown", ns.Grid.UseKeyDown())
     if not entry then
         button:SetAttribute("type1", nil)
         button:SetAttribute("spell", nil)
