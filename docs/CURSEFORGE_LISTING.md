@@ -57,7 +57,7 @@ shows which of your buttons to press next. No other addon is needed.
   a suggestion.
 - **Only your tree's list is suggested**, so the panel never bounces between
   stances.
-- **Ranks handled**: the rank on your action bars, or the highest you know.
+- **Ranks handled**: every cell uses the highest rank you know.
 - **Charge** and other gap closers when you are out of melee; a clear **wait**
   when nothing can be pressed yet.
 
@@ -72,6 +72,8 @@ shows which of your buttons to press next. No other addon is needed.
   and healthstones by how hurt you are, and holds the big ones until you
   really need them. Pet heal and revive for hunters and warlocks; optional
   group heals and escapes from crowd control.
+- **Critical health**: below 30 % health in a fight, a healing spell (or
+  your healing potion) on a cell takes position 1, with a green frame.
 - **Reminders out of combat**: a clickable row for missing class buffs,
   flasks and elixirs, Well Fed food, scrolls, weapon stones and oils, shaman
   imbues, stealth, and food, drink or bandages after a fight.

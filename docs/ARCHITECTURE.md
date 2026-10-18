@@ -32,9 +32,14 @@ all'infinito Postura difensiva e Postura da battaglia (`MILESTONES.md`).
   attributi secure, override binding, solo fuori combattimento)
 ```
 
-Il pixel riceve solo `Queue.Head` (posizione 1 della coda dei danni).
-Interruzioni, difensivi e promemoria non passano mai dal pixel; il segno
-"burst" è solo grafico (`Bridge/Model.lua`).
+Il pixel riceve solo `Queue.Head` (posizione 1 della coda dei danni). Unica
+eccezione: con salute critica in combattimento (`emergencyHeal`, soglia
+`emergencyHealBelow`, 30 %) `Queue.Build` mette in posizione 1 la cura di
+`Defensives.EmergencyHeal` (prima spell di cura pronta della lista difensiva
+della classe con una cella, altrimenti la cella dell'oggetto di cura); la
+portata del bersaglio non si applica. Interruzioni, il resto dei difensivi e
+i promemoria non passano mai dal pixel; il segno "burst" è solo grafico
+(`Bridge/Model.lua`).
 
 ## Moduli e responsabilità
 
@@ -46,14 +51,14 @@ Interruzioni, difensivi e promemoria non passano mai dal pixel; il segno
 | `Core/Probe.lua` | `/fob probe spellbook` e `/fob probe frames`, sola lettura | — |
 | `Data/Rotations.lua`, `Defaults.lua`, `Interrupts.lua`, `Consumables.lua`, `CCBreakers.lua` | tabelle generate: liste di priorità per classe/albero/contesto con condizioni, catene di ranghi, abilità di classe, difensivi, gap closer, burst, buff, interruzioni, consumabili, oggetti di cura, breaker | nessuna funzione, nessuna chiamata (`tests/test_data.lua`) |
 | `Engine/Secret.lua` | risposte sì/no su valori segreti: curve a soglia (`UnitHealthPercent`/`UnitPowerPercent` + `C_StringUtil.TruncateWhenZero`) e `DurationObject` di cooldown su un widget Cooldown nascosto | nessuna funzione restituisce un numero; una soglia per decisione |
-| `Engine/Ranks.lua` | rango 1 ↔ ranghi, rango più alto conosciuto, rango presente sulle barre | — |
+| `Engine/Ranks.lua` | rango 1 ↔ ranghi, rango più alto conosciuto | — |
 | `Engine/State.lua` | domande sullo stato (salute/potere sotto soglia, usabile, cooldown, portata, bersaglio, nemici ingaggiati, postura, buff, stack, swing) con risposta vero/falso/sconosciuto | nessun valore segreto confrontato in Lua |
 | `Engine/Gates.lua` | 19 tipi di condizione (`stealth`, `known`, `starved`, `unconfirmed`, `targets`, `totem`, `near`, `swing`, `resource`, `power`, `execute`, `health`, `stack`, `cd`, `buff`, `dot`, `tick`, `any`, `all`), a tre valori | uno sconosciuto non blocca mai: blocca solo `false` |
 | `Engine/Dots.lua` | DoT considerato attivo se lanciato dal giocatore sul bersaglio corrente entro la durata | — |
 | `Engine/Trees.lua` | albero dei talenti con più punti, altrimenti default della classe; contesto st/cleave/aoe da 1/2/3+ nemici ingaggiati; forma d'orso per i druidi feral | — |
 | `Engine/Queue.lua` | coda dei danni (sotto) e `Queue.Head` | nessuna spell fuori dalla lista attiva, salvo i gap closer |
 | `Engine/Interrupts.lua` | interruzione suggerita quando il bersaglio lancia o canalizza | non entra nella coda né nel pixel |
-| `Engine/Defensives.lua` | fino a 4 difensivi/oggetti di cura per fascia di salute; cue per pet, cure di gruppo, breaker | non entra nella coda né nel pixel |
+| `Engine/Defensives.lua` | fino a 4 difensivi/oggetti di cura per fascia di salute; cue per pet, cure di gruppo, breaker; cura d'emergenza | solo la cura d'emergenza entra nella coda (posizione 1) e quindi nel pixel |
 | `Engine/Precombat.lua` | fino a 6 promemoria fuori combattimento: buff di classe, consumabili, furtività, cura di rabbocco, cibo/bevanda/benda | vuoto in combattimento, in sella, da morto |
 | `Panel/Keys.lua` | normalizzazione dei tasti (riuso tecnico HCOB), tasti rifiutati, etichette brevi | — |
 | `Panel/Actions.lua` | assegnazioni, tasti effettivi (utente/default), conflitti, applicazione secure, `SlotFor` | non assegna né rilega nulla in base alla coda |

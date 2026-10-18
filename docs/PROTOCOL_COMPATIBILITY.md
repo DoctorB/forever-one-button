@@ -67,8 +67,9 @@ runtime.
 | Posizione 1 | `Queue.Head`: l'ID della posizione 1 solo se è una spell o un item **pronto**; le voci pronte precedono sempre quelle non pronte, quindi è la prima voce pronta della lista (o il gap closer) | il pixel codifica solo questa posizione, come l'originale codificava solo la raccomandazione principale |
 | Wait | niente di pronto in combattimento o con un bersaglio attaccabile → posizione 1 = wait | `Head` = `nil` → nero |
 | Posizioni 2+ | voci pronte restanti, poi quelle in arrivo; il trigger di burst pronto può essere spostato in posizione 2 | solo griglia e striscia; mai nel pixel |
-| ID visualizzati | rango sulle barre se presente, altrimenti il più alto conosciuto | una cella spell corrisponde se l'ID è uguale, se `C_Spell.GetOverrideSpell(cella)` è uguale, o altrimenti se il nome localizzato è uguale (altro rango della stessa spell) |
-| Fuori dalla coda | interruzioni (`Engine/Interrupts.lua`), difensivi (`Engine/Defensives.lua`), promemoria (`Engine/Precombat.lua`) | mostrati accanto alla griglia; nessuno di essi viene passato a `Pixel.Update` |
+| ID visualizzati | rango più alto conosciuto | una cella spell corrisponde se l'ID è uguale, se `C_Spell.GetOverrideSpell(cella)` è uguale, o altrimenti se il nome localizzato è uguale (altro rango della stessa spell) |
+| Cura d'emergenza | salute sotto `emergencyHealBelow` (30 %) in combattimento: `Defensives.EmergencyHeal` (spell di cura pronta con una cella, altrimenti l'oggetto di cura con una cella) va in posizione 1 e sostituisce il wait | pixel = sua cella; la portata del bersaglio non si applica; salute non leggibile → mai |
+| Fuori dalla coda | interruzioni (`Engine/Interrupts.lua`), il resto dei difensivi (`Engine/Defensives.lua`), promemoria (`Engine/Precombat.lua`) | mostrati accanto alla griglia; nessuno di essi viene passato a `Pixel.Update` |
 
 Conversioni introdotte, tutte necessarie al protocollo e nessuna decisionale:
 (1) ID della coda → numero di cella (lookup nelle associazioni, compresa

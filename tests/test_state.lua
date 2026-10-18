@@ -46,16 +46,17 @@ H.Equal(S.HealthBelow("player", 50), true, "memoized inside the window")
 Fresh()
 H.Equal(S.HealthBelow("player", 50), false, "fresh after the window")
 
--- Ranks: chains from the data, highest known, the rank on the bars.
+-- Ranks: chains from the data, highest known; the bars are never read.
 H.Equal(Ranks.Base(284), 78, "Heroic Strike rank 2 -> rank 1")
 H.known[78], H.known[284], H.known[285] = true, true, true
 H.Equal(Ranks.HighestKnown(78), 285, "highest known rank")
-H.actions[1] = 284
-Ranks.InvalidateBars()
-H.Equal(Ranks.Pressed(78), 284, "rank on the bars wins")
+H.actions[1] = 78
+H.Equal(Ranks.Pressed(78), 285, "an old rank left on the bars does not hold the rank back")
+H.Equal(Ranks.Pressed(284), 285, "any rank asks for the highest known")
 H.actions[1] = nil
-Ranks.InvalidateBars()
-H.Equal(Ranks.Pressed(78), 285, "else the highest known")
+H.Equal(Ranks.Higher(78), 285, "higher known rank")
+H.Equal(Ranks.Higher(285), nil, "already the highest")
+H.Equal(Ranks.Higher(6603), nil, "spell without ranks")
 H.Equal(Ranks.HighestKnown(12294), nil, "unknown spell")
 
 -- Usable, cooldown (GCD excluded), range.

@@ -59,7 +59,7 @@ queste API è stata ancora provata in gioco con il motore interno.
 | `C_Spell.GetSpellCooldownDuration`, `Cooldown:SetCooldownFromDurationObject`, `IsShown` | cooldown in corso su un widget Cooldown nascosto | indiretto | ripiego su `C_Spell.GetSpellCooldown` in chiaro (GCD escluso) |
 | `UnitHealth`, `UnitHealthMax`, `UnitPower`, `UnitPowerMax` | valori in chiaro quando il client li dà | indiretto | `UnitPowerMax` per convertire soglie assolute di rabbia/energia |
 | `C_Spell.IsSpellUsable`, `C_Spell.IsSpellInRange`, `C_Spell.IsCurrentSpell` | usabile/risorse, portata, Attacco già attivo | indiretto | portata: solo un `false` leggibile conta |
-| `IsPlayerSpell`, `IsSpellKnown`, `GetActionInfo` (slot 1–180) | ranghi conosciuti e rango sulle barre | indiretto | cache invalidata a `ACTIONBAR_SLOT_CHANGED`/`SPELLS_CHANGED` |
+| `IsPlayerSpell`, `IsSpellKnown` | ranghi conosciuti | indiretto | ultima risposta leggibile tenuta in cache |
 | `C_ClassTalents.GetActiveConfigID/GetTraitTreeForSpec`, `C_SpecializationInfo`, `C_Traits.GetGroupDisplayInfoByTreeID/GetGroupCurrencyInfo` | punti per albero dei talenti (`Engine/Trees.lua`) | indiretto | dati illeggibili → albero di default della classe; ricalcolo a `PLAYER_TALENT_UPDATE`, `TRAIT_CONFIG_UPDATED` |
 | `GetNumShapeshiftForms`, `GetShapeshiftFormInfo`, `GetShapeshiftForm`, `GetShapeshiftFormID`, `UPDATE_SHAPESHIFT_FORM` | postura/forma attiva, forma d'orso | indiretto | la postura attiva non è mai candidata |
 | `UnitExists`, `UnitCanAttack`, `UnitIsDeadOrGhost`, `UnitClassification`, `UnitLevel`, `UnitGUID` (`target`) | bersaglio attaccabile, boss, DoT sul bersaglio corrente | indiretto | — |

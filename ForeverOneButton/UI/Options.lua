@@ -115,6 +115,8 @@ Options.FEATURE_PAGES = {
         {"defensives", "Defensive column right of the grid (orange \"D\" on its cell)"},
         {"holdEmergencies", "Hold immunities and big heals until health is low"},
         {"healingItems", "Best healing potion or healthstone in the column"},
+        {"emergencyHeal", "Critical health: a heal takes position 1 (and the pixel)"},
+        {"emergencyHealBelow", "Critical health below %"},
         {"petCues", "Pet heal, revive and summon"},
         {"petHealBelow", "Pet heal below health %"},
         {"groupHeals", "Group heals when allies are low"},

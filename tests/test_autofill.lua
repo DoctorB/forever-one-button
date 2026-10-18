@@ -153,6 +153,31 @@ H.Equal(A.SlotUsingAction("spell", 300), nil, "nothing placed when off")
 F.SetEnabled(true)
 H.Check(A.SlotUsingAction("spell", 300), "placed when switched on")
 
+-- Learned ranks (real chains, Heroic Strike 78 -> 284 -> 285): every spell
+-- cell moves to the highest known rank in the same cell, the user's too,
+-- also with the fill off, whatever rank the hidden Blizzard bars hold.
+H.spells[78], H.spells[284], H.spells[285] = {name = "Heroic Strike"}, {name = "Heroic Strike"}, {name = "Heroic Strike"}
+H.known[78] = true
+H.actions[1] = 78
+pool.ids = {}
+H.Check(A.Assign(10, "spell", 78), "user places Heroic Strike rank 1")
+H.known[284] = true
+H.Fire("SPELLS_CHANGED")
+H.Tick(1)
+H.Equal(char.cells[10].id, 284, "user cell moves to rank 2")
+H.Check(not char.cells[10].auto, "still the user's cell")
+H.Equal(ns.Grid.buttons[10].attributes.spell, 284, "button casts rank 2")
+F.SetEnabled(false)
+H.known[285] = true
+H.Fire("SPELLS_CHANGED")
+H.Tick(1)
+H.Equal(char.cells[10].id, 285, "rank 3 with the fill off")
+H.Equal(ns.Grid.buttons[10].attributes.spell, 285, "button casts rank 3")
+F.SetEnabled(true)
+A.Clear(10)
+F.ResetDismissed()
+H.actions[1] = nil
+
 -- Per character: another character starts empty and fills from its own pool.
 local account = ForeverOneButtonDB
 ns = H.Boot(account, nil)

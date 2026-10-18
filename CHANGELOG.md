@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.2 - 2026-10-18
+
+- Spell ranks, all classes: a newly learned rank now replaces the old one
+  in its cell. Before, a rank still sitting on the hidden Blizzard bar kept
+  the cell (and the suggestion) on that rank, so a level-19 character could
+  still be casting rank 1. Every spell cell, also the ones you placed and
+  also with automatic filling off, now uses the highest rank you know.
+- Critical health: below 30 % health in a fight, a healing spell on a cell
+  (the class's first ready one, else your healing potion or healthstone)
+  takes position 1, with a green frame, and the diagnostic pixel shows its
+  cell. Options *Combat*: on/off and the threshold (10-60 %).
+
 ## 1.0.1 - 2026-10-16
 
 - Options window: the engine features no longer run past the bottom of the

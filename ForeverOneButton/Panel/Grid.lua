@@ -22,6 +22,7 @@ local POSITION_COLORS = {
 local BURST_COLOR = {0.75, 0.35, 1.00} -- burst cooldown ready: purple
 local INTERRUPT_COLOR = {1.00, 0.20, 0.20} -- interrupt now: red
 local DEFENSE_COLOR = {1.00, 0.55, 0.10} -- defensive to use now: orange
+local HEAL_COLOR = {0.25, 1.00, 0.35} -- critical health, heal now: green
 local CHECKER = {{0.10, 0.12, 0.15, 0.92}, {0.17, 0.19, 0.23, 0.92}}
 local EMPTY_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 local STRIP_HEIGHT = 44
@@ -236,6 +237,7 @@ local function OnEnter(button)
     if button.queuePosition then
         GameTooltip:AddLine("Queue position " .. button.queuePosition, 1, 0.82, 0.1)
         if button.burst then GameTooltip:AddLine("Burst cooldown ready", 0.75, 0.35, 1.0) end
+        if button.emergency then GameTooltip:AddLine("Critical health: heal now", 0.25, 1.0, 0.35) end
     end
     if not ns.Actions.applied[button.slot] then
         GameTooltip:AddLine("Drag a spell or item here (out of combat)", 0.6, 0.6, 0.6)
@@ -390,6 +392,7 @@ function Grid.ShowQueue(snapshot, observation)
         local button = Grid.buttons[slot]
         button.queuePosition = nil
         button.burst = nil
+        button.emergency = nil
         button.positionText:SetText("")
         SetEdges(button.edges, nil)
         button.rangeTint:Hide()
@@ -417,7 +420,9 @@ function Grid.ShowQueue(snapshot, observation)
                     button.queuePosition = position
                     button.positionText:SetText(tostring(position))
                     button.burst = entry.burst
-                    SetEdges(button.edges, entry.burst and BURST_COLOR or POSITION_COLORS[position] or POSITION_COLORS.other)
+                    button.emergency = entry.emergency
+                    SetEdges(button.edges, entry.emergency and HEAL_COLOR or entry.burst and BURST_COLOR
+                        or POSITION_COLORS[position] or POSITION_COLORS.other)
                     if position == 1 and observation.outOfRange then button.rangeTint:Show() end
                 end
                 if position == 1 then mappedHead = true end

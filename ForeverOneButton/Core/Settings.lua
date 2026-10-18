@@ -32,6 +32,8 @@ Settings.FEATURES = {
     defensives = {kind = "boolean", default = true},        -- defensive row
     holdEmergencies = {kind = "boolean", default = true},   -- big cooldowns wait for low health
     healingItems = {kind = "boolean", default = true},      -- best potion / healthstone in the row
+    emergencyHeal = {kind = "boolean", default = true},     -- heal at position 1 when health is critical
+    emergencyHealBelow = {kind = "number", default = 30, min = 10, max = 60},
     petCues = {kind = "boolean", default = true},           -- pet heal, revive and summon
     petHealBelow = {kind = "number", default = 50, min = 10, max = 90},
     groupHeals = {kind = "boolean", default = false},       -- group heals when allies are low

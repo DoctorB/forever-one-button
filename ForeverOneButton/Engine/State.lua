@@ -311,8 +311,6 @@ local frame = CreateFrame("Frame")
 State.frame = frame
 frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 pcall(frame.RegisterEvent, frame, "PLAYER_SWING")
-frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
-frame:RegisterEvent("SPELLS_CHANGED")
 frame:SetScript("OnEvent", function(_, event, ...)
     if event == "UNIT_SPELLCAST_SUCCEEDED" then
         local spellID = select(3, ...)
@@ -321,7 +319,5 @@ frame:SetScript("OnEvent", function(_, event, ...)
         -- Payload (duration, swingType, checksRange), as JustAC reads it on Forever.
         local duration, swingType = ...
         if type(swingType) == "number" and not ns.IsSecret(swingType) then State.NoteSwing(swingType, duration) end
-    else
-        ns.Ranks.InvalidateBars()
     end
 end)

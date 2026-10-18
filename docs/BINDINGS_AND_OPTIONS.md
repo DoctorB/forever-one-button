@@ -15,7 +15,7 @@ sempre nello stesso slot, limitandosi a quelle che l'addon può suggerire.
 
 | Regola | Comportamento |
 |---|---|
-| Sorgente | il pool del motore (`Panel/AutoFill.lua` `ReadPool`), in ordine fisso: le voci della lista dell'albero attivo (`Engine/Trees.lua`) nei contesti st, cleave, aoe, escluse le abilità con ruolo non offensivo nei dati (`Defaults.abilityRoles`); poi i **gap closer** della classe (`Defaults.gapClosers`: Carica, Intercettare…; aggiunti dopo il primo test in gioco del 2026-10-15, in cui la Carica era suggerita senza una cella); poi le interruzioni conosciute (`Data/Interrupts.lua`, solo `kind = interrupt`); poi i difensivi della classe (`Defaults.defensive`). Solo spell conosciute, al rango premuto (`Engine/Ranks.lua`: rango sulle barre, altrimenti il più alto conosciuto). Classe senza lista: nessun pool ("no priority list for this class") |
+| Sorgente | il pool del motore (`Panel/AutoFill.lua` `ReadPool`), in ordine fisso: le voci della lista dell'albero attivo (`Engine/Trees.lua`) nei contesti st, cleave, aoe, escluse le abilità con ruolo non offensivo nei dati (`Defaults.abilityRoles`); poi i **gap closer** della classe (`Defaults.gapClosers`: Carica, Intercettare…; aggiunti dopo il primo test in gioco del 2026-10-15, in cui la Carica era suggerita senza una cella); poi le interruzioni conosciute (`Data/Interrupts.lua`, solo `kind = interrupt`); poi i difensivi della classe (`Defaults.defensive`). Solo spell conosciute, al rango più alto conosciuto (`Engine/Ranks.lua`; le barre Blizzard non sono lette). Ogni cella spell, anche quelle dell'utente e anche a riempimento spento, passa al rango più alto conosciuto nella stessa cella. Classe senza lista: nessun pool ("no priority list for this class") |
 | Oggetto di cura | con `healingItems` attivo, una cella automatica per il miglior oggetto di cura posseduto (`Consumables.healingItems`, migliore per primo); uno migliore la sostituisce nella stessa cella; un oggetto di cura messo a mano non viene toccato; svuotare la cella automatica la esclude (`item:healing`) |
 | Quando | login, `SPELLS_CHANGED` (spell o rango nuovo), `PLAYER_SPECIALIZATION_CHANGED`, `ACTIONBAR_SLOT_CHANGED`, `BAG_UPDATE_DELAYED`; raffiche raggruppate in una lettura dopo 0,5 s; in combattimento rimandato a `PLAYER_REGEN_ENABLED` |
 | Posizione | una spell del pool che non è già in griglia va nella **prima cella libera** (ordine del pool) e **non viene più spostata** |
@@ -125,6 +125,8 @@ pannello, mai cosa fa una cella o quando viene premuto un tasto.
 | `defensives` | sì/no (sì) | colonna difensiva; "D" sulla cella |
 | `holdEmergencies` | sì/no (sì) | immunità trattenute fino a salute < 25 %, oggetti e grandi cure a lungo cooldown fino a < 50 % |
 | `healingItems` | sì/no (sì) | miglior pozione o pietra della salute nella colonna e in una cella automatica |
+| `emergencyHeal` | sì/no (sì) | salute critica in combattimento: una cura con una cella va in posizione 1 (bordo verde) e nel pixel |
+| `emergencyHealBelow` | 10–60 (30) | soglia della salute critica, in % |
 | `petCues` | sì/no (sì) | cura, resurrezione ed evocazione del pet |
 | `petHealBelow` | 10–90 (50) | soglia di salute del pet |
 | `groupHeals` | sì/no (no) | cure di gruppo con alleati feriti |

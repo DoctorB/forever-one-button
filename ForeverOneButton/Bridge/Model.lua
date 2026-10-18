@@ -55,7 +55,9 @@ function Model.Refresh()
 
     local head = ns.Queue.Head(snapshot)
     local casting = PlayerIsCasting()
-    local outOfRange = head ~= nil and not casting and ConfirmedOutOfRange(head)
+    -- An emergency heal is cast on the player: the target's range does not apply.
+    local selfHeal = snapshot.entries[1] and snapshot.entries[1].emergency
+    local outOfRange = head ~= nil and not casting and not selfHeal and ConfirmedOutOfRange(head)
     Model.observation.casting = casting
     Model.observation.outOfRange = outOfRange
     -- Combat-only pixel (owner decision 2026-10-15, default on): out of combat
@@ -94,7 +96,8 @@ function Model.Refresh()
         ns.Reminders.Update()
     end
 
-    -- Defensive row: beside the grid, never in the pixel.
+    -- Defensive row: beside the grid. Only the emergency heal (Queue.Build)
+    -- reaches the pixel.
     local okDefense, row = pcall(ns.Defensives.Suggest)
     if not okDefense then row = nil end
     local signature = ""

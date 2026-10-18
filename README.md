@@ -114,8 +114,11 @@ closes when combat starts.
 | Out of combat (default "pixel only in combat"), or no executable suggestion (none, wait, no priority list for the class, engine error, player casting or channeling, confirmed out of range) | `0, 0, 0` |
 | Suggestion not on any cell | `255, 255, 255` |
 
-Only the damage queue reaches the pixel: burst cue, interrupts, defensives and
-reminders are shown on the panel only.
+Only the damage queue reaches the pixel, plus one exception: with health
+critical in a fight (below 30 %, "Critical health" options), a healing spell
+on a cell (else the healing item's cell) takes position 1, so the grid shows
+it with a green frame and the pixel shows its cell. Burst cue, interrupts,
+the rest of the defensive column and reminders are shown on the panel only.
 
 By default the pixel is black out of combat: you choose the pull and the
 opening spell, and the pixel starts following the queue when combat begins
