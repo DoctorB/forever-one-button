@@ -166,6 +166,37 @@ local function BreakerCue()
     return nil
 end
 
+-- Emergency heal (owner request 2026-10-18) -----------------------------------
+-- In a fight with health below the threshold: the first ready healing spell
+-- of the class's defensive list (Defaults.categories.healing) that has a
+-- cell, else the best healing item if it has a cell. Queue.Build puts it at
+-- position 1, so the grid and the pixel both name it. Health that cannot be
+-- read never triggers it.
+function Defensives.EmergencyHeal()
+    if not ns.Settings.Feature("emergencyHeal") or not ns.InCombat() then return nil end
+    if ns.State.HealthBelow("player", ns.Settings.Feature("emergencyHealBelow")) ~= true then return nil end
+    local class = ns.Trees.Class()
+    local healing = ns.Data.Defaults.categories.healing
+    for _, first in ipairs(class and ns.Data.Defaults.defensive[class] or {}) do
+        if healing[first] then
+            local entry = SpellEntry(first, 2)
+            if entry and entry.ready and ns.Actions.SlotFor(entry.id) then
+                entry.emergency = true
+                return entry
+            end
+        end
+    end
+    local itemID = ns.Settings.Feature("healingItems") and Defensives.BestHealingItem()
+    if itemID then
+        local entry = ItemEntry(itemID)
+        if entry.ready and ns.Actions.SlotFor(entry.id) then
+            entry.emergency = true
+            return entry
+        end
+    end
+    return nil
+end
+
 -- The row ---------------------------------------------------------------------
 -- {entries = {...}, band} or nil when the row is off or has nothing to show.
 function Defensives.Suggest()

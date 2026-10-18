@@ -125,6 +125,8 @@ pannello, mai cosa fa una cella o quando viene premuto un tasto.
 | `defensives` | sì/no (sì) | colonna difensiva; "D" sulla cella |
 | `holdEmergencies` | sì/no (sì) | immunità trattenute fino a salute < 25 %, oggetti e grandi cure a lungo cooldown fino a < 50 % |
 | `healingItems` | sì/no (sì) | miglior pozione o pietra della salute nella colonna e in una cella automatica |
+| `emergencyHeal` | sì/no (sì) | salute critica in combattimento: una cura con una cella va in posizione 1 (bordo verde) e nel pixel |
+| `emergencyHealBelow` | 10–60 (30) | soglia della salute critica, in % |
 | `petCues` | sì/no (sì) | cura, resurrezione ed evocazione del pet |
 | `petHealBelow` | 10–90 (50) | soglia di salute del pet |
 | `groupHeals` | sì/no (no) | cure di gruppo con alleati feriti |

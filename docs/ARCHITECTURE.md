@@ -32,9 +32,14 @@ all'infinito Postura difensiva e Postura da battaglia (`MILESTONES.md`).
   attributi secure, override binding, solo fuori combattimento)
 ```
 
-Il pixel riceve solo `Queue.Head` (posizione 1 della coda dei danni).
-Interruzioni, difensivi e promemoria non passano mai dal pixel; il segno
-"burst" è solo grafico (`Bridge/Model.lua`).
+Il pixel riceve solo `Queue.Head` (posizione 1 della coda dei danni). Unica
+eccezione: con salute critica in combattimento (`emergencyHeal`, soglia
+`emergencyHealBelow`, 30 %) `Queue.Build` mette in posizione 1 la cura di
+`Defensives.EmergencyHeal` (prima spell di cura pronta della lista difensiva
+della classe con una cella, altrimenti la cella dell'oggetto di cura); la
+portata del bersaglio non si applica. Interruzioni, il resto dei difensivi e
+i promemoria non passano mai dal pixel; il segno "burst" è solo grafico
+(`Bridge/Model.lua`).
 
 ## Moduli e responsabilità
 
@@ -53,7 +58,7 @@ Interruzioni, difensivi e promemoria non passano mai dal pixel; il segno
 | `Engine/Trees.lua` | albero dei talenti con più punti, altrimenti default della classe; contesto st/cleave/aoe da 1/2/3+ nemici ingaggiati; forma d'orso per i druidi feral | — |
 | `Engine/Queue.lua` | coda dei danni (sotto) e `Queue.Head` | nessuna spell fuori dalla lista attiva, salvo i gap closer |
 | `Engine/Interrupts.lua` | interruzione suggerita quando il bersaglio lancia o canalizza | non entra nella coda né nel pixel |
-| `Engine/Defensives.lua` | fino a 4 difensivi/oggetti di cura per fascia di salute; cue per pet, cure di gruppo, breaker | non entra nella coda né nel pixel |
+| `Engine/Defensives.lua` | fino a 4 difensivi/oggetti di cura per fascia di salute; cue per pet, cure di gruppo, breaker; cura d'emergenza | solo la cura d'emergenza entra nella coda (posizione 1) e quindi nel pixel |
 | `Engine/Precombat.lua` | fino a 6 promemoria fuori combattimento: buff di classe, consumabili, furtività, cura di rabbocco, cibo/bevanda/benda | vuoto in combattimento, in sella, da morto |
 | `Panel/Keys.lua` | normalizzazione dei tasti (riuso tecnico HCOB), tasti rifiutati, etichette brevi | — |
 | `Panel/Actions.lua` | assegnazioni, tasti effettivi (utente/default), conflitti, applicazione secure, `SlotFor` | non assegna né rilega nulla in base alla coda |

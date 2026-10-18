@@ -33,7 +33,10 @@ local function Same(a, b)
     end
     for i = 1, a.count do
         local x, y = a.entries[i], b.entries[i]
-        if x.kind ~= y.kind or x.id ~= y.id or x.ready ~= y.ready or x.burst ~= y.burst then return false end
+        if x.kind ~= y.kind or x.id ~= y.id or x.ready ~= y.ready or x.burst ~= y.burst
+            or x.emergency ~= y.emergency then
+            return false
+        end
     end
     return true
 end
@@ -188,6 +191,14 @@ function Queue.Build(previous)
         end
     end
     ApplyBurst(entries, class, ctx)
+    -- Critical health: the emergency heal leads, replacing a wait.
+    local heal = ns.Defensives.EmergencyHeal()
+    if heal then
+        for i = #entries, 1, -1 do
+            if entries[i].kind == ENTRY.WAIT or entries[i].id == heal.id then table.remove(entries, i) end
+        end
+        table.insert(entries, 1, heal)
+    end
     for i = 1, math.min(#entries, Queue.MAX_ENTRIES) do result.entries[i] = entries[i] end
     result.count = #result.entries
     result.candidates, result.ready = #candidates, #ready
