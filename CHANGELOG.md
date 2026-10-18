@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2 - 2026-10-18
+
+- Spell ranks, all classes: a newly learned rank now replaces the old one
+  in its cell. Before, a rank still sitting on the hidden Blizzard bar kept
+  the cell (and the suggestion) on that rank, so a level-19 character could
+  still be casting rank 1. Every spell cell, also the ones you placed and
+  also with automatic filling off, now uses the highest rank you know.
+
 ## 1.0.1 - 2026-10-16
 
 - Options window: the engine features no longer run past the bottom of the

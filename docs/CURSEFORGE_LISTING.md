@@ -57,7 +57,7 @@ shows which of your buttons to press next. No other addon is needed.
   a suggestion.
 - **Only your tree's list is suggested**, so the panel never bounces between
   stances.
-- **Ranks handled**: the rank on your action bars, or the highest you know.
+- **Ranks handled**: every cell uses the highest rank you know.
 - **Charge** and other gap closers when you are out of melee; a clear **wait**
   when nothing can be pressed yet.
 

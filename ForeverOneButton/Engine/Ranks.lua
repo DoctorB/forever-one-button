@@ -1,8 +1,9 @@
 -- Forever One Button: spell ranks.
 --
 -- The data names every spell by its rank-1 ID (Data/Rotations.lua rankChains:
--- rank 1 first, in learn order). The rank a cell or the queue uses is the one
--- on the player's action bars when present, else the highest rank known.
+-- rank 1 first, in learn order). Cells and the queue use the highest rank
+-- known, for every class. The Blizzard bars are not read: the addon hides
+-- them, and they can still hold the rank learned first.
 local ADDON_NAME, ns = ...
 
 local Ranks = {}
@@ -57,26 +58,19 @@ function Ranks.HighestKnown(spellID)
     return nil
 end
 
--- Rank on the action bars (slots 1-180), cached until the bars change.
-local barRank
-function Ranks.InvalidateBars() barRank = nil end
-local function BarRanks()
-    if barRank then return barRank end
-    barRank = {}
-    if not GetActionInfo then return barRank end
-    for slot = 1, 180 do
-        local ok, kind, id = pcall(GetActionInfo, slot)
-        if ok and ns.Readable(kind) and kind == "spell" and ns.Readable(id) and type(id) == "number" then
-            local first = Ranks.Base(id)
-            if not barRank[first] then barRank[first] = id end
-        end
+-- A known rank of the spell higher than this one, the highest; nil when
+-- there is none.
+function Ranks.Higher(spellID)
+    local chain = Ranks.Chain(spellID)
+    if not chain then return nil end
+    for i = #chain, 1, -1 do
+        if chain[i] == spellID then return nil end
+        if Ranks.Known(chain[i]) then return chain[i] end
     end
-    return barRank
+    return nil
 end
 
--- The rank to show and press: on the bars, else the highest known.
+-- The rank to show and press.
 function Ranks.Pressed(spellID)
-    local onBar = BarRanks()[Ranks.Base(spellID)]
-    if onBar and Ranks.Known(onBar) then return onBar end
     return Ranks.HighestKnown(spellID)
 end

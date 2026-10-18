@@ -46,7 +46,7 @@ Interruzioni, difensivi e promemoria non passano mai dal pixel; il segno
 | `Core/Probe.lua` | `/fob probe spellbook` e `/fob probe frames`, sola lettura | — |
 | `Data/Rotations.lua`, `Defaults.lua`, `Interrupts.lua`, `Consumables.lua`, `CCBreakers.lua` | tabelle generate: liste di priorità per classe/albero/contesto con condizioni, catene di ranghi, abilità di classe, difensivi, gap closer, burst, buff, interruzioni, consumabili, oggetti di cura, breaker | nessuna funzione, nessuna chiamata (`tests/test_data.lua`) |
 | `Engine/Secret.lua` | risposte sì/no su valori segreti: curve a soglia (`UnitHealthPercent`/`UnitPowerPercent` + `C_StringUtil.TruncateWhenZero`) e `DurationObject` di cooldown su un widget Cooldown nascosto | nessuna funzione restituisce un numero; una soglia per decisione |
-| `Engine/Ranks.lua` | rango 1 ↔ ranghi, rango più alto conosciuto, rango presente sulle barre | — |
+| `Engine/Ranks.lua` | rango 1 ↔ ranghi, rango più alto conosciuto | — |
 | `Engine/State.lua` | domande sullo stato (salute/potere sotto soglia, usabile, cooldown, portata, bersaglio, nemici ingaggiati, postura, buff, stack, swing) con risposta vero/falso/sconosciuto | nessun valore segreto confrontato in Lua |
 | `Engine/Gates.lua` | 19 tipi di condizione (`stealth`, `known`, `starved`, `unconfirmed`, `targets`, `totem`, `near`, `swing`, `resource`, `power`, `execute`, `health`, `stack`, `cd`, `buff`, `dot`, `tick`, `any`, `all`), a tre valori | uno sconosciuto non blocca mai: blocca solo `false` |
 | `Engine/Dots.lua` | DoT considerato attivo se lanciato dal giocatore sul bersaglio corrente entro la durata | — |

@@ -8,10 +8,10 @@
 -- Rules:
 --   * a pool spell not on the grid takes the first free cell, in pool order,
 --     and keeps that cell: nothing is ever moved;
---   * a new rank of a spell (same name) replaces the old rank in the SAME
---     cell, if the cell was filled automatically;
+--   * a new rank of a spell replaces the old rank in the SAME cell, in every
+--     cell, also the user's and also with the automatic fill off;
 --   * a spell the user removed from a cell is never put back automatically;
---   * cells the user filled are never touched;
+--   * cells the user filled are never touched, except for the rank;
 --   * out of combat only; requests in combat run when combat ends.
 -- This never looks at the current queue: what is suggested at a given moment
 -- has no influence on which cell a spell gets.
@@ -127,23 +127,43 @@ local function PlaceHealingItem(cells, dismissed)
     return true
 end
 
-function AutoFill.Run()
-    if not ns.Settings.Get().autoFill then
-        AutoFill.status = "off"
-        return false
+-- Every spell cell, automatic or the user's, moves to the highest rank known
+-- in the same cell, also with the automatic fill off.
+local function UpgradeRanks(cells)
+    local changed = false
+    for slot = 1, ns.MAX_SLOTS do
+        local cell = cells[slot]
+        local higher = cell and cell.kind == "spell" and ns.Ranks.Higher(cell.id)
+        if higher then
+            cell.id = higher
+            changed = true
+        end
     end
+    return changed
+end
+
+function AutoFill.Run()
     if ns.InCombat() then
         AutoFill.pending = true
         return false
     end
     AutoFill.pending = false
-    local pool, status = AutoFill.ReadPool()
-    AutoFill.status = status
-    if not pool then return false end
-
     local char = ns.Settings.Char()
     local cells, dismissed = char.cells, char.dismissed
-    local changed, overflow = false, 0
+    local upgraded = UpgradeRanks(cells)
+    if not ns.Settings.Get().autoFill then
+        AutoFill.status = "off"
+        if upgraded then ns.Actions.Apply() end
+        return upgraded
+    end
+    local pool, status = AutoFill.ReadPool()
+    AutoFill.status = status
+    if not pool then
+        if upgraded then ns.Actions.Apply() end
+        return upgraded
+    end
+
+    local changed, overflow = upgraded, 0
     for _, spellID in ipairs(pool) do
         local name = ns.SpellName(spellID)
         if not dismissed[name or ("spell:" .. spellID)] then
