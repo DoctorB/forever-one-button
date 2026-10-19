@@ -60,11 +60,15 @@ Preparazione: copiare `dist/ForeverOneButton-<versione>.zip` in `AddOns`,
 28. Il bersaglio lancia un incantesimo: icona di Pummel o Shield Bash a sinistra della griglia con il cast nell'angolo e il tasto; bordo rosso e "!" sulla cella; icona nascosta a fine cast; nessun cambiamento del pixel.
 29. Burst: con Death Wish pronta in combattimento (Arms), la sua cella è in posizione 2 con bordo viola; non su un mob singolo non boss sotto il 20 %; `/fob feature burstCue off` lo disattiva.
 30. Colonna difensiva: sotto il 50 % di salute in combattimento compaiono i difensivi (es. Last Stand, Shield Wall) a destra della griglia, bordo arancione e "D" sulla cella della prima voce pronta; sopra l'80 % fuori combattimento la colonna è nascosta.
-31. Oggetto di cura: con una pozione di cura nelle borse una cella automatica la contiene; con una pozione migliore la cella cambia oggetto; dopo l'uso in combattimento la voce resta "in cooldown" fino alla fine del combattimento.
+31. Oggetto di cura: con una pozione di cura nelle borse una cella automatica la contiene; con una pozione migliore la cella cambia oggetto; dopo l'uso in combattimento la voce resta "in cooldown" fino alla fine del combattimento e la cella è desaturata con lo swipe dei due minuti.
 32. Riga promemoria: fuori combattimento, con un elisir di forza o una pietra per armi nelle borse e nessun effetto di quella categoria attivo, compare sotto la striscia (il Guerriero non ha buff di classe nei dati); il clic lancia la spell o usa l'oggetto; nessun tasto la attiva; all'ingaggio la riga sparisce e riappare dopo il combattimento; nessun errore `ADDON_ACTION_BLOCKED`.
 33. Dopo un combattimento con salute sotto il 70 %: la riga propone cibo (o una benda se non c'è cibo e non si è "Recently Bandaged"); mentre si mangia non viene riproposto.
+34. Cooldown sulle celle (2026-10-19): dopo Bloodrage (o un'altra abilità con cooldown) la cella diventa subito desaturata con lo swipe e il suo numero di coda passa in grigio senza bordo; resta così fino alla fine del cooldown anche in combattimento; il GCD non desatura le altre celle. Senza rabbia sufficiente l'icona è blu, in postura sbagliata o con Execute non disponibile grigia. Dopo una pozione la cella oggetto è desaturata, con il numero di pezzi aggiornato.
+35. Suggerimento evidente: la cella in posizione 1 ha bordo oro, "1" grande e glow pulsante; la prima icona della striscia è più grande e incorniciata; con "wait" nessun glow.
 
 Esito al 2026-10-16 (Guerriero Fury livello 13, `TEST_REPORT.md`): 24, 25, 27,
 32 (cibo), 33 verificati; 26 (Carica) visto nei lanci, non come suggerimento
 in posizione 1; 28, 29, 30 non verificati (nessun incantatore, Death Wish non
 appresa, nessuna pozione); 31 parzialmente (cella svuotata senza pozioni).
+
+Esito al 2026-10-19: 34 e 35 verificati in gioco dal proprietario sulla build 1.1.0 ("funziona").

@@ -57,7 +57,23 @@ function Region:SetColorTexture(r, g, b, a)
 end
 function Region:SetTexture(t) self.texture = t end
 function Region:SetAlpha(a) self.alpha = a end
-function Region:SetVertexColor() end
+function Region:SetVertexColor(r, g, b) self.vertex = {r, g, b} end
+function Region:SetDesaturated(d) self.desaturated = d end
+function Region:SetBlendMode(mode) self.blendMode = mode end
+-- Animations: only whether a group is playing is modelled.
+local AnimationGroup = {}
+AnimationGroup.__index = AnimationGroup
+local Animation = {}
+Animation.__index = Animation
+function Animation:SetFromAlpha() end
+function Animation:SetToAlpha() end
+function Animation:SetDuration() end
+function AnimationGroup:CreateAnimation() return setmetatable({}, Animation) end
+function AnimationGroup:SetLooping(l) self.looping = l end
+function AnimationGroup:Play() self.playing = true end
+function AnimationGroup:Stop() self.playing = false end
+function AnimationGroup:IsPlaying() return self.playing == true end
+function Region:CreateAnimationGroup() return setmetatable({playing = false}, AnimationGroup) end
 function Region:SetAllPoints(target) self.allPoints = target or self.parent end
 function Region:SetPoint(...) self.points[#self.points + 1] = {...} end
 function Region:ClearAllPoints() self.points = {} end
@@ -566,17 +582,36 @@ function C_Spell.IsSpellUsable(id)
     if not s then return false, false end
     return s.usable ~= false, s.noResources == true
 end
+-- H.secretCooldowns: cooldown timers are secret (a Cooldown widget fed with
+-- them still draws, but its IsShown() answer is secret too).
 function C_Spell.GetSpellCooldownDuration(id)
     local s = H.spells[id]
-    return {active = s ~= nil and s.cooldown == true}
+    return {active = s ~= nil and s.cooldown == true, secret = H.secretCooldowns}
 end
 function C_Spell.GetSpellCooldown(id)
     local s = H.spells[id]
-    return {isOnGCD = s and s.onGCD or nil, isActive = s ~= nil and s.cooldown == true,
-        startTime = H.secretStats and H.Secret() or 0, duration = H.secretStats and H.Secret() or 0}
+    local active = s ~= nil and s.cooldown == true
+    if H.secretCooldowns then active = H.Secret() end
+    return {isOnGCD = s and s.onGCD or nil, isActive = active,
+        startTime = (H.secretStats or H.secretCooldowns) and H.Secret() or 0,
+        duration = (H.secretStats or H.secretCooldowns) and H.Secret() or 0}
 end
-function Frame:SetCooldownFromDurationObject(d) self.shown = d ~= nil and d.active == true end
-function Frame:SetCooldown() self.shown = false end
+function Frame:SetCooldownFromDurationObject(d)
+    self.cooldownShown = d ~= nil and d.active == true
+    self.shown = d ~= nil and d.secret and H.Secret() or self.cooldownShown
+end
+function Frame:SetCooldown(start, duration)
+    if issecretvalue(start) or issecretvalue(duration) then
+        self.cooldownShown, self.shown = nil, H.Secret()
+        return
+    end
+    self.cooldownStart, self.cooldownDuration = start, duration
+    self.cooldownShown = start > 0 and duration > 0 and start + duration > H.now
+    self.shown = self.cooldownShown
+end
+function Frame:SetDrawEdge(e) self.drawEdge = e end
+function Frame:SetSwipeColor() end
+function Frame:SetHideCountdownNumbers(h) self.hideNumbers = h end
 
 function GetNumShapeshiftForms() return #H.forms end
 function GetShapeshiftFormInfo(i) return nil, H.activeForm == i, true, H.forms[i] end
@@ -634,6 +669,7 @@ function C_Item.GetItemCount(id)
     return H.bags[id] or 0
 end
 C_Container = {GetItemCooldown = function(id)
+    if H.secretCooldowns then return H.Secret(), H.Secret(), 1 end
     local c = H.itemCooldowns[id]
     if c then return c[1], c[2], 1 end
     return 0, 0, 1
