@@ -76,8 +76,8 @@ function State.Usable(spellID)
     return Plain(usable), Plain(noResources)
 end
 
--- Real cooldown running (the global cooldown excluded).
-function State.OnCooldown(spellID)
+-- What the client says about a real cooldown (the global cooldown excluded).
+local function ClientCooldown(spellID)
     if C_Spell and C_Spell.GetSpellCooldownDuration then
         local ok, duration = pcall(C_Spell.GetSpellCooldownDuration, spellID, true)
         if ok then
@@ -97,6 +97,34 @@ function State.OnCooldown(spellID)
     local active = Plain(info.isActive)
     if active ~= nil then return active == true end
     return nil
+end
+
+-- The cooldown our own cast started: (start, seconds) while the spell's base
+-- cooldown, counted from the cast seen, is still running; nil otherwise.
+-- Spells whose cooldown is only the global one have none.
+State.GCD_SECONDS = 1.5
+function State.CastCooldown(spellID)
+    local since = State.SecondsSinceCast(spellID)
+    if not since then return nil end
+    local ms = Plain(Call(GetSpellBaseCooldown, spellID))
+    if type(ms) ~= "number" then return nil end
+    local seconds = ms / 1000
+    if seconds <= State.GCD_SECONDS or since >= seconds then return nil end
+    return GetTime() - since, seconds
+end
+
+-- Real cooldown running (the global cooldown excluded). The client answers;
+-- when it cannot (secret timers), or in the moment between the cast and the
+-- client's cooldown update, the cast we saw does.
+State.CAST_LAG_SECONDS = 0.5
+function State.OnCooldown(spellID)
+    local active = ClientCooldown(spellID)
+    if active == true then return true end
+    if State.CastCooldown(spellID) then
+        if active == nil then return true end
+        if State.SecondsSinceCast(spellID) < State.CAST_LAG_SECONDS then return true end
+    end
+    return active
 end
 
 function State.InRange(spellID)

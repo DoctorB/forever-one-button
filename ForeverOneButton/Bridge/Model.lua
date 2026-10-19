@@ -88,6 +88,8 @@ function Model.Refresh()
         ns.Pixel.Update(head)
     end
     if changed and ns.Grid and ns.Grid.ShowQueue then ns.Grid.ShowQueue(snapshot, Model.observation) end
+    -- Cooldowns and usability on the cells change without a queue change.
+    if ns.Grid and ns.Grid.RefreshCooldowns then ns.Grid.RefreshCooldowns() end
 
     -- Reminder row, out of combat, at most once a second.
     local now = GetTime()

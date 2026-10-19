@@ -69,15 +69,33 @@ function Defensives.ItemCount(itemID)
     return lastCount[itemID] or 0
 end
 
--- Item cooldowns are secret in combat: a use seen this fight counts as on
--- cooldown until combat ends.
+-- Item uses seen (any item on a cell, every healing item): the cooldown they
+-- started when the client's timers are secret. Potions and healthstones
+-- share two minutes.
+Defensives.ITEM_COOLDOWN_SECONDS = 120
+Defensives.USE_LAG_SECONDS = 0.5
+local usedAt = {}
+
+-- (start, seconds) while the cooldown of the last use seen still runs.
+function Defensives.ItemUseCooldown(itemID)
+    local at = usedAt[itemID]
+    if not at or GetTime() - at >= Defensives.ITEM_COOLDOWN_SECONDS then return nil end
+    return at, Defensives.ITEM_COOLDOWN_SECONDS
+end
+
+-- Item cooldowns are secret in combat: a healing item used this fight counts
+-- as on cooldown until combat ends, any other item for two minutes after a
+-- use seen. Right after a use the client may not show the cooldown yet.
 function Defensives.ItemOnCooldown(itemID)
     if usedThisFight[itemID] then return true end
+    local recent = Defensives.ItemUseCooldown(itemID)
     local start, duration = Call(C_Container and C_Container.GetItemCooldown, itemID)
     start, duration = Plain(start), Plain(duration)
     if type(start) == "number" and type(duration) == "number" then
-        return start > 0 and start + duration > GetTime()
+        if start > 0 and start + duration > GetTime() then return true end
+        return recent ~= nil and GetTime() - recent < Defensives.USE_LAG_SECONDS
     end
+    if recent then return true end
     return nil
 end
 
@@ -274,8 +292,16 @@ frame:SetScript("OnEvent", function(_, event, ...)
     for _, itemID in ipairs(ns.Data.Consumables.healingItems) do
         local _, itemSpell = Call(C_Item and C_Item.GetItemSpell, itemID)
         if Plain(itemSpell) == spellID then
-            usedThisFight[itemID] = true
+            usedAt[itemID] = GetTime()
+            if ns.InCombat() then usedThisFight[itemID] = true end
             if lastCount[itemID] and lastCount[itemID] > 0 then lastCount[itemID] = lastCount[itemID] - 1 end
+        end
+    end
+    for slot = 1, ns.MAX_SLOTS do
+        local cell = ns.Actions.applied[slot]
+        if cell and cell.kind == "item" then
+            local _, itemSpell = Call(C_Item and C_Item.GetItemSpell, cell.id)
+            if Plain(itemSpell) == spellID then usedAt[cell.id] = GetTime() end
         end
     end
 end)

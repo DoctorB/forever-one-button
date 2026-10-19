@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.1.0 - 2026-10-19
+
+- Cooldowns on the panel: while a cell's cooldown runs, its icon is greyed
+  out under a cooldown swipe (the global cooldown is not shown). This works
+  in combat too, where Forever hides cooldown timers, and right after the
+  cast or the potion, when the panel used to show the action as ready again.
+  The suggestions follow the same rule: an action on cooldown is no longer
+  suggested as ready in the moment after you use it.
+- Readiness at a glance: a blue icon means not enough mana, rage or energy,
+  a grey icon that the action cannot be used right now (wrong stance, no
+  target, Execute not available). Item cells show how many you carry.
+- The action to use now stands out: its cell has a gold frame, a large "1"
+  and a pulsing glow, and the first icon of the queue strip is larger and
+  framed. Upcoming actions that are not ready yet keep a grey number and no
+  frame.
+- Countdown numbers on the swipe follow the client option *Show numbers for
+  cooldowns*.
+
 ## 1.0.2 - 2026-10-18
 
 - Spell ranks, all classes: a newly learned rank now replaces the old one

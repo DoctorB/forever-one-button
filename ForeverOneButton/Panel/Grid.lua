@@ -23,8 +23,13 @@ local BURST_COLOR = {0.75, 0.35, 1.00} -- burst cooldown ready: purple
 local INTERRUPT_COLOR = {1.00, 0.20, 0.20} -- interrupt now: red
 local DEFENSE_COLOR = {1.00, 0.55, 0.10} -- defensive to use now: orange
 local HEAL_COLOR = {0.25, 1.00, 0.35} -- critical health, heal now: green
+local WAITING_TEXT = {0.55, 0.55, 0.55} -- position of an entry not ready yet: grey, no frame
+local NO_RESOURCES_TINT = {0.45, 0.55, 1.00} -- not enough mana, rage or energy: blue
+local UNUSABLE_TINT = {0.40, 0.40, 0.40} -- cannot be used now (form, target, reactive): grey
 local CHECKER = {{0.10, 0.12, 0.15, 0.92}, {0.17, 0.19, 0.23, 0.92}}
 local EMPTY_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+local GLOW_TEXTURE = "Interface\\Buttons\\UI-ActionButton-Border"
+local GLOW_SCALE = 1.8 -- the border texture's square fills 36 of its 64 pixels
 local STRIP_HEIGHT = 44
 
 local container = CreateFrame("Frame", "ForeverOneButtonGrid", UIParent)
@@ -120,17 +125,50 @@ statusText:SetPoint("TOPRIGHT", strip, "TOPRIGHT", -4, -3)
 statusText:SetJustifyH("LEFT")
 Grid.statusText = statusText
 
+-- Edges of `thickness` pixels drawn by `owner` around `target` (default:
+-- the owner itself).
+local function Edge(owner, layer, target, thickness)
+    target, thickness = target or owner, thickness or 2
+    local edges = {}
+    for i = 1, 4 do edges[i] = owner:CreateTexture(nil, layer) end
+    edges[1]:SetPoint("TOPLEFT", target, "TOPLEFT"); edges[1]:SetPoint("TOPRIGHT", target, "TOPRIGHT"); edges[1]:SetHeight(thickness)
+    edges[2]:SetPoint("BOTTOMLEFT", target, "BOTTOMLEFT"); edges[2]:SetPoint("BOTTOMRIGHT", target, "BOTTOMRIGHT"); edges[2]:SetHeight(thickness)
+    edges[3]:SetPoint("TOPLEFT", target, "TOPLEFT"); edges[3]:SetPoint("BOTTOMLEFT", target, "BOTTOMLEFT"); edges[3]:SetWidth(thickness)
+    edges[4]:SetPoint("TOPRIGHT", target, "TOPRIGHT"); edges[4]:SetPoint("BOTTOMRIGHT", target, "BOTTOMRIGHT"); edges[4]:SetWidth(thickness)
+    return edges
+end
+
+local function SetEdges(edges, color)
+    for i = 1, 4 do
+        if color then
+            edges[i]:SetColorTexture(color[1], color[2], color[3], 1)
+            edges[i]:Show()
+        else
+            edges[i]:Hide()
+        end
+    end
+end
+
+-- The strip's first icon is larger and framed in gold: the action to use now.
 Grid.queueIcons = {}
 local MAX_QUEUE_ICONS = ns.Settings.GRID_LIMITS.queueDepth.max
+local HEAD_ICON, QUEUE_ICON, QUEUE_STEP = 26, 20, 56
 for position = 1, MAX_QUEUE_ICONS do
     local icon = strip:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(20, 20)
-    icon:SetPoint("BOTTOMLEFT", strip, "BOTTOMLEFT", 4 + (position - 1) * 56, 3)
+    local size = position == 1 and HEAD_ICON or QUEUE_ICON
+    icon:SetSize(size, size)
+    local x = position == 1 and 4 or 4 + HEAD_ICON + 36 + (position - 2) * QUEUE_STEP
+    icon:SetPoint("BOTTOMLEFT", strip, "BOTTOMLEFT", x, 3)
     local label = strip:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    label:SetPoint("LEFT", icon, "RIGHT", 2, 0)
+    label:SetPoint("LEFT", icon, "RIGHT", 3, 0)
     icon:Hide()
     label:Hide()
-    Grid.queueIcons[position] = {icon = icon, label = label}
+    local item = {icon = icon, label = label}
+    if position == 1 then
+        item.edges = Edge(strip, "OVERLAY", icon)
+        SetEdges(item.edges, nil)
+    end
+    Grid.queueIcons[position] = item
 end
 
 -- Interrupt icon, left of the grid: the spell to use, the enemy cast in the
@@ -168,27 +206,6 @@ for i = 1, 4 do
     icon:Hide()
     key:Hide()
     Grid.defenseIcons[i] = {icon = icon, key = key}
-end
-
-local function Edge(button, layer)
-    local edges = {}
-    for i = 1, 4 do edges[i] = button:CreateTexture(nil, layer) end
-    edges[1]:SetPoint("TOPLEFT"); edges[1]:SetPoint("TOPRIGHT"); edges[1]:SetHeight(2)
-    edges[2]:SetPoint("BOTTOMLEFT"); edges[2]:SetPoint("BOTTOMRIGHT"); edges[2]:SetHeight(2)
-    edges[3]:SetPoint("TOPLEFT"); edges[3]:SetPoint("BOTTOMLEFT"); edges[3]:SetWidth(2)
-    edges[4]:SetPoint("TOPRIGHT"); edges[4]:SetPoint("BOTTOMRIGHT"); edges[4]:SetWidth(2)
-    return edges
-end
-
-local function SetEdges(edges, color)
-    for i = 1, 4 do
-        if color then
-            edges[i]:SetColorTexture(color[1], color[2], color[3], 1)
-            edges[i]:Show()
-        else
-            edges[i]:Hide()
-        end
-    end
 end
 
 function Grid.UseKeyDown()
@@ -234,8 +251,10 @@ local function OnEnter(button)
     GameTooltip:AddLine(string.format("Cell %d: %s", button.slot, CellDescription(button.slot)))
     local key = ns.Actions.appliedKeys[button.slot]
     GameTooltip:AddLine(key and ("Key: " .. key) or "No key bound", 0.8, 0.8, 0.8)
+    if button.onCooldown then GameTooltip:AddLine("On cooldown", 0.6, 0.6, 0.6) end
     if button.queuePosition then
-        GameTooltip:AddLine("Queue position " .. button.queuePosition, 1, 0.82, 0.1)
+        GameTooltip:AddLine("Queue position " .. button.queuePosition
+            .. (button.queueReady and "" or " (not ready yet)"), 1, 0.82, 0.1)
         if button.burst then GameTooltip:AddLine("Burst cooldown ready", 0.75, 0.35, 1.0) end
         if button.emergency then GameTooltip:AddLine("Critical health: heal now", 0.25, 1.0, 0.35) end
     end
@@ -260,19 +279,47 @@ local function CreateCell(slot)
     button.icon = button:CreateTexture(nil, "ARTWORK")
     button.icon:SetPoint("TOPLEFT", 2, -2)
     button.icon:SetPoint("BOTTOMRIGHT", -2, 2)
-    button.rangeTint = button:CreateTexture(nil, "OVERLAY")
+
+    -- Cooldown swipe over the icon; the marks and texts sit on a frame above
+    -- it so a running cooldown never covers the key or the queue position.
+    -- Both are plain frames: shown, hidden and updated in combat.
+    button.cooldown = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
+    button.cooldown:SetAllPoints(button.icon)
+    if button.cooldown.SetDrawEdge then button.cooldown:SetDrawEdge(true) end
+    if button.cooldown.SetSwipeColor then button.cooldown:SetSwipeColor(0, 0, 0, 0.75) end
+    if button.cooldown.SetHideCountdownNumbers then button.cooldown:SetHideCountdownNumbers(false) end
+    local marks = CreateFrame("Frame", nil, button)
+    marks:SetAllPoints(button)
+    marks:SetFrameLevel(button:GetFrameLevel() + 3)
+    button.marks = marks
+
+    button.rangeTint = marks:CreateTexture(nil, "ARTWORK")
     button.rangeTint:SetAllPoints(button.icon)
     button.rangeTint:SetColorTexture(0.9, 0.1, 0.1, 0.35)
     button.rangeTint:Hide()
-    button.edges = Edge(button, "OVERLAY")
+    button.edges = Edge(marks, "OVERLAY", button)
     SetEdges(button.edges, nil)
+    -- Queue position 1: a pulsing glow around the cell, in the frame's colour.
+    button.glow = marks:CreateTexture(nil, "BACKGROUND")
+    button.glow:SetTexture(GLOW_TEXTURE)
+    button.glow:SetBlendMode("ADD")
+    button.glow:SetPoint("CENTER", button, "CENTER")
+    button.glow:Hide()
+    button.pulse = button.glow:CreateAnimationGroup()
+    local fade = button.pulse:CreateAnimation("Alpha")
+    fade:SetFromAlpha(1)
+    fade:SetToAlpha(0.3)
+    fade:SetDuration(0.6)
+    button.pulse:SetLooping("BOUNCE")
 
-    button.slotText = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    button.slotText = marks:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     button.slotText:SetPoint("TOPLEFT", 3, -2)
     button.slotText:SetText(tostring(slot))
-    button.keyText = button:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    button.keyText = marks:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     button.keyText:SetPoint("BOTTOMRIGHT", -3, 3)
-    button.positionText = button:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    button.countText = marks:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    button.countText:SetPoint("BOTTOMLEFT", 3, 3)
+    button.positionText = marks:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
     button.positionText:SetPoint("TOPRIGHT", -3, -2)
 
     button:SetScript("OnReceiveDrag", OnReceiveDrag)
@@ -302,6 +349,7 @@ function Grid.ApplyLayout()
             local column, row = index % columns, math.floor(index / columns)
             button:ClearAllPoints()
             button:SetSize(g.cellSize, g.cellSize)
+            button.glow:SetSize(g.cellSize * GLOW_SCALE, g.cellSize * GLOW_SCALE)
             button:SetPoint("TOPLEFT", container, "TOPLEFT", g.spacing + column * step, -(g.spacing + row * step))
             local shade = CHECKER[(row + column) % 2 + 1]
             button.bg:SetColorTexture(shade[1], shade[2], shade[3], shade[4])
@@ -347,6 +395,7 @@ function Grid.Refresh()
         elseif cell then texture = ns.ItemIcon(cell.id) end
         button.icon:SetTexture(texture or EMPTY_ICON)
         button.icon:SetAlpha(cell and 1 or 0.15)
+        if not cell then button.countText:SetText("") end
         local key = ns.Actions.appliedKeys[slot]
         if key then
             button.keyText:SetText(ns.Keys.Short(key))
@@ -360,6 +409,103 @@ function Grid.Refresh()
     end
     if ns.Pixel then ns.Pixel.Rerender() end
     Grid.ShowQueue(ns.Model.snapshot, ns.Model.observation)
+    Grid.RefreshCooldowns(true)
+end
+
+-- Cooldowns and usability on the cells --------------------------------------
+-- While a cell's real cooldown runs (the global cooldown is not shown) its
+-- icon is desaturated under a swipe; without enough resources it is tinted
+-- blue, when it cannot be used now (wrong form, no target, reactive ability
+-- not lit, no item left) grey. The client's cooldown is handed to the widget
+-- as it is, so a secret timer still draws; when the client gives nothing
+-- usable, the cooldown our own cast or item use started is drawn instead.
+-- Regions and a plain widget only: combat safe.
+Grid.COOLDOWN_REFRESH_SECONDS = 0.1
+local cooldownAt = -math.huge
+
+local function Plain(value)
+    if value == nil or ns.IsSecret(value) then return nil end
+    return value
+end
+
+-- The widget's own answer: true or false, nil when it is secret.
+local function WidgetActive(cd)
+    return Plain(cd:IsShown())
+end
+
+local function ShowSpellCooldown(cd, spellID)
+    local set = false
+    if C_Spell and C_Spell.GetSpellCooldownDuration and cd.SetCooldownFromDurationObject then
+        local ok, duration = pcall(C_Spell.GetSpellCooldownDuration, spellID, true)
+        set = ok and duration ~= nil and pcall(cd.SetCooldownFromDurationObject, cd, duration)
+    end
+    if not set and C_Spell and C_Spell.GetSpellCooldown then
+        local ok, info = pcall(C_Spell.GetSpellCooldown, spellID)
+        if ok and type(info) == "table" then
+            if Plain(info.isOnGCD) == true then
+                set = pcall(cd.SetCooldown, cd, 0, 0)
+            elseif info.startTime ~= nil and info.duration ~= nil then
+                set = pcall(cd.SetCooldown, cd, info.startTime, info.duration)
+            end
+        end
+    end
+    if not set then cd:SetCooldown(0, 0) end
+    local onCooldown = ns.State.OnCooldown(spellID) == true
+    if onCooldown and WidgetActive(cd) ~= true then
+        local start, seconds = ns.State.CastCooldown(spellID)
+        if start then cd:SetCooldown(start, seconds) end
+    end
+    return onCooldown
+end
+
+local function ShowItemCooldown(cd, itemID)
+    local set = false
+    local getter = C_Container and C_Container.GetItemCooldown
+    if getter then
+        local ok, start, duration = pcall(getter, itemID)
+        set = ok and start ~= nil and duration ~= nil and pcall(cd.SetCooldown, cd, start, duration)
+    end
+    if not set then cd:SetCooldown(0, 0) end
+    local onCooldown = ns.Defensives.ItemOnCooldown(itemID) == true
+    if onCooldown and WidgetActive(cd) ~= true then
+        local start, seconds = ns.Defensives.ItemUseCooldown(itemID)
+        if start then cd:SetCooldown(start, seconds) end
+    end
+    return onCooldown
+end
+
+-- Each cell's cooldown and tint; at most every COOLDOWN_REFRESH_SECONDS
+-- unless forced.
+function Grid.RefreshCooldowns(force)
+    local now = GetTime()
+    if not force and now - cooldownAt < Grid.COOLDOWN_REFRESH_SECONDS then return end
+    cooldownAt = now
+    for slot = 1, ns.MAX_SLOTS do
+        local button = Grid.buttons[slot]
+        local cell = ns.Actions.applied[slot]
+        local onCooldown, tint = false, nil
+        if cell and cell.kind == "spell" then
+            onCooldown = ShowSpellCooldown(button.cooldown, cell.id)
+            local usable, noResources = ns.State.Usable(cell.id)
+            if noResources == true then tint = NO_RESOURCES_TINT
+            elseif usable == false then tint = UNUSABLE_TINT end
+            button.countText:SetText("")
+        elseif cell then
+            onCooldown = ShowItemCooldown(button.cooldown, cell.id)
+            local count = ns.Defensives.ItemCount(cell.id)
+            if count <= 0 then tint = UNUSABLE_TINT end
+            button.countText:SetText(tostring(count))
+        else
+            button.cooldown:SetCooldown(0, 0)
+        end
+        button.onCooldown = cell ~= nil and onCooldown or nil
+        button.icon:SetDesaturated(onCooldown and true or false)
+        if tint then
+            button.icon:SetVertexColor(tint[1], tint[2], tint[3])
+        else
+            button.icon:SetVertexColor(1, 1, 1)
+        end
+    end
 end
 
 local STATUS_TEXT = {
@@ -391,12 +537,16 @@ function Grid.ShowQueue(snapshot, observation)
     for slot = 1, ns.MAX_SLOTS do
         local button = Grid.buttons[slot]
         button.queuePosition = nil
+        button.queueReady = nil
         button.burst = nil
         button.emergency = nil
         button.positionText:SetText("")
         SetEdges(button.edges, nil)
         button.rangeTint:Hide()
+        button.glow:Hide()
+        button.pulse:Stop()
     end
+    SetEdges(Grid.queueIcons[1].edges, nil)
 
     local mappedHead, unmappedHead = false, false
     for position = 1, MAX_QUEUE_ICONS do
@@ -409,20 +559,39 @@ function Grid.ShowQueue(snapshot, observation)
             if entry.kind == ns.ENTRY.WAIT then label = position .. ": wait"
             elseif slot then label = position .. ": c" .. slot
             else label = position .. ": --" end
+            local ready = entry.ready ~= false
+            local color = entry.emergency and HEAL_COLOR or entry.burst and BURST_COLOR
+                or POSITION_COLORS[position] or POSITION_COLORS.other
             item.icon:SetTexture(EntryVisual(entry) or EMPTY_ICON)
-            item.icon:SetAlpha(entry.ready == false and 0.45 or 1)
+            item.icon:SetAlpha(ready and 1 or 0.45)
+            item.icon:SetDesaturated(not ready)
             item.icon:Show()
             item.label:SetText(label)
+            if ready then item.label:SetTextColor(1, 1, 1)
+            else item.label:SetTextColor(WAITING_TEXT[1], WAITING_TEXT[2], WAITING_TEXT[3]) end
             item.label:Show()
+            if position == 1 and ready and entry.kind ~= ns.ENTRY.WAIT then SetEdges(item.edges, color) end
             if slot then
                 local button = Grid.buttons[slot]
                 if not button.queuePosition then
                     button.queuePosition = position
+                    button.queueReady = ready
                     button.positionText:SetText(tostring(position))
                     button.burst = entry.burst
                     button.emergency = entry.emergency
-                    SetEdges(button.edges, entry.emergency and HEAL_COLOR or entry.burst and BURST_COLOR
-                        or POSITION_COLORS[position] or POSITION_COLORS.other)
+                    -- Only ready entries are framed; one still waiting for
+                    -- its cooldown or resources keeps a grey number.
+                    if ready then
+                        button.positionText:SetTextColor(color[1], color[2], color[3])
+                        SetEdges(button.edges, color)
+                    else
+                        button.positionText:SetTextColor(WAITING_TEXT[1], WAITING_TEXT[2], WAITING_TEXT[3])
+                    end
+                    if position == 1 and ready then
+                        button.glow:SetVertexColor(color[1], color[2], color[3])
+                        button.glow:Show()
+                        button.pulse:Play()
+                    end
                     if position == 1 and observation.outOfRange then button.rangeTint:Show() end
                 end
                 if position == 1 then mappedHead = true end
@@ -490,7 +659,10 @@ function Grid.ShowDefensives(row)
                 if not button.interruptMark then
                     Grid.defenseSlot = slot
                     button.defenseMark = true
-                    if not button.queuePosition then button.positionText:SetText("D") end
+                    if not button.queuePosition then
+                        button.positionText:SetText("D")
+                        button.positionText:SetTextColor(DEFENSE_COLOR[1], DEFENSE_COLOR[2], DEFENSE_COLOR[3])
+                    end
                     SetEdges(button.edges, DEFENSE_COLOR)
                 end
             end
@@ -534,7 +706,10 @@ function Grid.ShowInterrupt(suggestion)
         local button = Grid.buttons[slot]
         Grid.interruptSlot = slot
         button.interruptMark = true
-        if not button.queuePosition then button.positionText:SetText("!") end
+        if not button.queuePosition then
+            button.positionText:SetText("!")
+            button.positionText:SetTextColor(INTERRUPT_COLOR[1], INTERRUPT_COLOR[2], INTERRUPT_COLOR[3])
+        end
         SetEdges(button.edges, INTERRUPT_COLOR)
     end
 end
