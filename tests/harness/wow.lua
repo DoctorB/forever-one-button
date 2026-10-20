@@ -629,6 +629,9 @@ function C_UnitAuras.GetUnitAuraBySpellID(unit, id) return Aura(unit, id) end
 H.class = "WARRIOR"
 function UnitClass(unit) if unit == "player" then return H.class:sub(1, 1) .. H.class:sub(2):lower(), H.class end end
 function UnitGUID(unit) local u = Unit(unit); return u and (u.guid or ("guid-" .. unit)) end
+-- H.units[unit].creatureType: localized type name ("Undead"); creatureTypeID:
+-- the second return, when the client gives it.
+function UnitCreatureType(unit) local u = Unit(unit); if u then return u.creatureType, u.creatureTypeID end end
 H.autoAttack = false
 function C_Spell.IsCurrentSpell(id) if H.secretSpellbook then return H.Secret() end return id == 6603 and H.autoAttack end
 H.autoRepeat = {} -- spellID -> true while Auto Shot / Shoot runs

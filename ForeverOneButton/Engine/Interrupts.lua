@@ -83,6 +83,7 @@ local function Ready(entry, isKick)
     -- Kicks fail open on an unknown answer; crowd control does not.
     if usable == false or (not isKick and usable == nil) then return nil end
     if ns.State.OnCooldown(id) == true then return nil end
+    if ns.Targets.Allows(id) == false then return nil end
     if not Reaches(entry.info, id) then return nil end
     return id
 end

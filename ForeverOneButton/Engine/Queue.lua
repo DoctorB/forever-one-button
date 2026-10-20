@@ -2,7 +2,7 @@
 --
 -- Only the entries of the active tree's list are candidates (plus the class's
 -- gap closers): a spell the list does not name, such as the other stance, is
--- never suggested. Each entry is ready when it is known, usable, off cooldown,
+-- never suggested, nor one the target cannot be affected by (Engine/Targets.lua). Each entry is ready when it is known, usable, off cooldown,
 -- in range, not held back by a gate and not a DoT already ticking. Ready
 -- entries come first in list order; the others follow as "coming up". With
 -- nothing ready in a fight, position 1 is a deliberate wait.
@@ -151,6 +151,7 @@ function Queue.Build(previous)
             and not (activeForm and activeForm == first)
             and not (first == ATTACK_SPELL and attacking)
             and not Repeating(id)
+            and not (ctx.targetAttackable and ns.Targets.Allows(id) == false)
             and not (not ns.InCombat() and ns.Precombat.Offered(first)) then
             seen[first] = true
             candidates[#candidates + 1] = {entry = entry, id = id, first = first}

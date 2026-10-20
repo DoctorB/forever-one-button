@@ -65,6 +65,7 @@ Preparazione: copiare `dist/ForeverOneButton-<versione>.zip` in `AddOns`,
 33. Dopo un combattimento con salute sotto il 70 %: la riga propone cibo (o una benda se non c'è cibo e non si è "Recently Bandaged"); mentre si mangia non viene riproposto.
 34. Cooldown sulle celle (2026-10-19): dopo Bloodrage (o un'altra abilità con cooldown) la cella diventa subito desaturata con lo swipe e il suo numero di coda passa in grigio senza bordo; resta così fino alla fine del cooldown anche in combattimento; il GCD non desatura le altre celle. Senza rabbia sufficiente l'icona è blu, in postura sbagliata o con Execute non disponibile grigia. Dopo una pozione la cella oggetto è desaturata, con il numero di pezzi aggiornato.
 35. Suggerimento evidente: la cella in posizione 1 ha bordo oro, "1" grande e glow pulsante; la prima icona della striscia è più grande e incorniciata; con "wait" nessun glow.
+36. Bersagli immuni (2026-10-20): con il Paladino, Esorcismo non è mai proposto su bestie o umanoidi (cella grigia) ed è proposto su non morti e demoni; una spell rifiutata dal client con "Invalid target" non viene più proposta su quel tipo di creatura fino al /reload (riga `refused` nel log diagnostico).
 
 Esito al 2026-10-16 (Guerriero Fury livello 13, `TEST_REPORT.md`): 24, 25, 27,
 32 (cibo), 33 verificati; 26 (Carica) visto nei lanci, non come suggerimento
@@ -72,3 +73,5 @@ in posizione 1; 28, 29, 30 non verificati (nessun incantatore, Death Wish non
 appresa, nessuna pozione); 31 parzialmente (cella svuotata senza pozioni).
 
 Esito al 2026-10-19: 34 e 35 verificati in gioco dal proprietario sulla build 1.1.0 ("funziona").
+
+Esito al 2026-10-20: 36 verificato in gioco dal proprietario sulla build 1.1.1 ("funziona").

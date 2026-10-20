@@ -416,7 +416,7 @@ end
 -- While a cell's real cooldown runs (the global cooldown is not shown) its
 -- icon is desaturated under a swipe; without enough resources it is tinted
 -- blue, when it cannot be used now (wrong form, no target, reactive ability
--- not lit, no item left) grey. The client's cooldown is handed to the widget
+-- not lit, a target it cannot affect, no item left) grey. The client's cooldown is handed to the widget
 -- as it is, so a secret timer still draws; when the client gives nothing
 -- usable, the cooldown our own cast or item use started is drawn instead.
 -- Regions and a plain widget only: combat safe.
@@ -488,7 +488,7 @@ function Grid.RefreshCooldowns(force)
             onCooldown = ShowSpellCooldown(button.cooldown, cell.id)
             local usable, noResources = ns.State.Usable(cell.id)
             if noResources == true then tint = NO_RESOURCES_TINT
-            elseif usable == false then tint = UNUSABLE_TINT end
+            elseif usable == false or ns.Targets.Allows(cell.id) == false then tint = UNUSABLE_TINT end
             button.countText:SetText("")
         elseif cell then
             onCooldown = ShowItemCooldown(button.cooldown, cell.id)

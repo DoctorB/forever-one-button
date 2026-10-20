@@ -54,6 +54,7 @@ i promemoria non passano mai dal pixel; il segno "burst" è solo grafico
 | `Engine/Ranks.lua` | rango 1 ↔ ranghi, rango più alto conosciuto | — |
 | `Engine/State.lua` | domande sullo stato (salute/potere sotto soglia, usabile, cooldown, portata, bersaglio, nemici ingaggiati, postura, buff, stack, swing) con risposta vero/falso/sconosciuto | nessun valore segreto confrontato in Lua |
 | `Engine/Gates.lua` | 19 tipi di condizione (`stealth`, `known`, `starved`, `unconfirmed`, `targets`, `totem`, `near`, `swing`, `resource`, `power`, `execute`, `health`, `stack`, `cd`, `buff`, `dot`, `tick`, `any`, `all`), a tre valori | uno sconosciuto non blocca mai: blocca solo `false` |
+| `Engine/Targets.lua`, `Data/TargetRules.lua` | spell che il bersaglio non può subire: regole per tipo di creatura (Esorcismo solo su non morti e demoni) e rifiuti del client imparati ("Invalid target", "Immune") per tipo di creatura (NPC ID) fino al /reload | uno sconosciuto non blocca; la spell rifiutata esce dalla coda e la sua cella diventa grigia |
 | `Engine/Dots.lua` | DoT considerato attivo se lanciato dal giocatore sul bersaglio corrente entro la durata | — |
 | `Engine/Trees.lua` | albero dei talenti con più punti, altrimenti default della classe; contesto st/cleave/aoe da 1/2/3+ nemici ingaggiati; forma d'orso per i druidi feral | — |
 | `Engine/Queue.lua` | coda dei danni (sotto) e `Queue.Head` | nessuna spell fuori dalla lista attiva, salvo i gap closer |
