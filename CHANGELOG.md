@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.1 - 2026-10-20
+
+- Spells that only work on some creatures are no longer suggested on the
+  others: Exorcism and Holy Wrath only on undead and demons, Turn Undead
+  and Shackle Undead on undead, Banish, Enslave Demon, Hibernate, Scare
+  Beast, Soothe Animal, Polymorph and Sap on their own creature types.
+  Their cell turns grey on a target they cannot affect.
+- When the game refuses a cast with "Invalid target" or "Immune", that spell
+  is no longer suggested against that kind of creature until the next
+  /reload. A hit that lands as "Immune" after a successful cast is not
+  detected (the combat log is not available to addons on Forever).
+
 ## 1.1.0 - 2026-10-19
 
 - Cooldowns on the panel: while a cell's cooldown runs, its icon is greyed

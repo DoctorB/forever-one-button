@@ -2,7 +2,7 @@
 ## Title: Forever One Button
 ## Notes: Action Panel grid for WoW Forever with its own suggestion engine: priority lists, burst, interrupts, defensives and pre-combat reminders on your own action buttons. You press every key yourself.
 ## Author: DoctorB
-## Version: 1.1.0
+## Version: 1.1.1
 ## SavedVariables: ForeverOneButtonDB, ForeverOneButtonLog
 ## SavedVariablesPerCharacter: ForeverOneButtonCharDB
 ## X-License: GPL-3.0-or-later
@@ -14,10 +14,12 @@ Data\Interrupts.lua
 Data\Consumables.lua
 Data\CCBreakers.lua
 Data\Leveling.lua
+Data\TargetRules.lua
 Engine\Secret.lua
 Engine\Ranks.lua
 Engine\State.lua
 Engine\Gates.lua
+Engine\Targets.lua
 Engine\Dots.lua
 Engine\Trees.lua
 Engine\Queue.lua
