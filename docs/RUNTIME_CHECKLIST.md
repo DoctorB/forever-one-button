@@ -40,6 +40,7 @@ Preparazione: copiare `dist/ForeverOneButton-<versione>.zip` in `AddOns`,
 15b. Fuori combattimento il quadrato è nero anche con un suggerimento visibile nella griglia; al primo colpo/aggro diventa il colore della cella; a fine combattimento torna nero subito.
 15c. Con l'icona di interruzione, la colonna difensiva o il bordo viola visibili il quadrato segue solo la posizione 1 della coda.
 16a. Log: `/fob log on`, combattimento premendo più volte la stessa spell suggerita (istantanea e con tempo di lancio), `/fob log show`, poi `/reload` e `python scripts/analyze_log.py`. Atteso: un fronte per ogni lancio riuscito, nessuno sotto 60 ms, `secret spell ID: 0`; se gli ID sono segreti non ci sono fronti (limite da segnalare). `/fob log off` alla fine.
+16b. Con il pixel reader avviato con `--diag-log` durante la prova 16a: nel suo log ogni riga `ack` di un lancio riuscito ha `blackMs` ≥ 60 (a meno di un campione) e `accepted: true`. Prima della 1.1.3 il log del 2026-10-21 (build 70450) mostrava neri di 43–58 ms (orologio del nero sull'inizio del frame).
 16. Dopo aver lanciato l'azione codificata: breve nero (≥ 60 ms) visibile in una registrazione a ≥ 50 fps.
 17. Spostare, scalare, nascondere la griglia: il quadrato non cambia; mettere la griglia sopra il quadrato: compare "grid covers the pixel!".
 18. Cambiare UI scale del client: annotare la dimensione in pixel fisici (comportamento identico a HCOB).

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.3 - 2026-10-21
+
+- Pixel reader: the short black after each cast of the suggested spell now
+  stays on screen for at least 60 ms, as the protocol says. It was timed from
+  the start of the game frame, while the cast arrives later in the frame, so
+  it could last only 40-58 ms and a pixel reader could miss it. Colours and
+  timings are otherwise unchanged.
+
 ## 1.1.2 - 2026-10-21
 
 - The addon has its own icon in the AddOns list instead of the question mark.

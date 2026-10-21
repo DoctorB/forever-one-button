@@ -46,6 +46,11 @@ local function Now()
     return GetTime and GetTime() or 0
 end
 
+-- Precise clock (GetTimePreciseSec, or GetTime without it). The pixel times
+-- its acknowledgement edge with it: GetTime is the frame start, and a cast
+-- event handled late in the frame would otherwise shorten the visible black.
+Diagnostics.Now = Now
+
 function Diagnostics.FrameTime()
     if not log then return nil end
     return string.format("%.4f", GetTime and GetTime() or 0)
