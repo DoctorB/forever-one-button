@@ -71,6 +71,7 @@ riproducibile di `scripts/package.py`), pacchetto verificabile byte per byte
 ## Cosa contiene lo ZIP
 
 Solo la cartella `ForeverOneButton/` con TOC, i file elencati nel TOC,
+l'icona indicata da `## IconTexture` (`Media/icon.tga`, copiata byte per byte),
 `LICENSE`, `NOTICE.md` e `README.md` (`scripts/package.py`). Esclusi `.git`,
 `.github`, test, documenti interni, script, dati locali, segreti e log.
 Timestamp e ordine deterministici: input identici producono lo stesso SHA-256.

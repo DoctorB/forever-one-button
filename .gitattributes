@@ -2,5 +2,6 @@
 # the machine-wide core.autocrlf setting.
 * text=auto eol=lf
 *.png binary
+*.tga binary
 *.jpg binary
 *.zip binary

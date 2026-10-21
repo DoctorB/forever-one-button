@@ -5,6 +5,16 @@ H.Equal(fields.Interface, "16001", "Forever interface (verified via GetBuildInfo
 H.Equal(fields.Title, "Forever One Button", "title")
 H.Equal(fields.SavedVariables, "ForeverOneButtonDB, ForeverOneButtonLog", "dedicated SavedVariables (settings, optional diagnostic log)")
 H.Equal(fields.SavedVariablesPerCharacter, "ForeverOneButtonCharDB", "per-character cells")
+H.Equal(fields.IconTexture, "Interface\\AddOns\\ForeverOneButton\\Media\\icon", "addon list icon")
+local icon = io.open("ForeverOneButton/Media/icon.tga", "rb")
+H.Check(icon ~= nil, "icon file exists")
+if icon then
+    local header = icon:read(18)
+    icon:close()
+    -- Uncompressed true-colour TGA, 64x64, 32 bits: what the client loads.
+    H.Check(header:byte(3) == 2 and header:byte(13) == 64 and header:byte(15) == 64 and header:byte(17) == 32,
+        "icon is an uncompressed 64x64 32-bit TGA")
+end
 H.Equal(fields.OptionalDeps, nil, "no optional dependency: the engine is built in")
 H.Equal(fields.Dependencies, nil, "no hard dependency")
 H.Equal(fields.RequiredDeps, nil, "no hard dependency")

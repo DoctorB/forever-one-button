@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2 - 2026-10-21
+
+- The addon has its own icon in the AddOns list instead of the question mark.
+
 ## 1.1.1 - 2026-10-20
 
 - Spells that only work on some creatures are no longer suggested on the
