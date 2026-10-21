@@ -26,11 +26,15 @@ class PackageTest(unittest.TestCase):
             names = archive.namelist()
             self.assertTrue(all(n.startswith("ForeverOneButton/") for n in names))
             for required in ("ForeverOneButton/ForeverOneButton.toc", "ForeverOneButton/LICENSE",
-                             "ForeverOneButton/NOTICE.md", "ForeverOneButton/README.md"):
+                             "ForeverOneButton/NOTICE.md", "ForeverOneButton/README.md",
+                             "ForeverOneButton/Media/icon.tga"):
                 self.assertIn(required, names)
             self.assertFalse(any("/tests/" in n or "fixtures" in n for n in names))
             for name in names:
-                self.assertNotIn(b"\r\n", archive.read(name), name)
+                if not package.is_binary(name):
+                    self.assertNotIn(b"\r\n", archive.read(name), name)
+            icon = archive.read("ForeverOneButton/Media/icon.tga")
+            self.assertEqual(icon, (ROOT / "ForeverOneButton" / "Media" / "icon.tga").read_bytes(), "icon shipped byte for byte")
 
     def test_build_is_reproducible(self):
         first = package.build(dist=self.tmp / "a").read_bytes()

@@ -4,7 +4,8 @@
     python scripts/package.py verify   # verify an existing package
 
 The package has one root folder, ForeverOneButton/, holding exactly the TOC,
-the files it lists, the license, the attribution notice and the README.
+the files it lists, its IconTexture, the license, the attribution notice and
+the README.
 Entries use a fixed timestamp so the same commit gives the same bytes.
 """
 import argparse
@@ -41,10 +42,27 @@ def read_toc(addon_dir):
     return fields, files
 
 
+def icon_file(fields):
+    """The IconTexture path inside the addon folder (the client adds .tga)."""
+    icon = fields.get("IconTexture")
+    if not icon:
+        return None
+    prefix = f"Interface/AddOns/{ADDON}/"
+    path = icon.replace("\\", "/")
+    if not path.startswith(prefix):
+        return None
+    return path[len(prefix):] + ".tga"
+
+
 def expected_entries(addon_dir):
-    _, files = read_toc(addon_dir)
-    names = [f"{ADDON}.toc", *files, "LICENSE", "NOTICE.md", "README.md"]
+    fields, files = read_toc(addon_dir)
+    icon = icon_file(fields)
+    names = [f"{ADDON}.toc", *files, *([icon] if icon else []), "LICENSE", "NOTICE.md", "README.md"]
     return [f"{ADDON}/{name}" for name in names]
+
+
+def is_binary(entry):
+    return entry.endswith(".tga")
 
 
 def source_for(entry, addon_dir):
@@ -67,7 +85,9 @@ def build(root=ROOT, dist=None):
     target = package_path(version, dist)
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
         for entry in expected_entries(addon_dir):
-            data = source_for(entry, addon_dir).read_bytes().replace(b"\r\n", b"\n")
+            data = source_for(entry, addon_dir).read_bytes()
+            if not is_binary(entry):
+                data = data.replace(b"\r\n", b"\n")
             info = zipfile.ZipInfo(entry, FIXED_TIME)
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o644 << 16
@@ -88,6 +108,8 @@ def verify(target, root=ROOT):
         for name in names:
             if not name.startswith(f"{ADDON}/") or ".." in name:
                 problems.append(f"entry outside {ADDON}/: {name}")
+            if is_binary(name):
+                continue
             data = archive.read(name)
             patterns = FORBIDDEN + (CODE_FORBIDDEN if name.endswith((".lua", ".toc")) else [])
             for pattern in patterns:
