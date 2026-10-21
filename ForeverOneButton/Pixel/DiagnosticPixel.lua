@@ -7,13 +7,16 @@
 --   * the colour formula and the two special colours;
 --   * 8x8 frame parented to UIParent, TOOLTIP strata, mouse disabled,
 --     OVERLAY colour texture filling the frame, black at creation;
---   * the 60 ms black acknowledgement edge and its release timer.
+--   * the 60 ms black acknowledgement edge and its release timer (only the
+--     clock it is measured on differs, see below).
 -- Adapted, with the reason:
 --   * slot source: the cell that executes the queue's position-1 action
 --     (ns.Actions.SlotFor) replaces HCOB.UI.ActionPanel.idToSlot;
 --   * anchor: an independent anchor frame instead of HCOneButton's Advisor
 --     frame, which does not exist here; never the grid (see ARCHITECTURE.md);
 --   * SurvivalStrip.ManualUsePending() is removed with the excluded strip;
+--   * the 60 ms edge is timed on the precise clock instead of GetTime, so
+--     it lasts at least 60 ms from the cast event (see PixelNow);
 --   * cast matching guards secret values before comparing.
 --
 -- RGB protocol v3: the color encodes ONLY the fixed slot.
@@ -55,8 +58,13 @@ local desiredSpellID = nil
 local suppressionUntil = 0
 local acknowledgementToken = 0
 
+-- The edge is timed on the precise clock, from the moment the black is
+-- written. The original used GetTime (frame start): with the cast event
+-- handled 20-30 ms into the frame, the black was on screen for only 40-58 ms
+-- (diagnostic log of 2026-10-21, build 70450). With one clock for frame and
+-- event (tests) both behave identically.
 local function PixelNow()
-    return GetTime and GetTime() or 0
+    return ns.Diagnostics.Now()
 end
 
 -- Last colour written, for /fob status and tests: "black", "white" or a slot.
