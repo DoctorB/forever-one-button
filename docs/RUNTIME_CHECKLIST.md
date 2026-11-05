@@ -1,6 +1,7 @@
 # Checklist delle verifiche in gioco (pendenti)
 
-Da eseguire sul client Forever (`_classic_beta_`, annotare `GetBuildInfo()`).
+Da eseguire sul client Forever ufficiale (`_forever_`, annotare `GetBuildInfo()`;
+le prove fino al 2026-10-22 sono sul beta `_classic_beta_`).
 Dalla 1.0.0 JustAC non serve: disattivarlo durante le prove, così i
 suggerimenti visibili sono solo quelli del motore interno. Il primo test del
 2026-10-15 (0.2.0, con JustAC) ha coperto solo parte di B e D

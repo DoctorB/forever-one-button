@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.1.4 - 2026-11-05
+
+- Live WoW Forever client: the installation instructions point to the live
+  client folder `World of Warcraft\_forever_\Interface\AddOns\` instead of
+  the beta folder. Suggestions, bindings and the pixel output are unchanged.
+
 ## 1.1.3 - 2026-10-21
 
 - Pixel reader: the short black after each cast of the suggested spell now
