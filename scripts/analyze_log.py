@@ -3,7 +3,7 @@
     python scripts/analyze_log.py [path\\to\\ForeverOneButton.lua]
 
 Without a path it looks in the Forever client's SavedVariables:
-World of Warcraft\\_classic_beta_\\WTF\\Account\\*\\SavedVariables\\ForeverOneButton.lua
+World of Warcraft\\_forever_\\WTF\\Account\\*\\SavedVariables\\ForeverOneButton.lua
 The client writes the file on /reload or logout. Enable the log in game with
 `/fob log on`.
 
@@ -21,7 +21,7 @@ import sys
 
 ACK_MIN_SECONDS = 0.060
 SAMPLE_SECONDS = 0.020  # one frame at 50 Hz
-DEFAULT_GLOB = r"C:\Program Files (x86)\World of Warcraft\_classic_beta_\WTF\Account\*\SavedVariables\ForeverOneButton.lua"
+DEFAULT_GLOB = r"C:\Program Files (x86)\World of Warcraft\_forever_\WTF\Account\*\SavedVariables\ForeverOneButton.lua"
 
 
 def read_entries(text):

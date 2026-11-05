@@ -29,14 +29,14 @@ Status: **1.0.0**. The offline suites pass; the in-game checks listed in
 
 ## Requirements
 
-- WoW Forever client (`_classic_beta_`, build 1.60.1.x, Interface `16001`).
+- WoW Forever client (`_forever_`, build 1.60.1.x, Interface `16001`).
 - No other addon. (Up to 0.2.0 the suggestions came from JustAC; its data now
   ships inside, see License.)
 
 ## Installation
 
 1. Download `ForeverOneButton-<version>.zip` (or build it, see below).
-2. Extract it into `World of Warcraft\_classic_beta_\Interface\AddOns\` so the
+2. Extract it into `World of Warcraft\_forever_\Interface\AddOns\` so the
    folder `AddOns\ForeverOneButton\ForeverOneButton.toc` exists.
 3. Restart the client or `/reload`.
 
