@@ -10,7 +10,9 @@ eseguita. Annotare per ognuna: data, build, personaggio (classe/livello),
 esito, screenshot o log. Non stampare valori segreti.
 
 Preparazione: copiare `dist/ForeverOneButton-<versione>.zip` in `AddOns`,
-`/console taintLog 1`, `/reload`.
+`/console taintLog 1`, `/reload`. Sul client ufficiale `taintLog` e
+`scriptErrors` non restano salvati: ridarli a ogni sessione e controllarli con
+`/run print(GetCVar("taintLog"), GetCVar("scriptErrors"))`.
 
 ## A. Caricamento e stati
 
@@ -93,8 +95,11 @@ log dell'addon (`scripts/analyze_log.py`), 11 combattimenti, 63 lanci:
   il pixel le lascia (3 su 21 a 460–500 ms); Heroic Strike al colpo
   successivo (0,5–2,5 s). Lo script ora dà il verdetto su questo schema.
 - 20: nessun ID segreto nei lanci (solo mondo aperto, non istanza).
-- 21: non chiusa: `Logs\taint.log` assente dopo `/console taintLog 1`
-  (nessuna voce o impostazione non applicata).
+- 21: verificata in mondo aperto. Con `GetCVar("taintLog")` e
+  `GetCVar("scriptErrors")` a `1` (controllati in gioco), 27 combattimenti e
+  138 lanci, poi `/reload` alle 21:44: `Logs\taint.log` non esiste, quindi
+  nessuna contaminazione registrata. Nota: Forever non salva queste due
+  impostazioni in `Config.wtf`; vanno date a ogni sessione.
 - 16b: non eseguita (reader senza `--diag-log`; il proprietario lo
   considera a posto).
 - Rabbia al massimo con Heroic Strike grigio (segnalazione 1.1.5): non
