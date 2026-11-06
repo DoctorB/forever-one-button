@@ -74,6 +74,14 @@ local EVALUATE = {
     targets = function(g, ctx) return NumberCompare(g.op, ctx.enemies, g.n) end,
     totem = function(g) return Neg(g, ns.State.TotemActive(g.slot)) end,
     near = function(g) return ns.State.TargetWithin(g.n) end,
+    -- Target announced it is running away (Engine/State.lua).
+    fleeing = function(g) return Neg(g, ns.State.TargetFleeing()) end,
+    -- Seconds since our own last cast of the spell; never cast counts as long ago.
+    since = function(g)
+        local seconds = ns.State.SecondsSinceCast(g.id)
+        if seconds == nil then return g.op == ">" or g.op == ">=" end
+        return NumberCompare(g.op, seconds, g.n)
+    end,
     swing = function(g) return NumberCompare(g.op, ns.State.SwingRemaining(g.ranged and 2 or 0), g.n) end,
     resource = function(g) return NumberCompare(g.op, ns.State.ComboPoints(), g.n) end,
     power = function(g)

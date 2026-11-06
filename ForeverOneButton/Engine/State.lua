@@ -334,15 +334,45 @@ function State.SwingRemaining(swingType)
     return math.max(remaining, 0)
 end
 
+-- Fleeing target -------------------------------------------------------------
+-- Fleeing humanoids announce it with the emote "%s attempts to run away in
+-- fear!" (same detection as HC One Button, Hunter/Pet.lua). The English text
+-- is matched directly; on other locales any emote from the current target
+-- below 35% health counts. The mark holds for FLEE_WINDOW seconds and only
+-- for that target.
+State.FLEE_WINDOW = 8
+local fleeingGUID, fleeingUntil = nil, 0
+
+function State.NoteMonsterEmote(text, sender)
+    if type(sender) ~= "string" or ns.IsSecret(sender) or not State.TargetAttackable() then return end
+    if Plain(Call(UnitName, "target")) ~= sender then return end
+    local english = type(text) == "string" and not ns.IsSecret(text) and text:find("run away in fear", 1, true)
+    if not english and State.HealthBelow("target", 35) ~= true then return end
+    local guid = Plain(Call(UnitGUID, "target"))
+    if not guid then return end
+    fleeingGUID, fleeingUntil = guid, GetTime() + State.FLEE_WINDOW
+end
+
+-- true while the current target is marked as fleeing, false otherwise: the
+-- emote is the only evidence, so its absence is a plain no.
+function State.TargetFleeing()
+    if not fleeingGUID or GetTime() >= fleeingUntil or not State.TargetAttackable() then return false end
+    return Plain(Call(UnitGUID, "target")) == fleeingGUID
+end
+
 -- Events --------------------------------------------------------------------
 local frame = CreateFrame("Frame")
 State.frame = frame
 frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 pcall(frame.RegisterEvent, frame, "PLAYER_SWING")
+pcall(frame.RegisterEvent, frame, "CHAT_MSG_MONSTER_EMOTE")
 frame:SetScript("OnEvent", function(_, event, ...)
     if event == "UNIT_SPELLCAST_SUCCEEDED" then
         local spellID = select(3, ...)
         if type(spellID) == "number" and not ns.IsSecret(spellID) then State.NoteCast(spellID) end
+    elseif event == "CHAT_MSG_MONSTER_EMOTE" then
+        local text, sender = ...
+        pcall(State.NoteMonsterEmote, text, sender)
     elseif event == "PLAYER_SWING" then
         -- Payload (duration, swingType, checksRange), as JustAC reads it on Forever.
         local duration, swingType = ...
