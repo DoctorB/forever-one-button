@@ -68,6 +68,16 @@ handlers.ACTIONBAR_SLOT_CHANGED = function() ns.AutoFill.Request() end
 -- Bags changed: the best healing item may be another one now.
 handlers.BAG_UPDATE_DELAYED = function() ns.AutoFill.Request() end
 
+-- Target changed or killed: the pixel follows at once instead of at the next
+-- poll, so an attack is not left on screen for a target that just died.
+handlers.PLAYER_TARGET_CHANGED = function()
+    if ns.Model.running then ns.Model.Refresh() end
+end
+handlers.UNIT_HEALTH = function(unit)
+    if ns.IsSecret(unit) or unit ~= "target" or not ns.Model.running then return end
+    if not ns.State.TargetAttackable() then ns.Model.Refresh() end
+end
+
 -- Diagnostic Pixel acknowledgement edge (HCOneButton Core/Events.lua:144-145).
 handlers.UNIT_SPELLCAST_SUCCEEDED = function(unit, _, spellID)
     if ns.IsSecret(unit) or unit ~= "player" then return end
@@ -94,9 +104,10 @@ local function Register(event, unit)
 end
 for _, event in ipairs({"ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_REGEN_DISABLED",
     "PLAYER_REGEN_ENABLED", "SPELLS_CHANGED", "PLAYER_SPECIALIZATION_CHANGED", "ACTIONBAR_SLOT_CHANGED", "PLAYER_ENTERING_WORLD",
-    "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "BAG_UPDATE_DELAYED"}) do
+    "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "BAG_UPDATE_DELAYED", "PLAYER_TARGET_CHANGED"}) do
     Register(event)
 end
 Register("UNIT_SPELLCAST_SUCCEEDED", "player")
+Register("UNIT_HEALTH", "target")
 
 Events.handlers = handlers

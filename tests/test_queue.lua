@@ -49,6 +49,26 @@ H.Equal(Q.Head(s), 7386, "head")
 Fresh()
 H.Check(Q.Build(s) == s, "unchanged queue reuses the snapshot")
 
+-- Heroic Strike already queued (on the next swing): not pressed again until
+-- the swing; repeated presses could land after the target has died.
+local function ReadyOf(snapshot, id)
+    for i = 1, snapshot.count do
+        if snapshot.entries[i].id == id then return snapshot.entries[i].ready end
+    end
+end
+H.Equal(ReadyOf(s, 78), true, "Heroic Strike ready before it is queued")
+H.currentSpells[78] = true
+s = Build()
+H.Equal(ReadyOf(s, 78), false, "queued Heroic Strike waits for the swing")
+H.Equal(Ids(s), "7386,772,2687,6673~,78~,1715~", "queued Heroic Strike moves to the waiting entries")
+H.Equal(Q.Head(s), 7386, "head unchanged")
+H.currentSpells[78] = nil
+s = Build()
+H.Equal(ReadyOf(s, 78), true, "swing done: Heroic Strike ready again")
+H.secretSpellbook = true
+H.Equal(Q.Current(78), false, "a secret answer is not 'queued'")
+H.secretSpellbook = false
+
 -- Ranks: the pressed rank is suggested.
 H.known[284] = true
 H.spells[284] = {name = "Heroic Strike"}

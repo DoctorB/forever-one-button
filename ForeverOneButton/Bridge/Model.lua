@@ -38,7 +38,26 @@ local function ConfirmedOutOfRange(queueID)
     return inRange == false
 end
 
-local lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat = nil, nil, nil, nil
+local function Harmful(spellID)
+    if not (C_Spell and type(C_Spell.IsSpellHarmful) == "function") then return nil end
+    local harmful = ns.SafeCall(C_Spell.IsSpellHarmful, spellID)
+    if harmful == nil or ns.IsSecret(harmful) then return nil end
+    return harmful == true
+end
+
+-- An attack with no living enemy targeted: pressed at that moment, the client
+-- picks the nearest enemy by itself (the player never chose it). Black until
+-- a living enemy is targeted. Only a readable "harmful" counts; spells on
+-- the player (shouts, seals, stances, the emergency heal) are unaffected.
+local function AttackWithoutTarget(snapshot, head)
+    local first = snapshot.entries[1]
+    if not (first and first.kind == ns.ENTRY.SPELL and first.id == head) then return false end
+    if ns.State.TargetAttackable() then return false end
+    return Harmful(head) == true
+end
+Model.AttackWithoutTarget = AttackWithoutTarget
+
+local lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat, lastNoTarget = nil, nil, nil, nil, nil
 local lastLogged -- the snapshot last written to the diagnostic log
 
 -- One refresh: build the queue, derive the pixel head, notify consumers.
@@ -58,19 +77,22 @@ function Model.Refresh()
     -- An emergency heal is cast on the player: the target's range does not apply.
     local selfHeal = snapshot.entries[1] and snapshot.entries[1].emergency
     local outOfRange = head ~= nil and not casting and not selfHeal and ConfirmedOutOfRange(head)
+    local noTarget = head ~= nil and not casting and not selfHeal and AttackWithoutTarget(snapshot, head)
     Model.observation.casting = casting
     Model.observation.outOfRange = outOfRange
+    Model.observation.noTarget = noTarget
     -- Combat-only pixel (owner decision 2026-10-15, default on): out of combat
     -- the pixel publishes protocol black, "no executable recommendation". Only
     -- the moment changes; the encoder and its colours do not. The grid still
     -- shows the suggestions.
     local outOfCombat = ns.Settings.Get().pixel.combatOnly and not ns.InCombat()
     Model.observation.outOfCombat = outOfCombat
-    if casting or outOfRange or outOfCombat then head = nil end
+    if casting or outOfRange or noTarget or outOfCombat then head = nil end
 
     local changed = snapshot ~= lastSnapshot or casting ~= lastCasting or outOfRange ~= lastOutOfRange
-        or outOfCombat ~= lastOutOfCombat
-    lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat = snapshot, casting, outOfRange, outOfCombat
+        or outOfCombat ~= lastOutOfCombat or noTarget ~= lastNoTarget
+    lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat, lastNoTarget =
+        snapshot, casting, outOfRange, outOfCombat, noTarget
 
     if head ~= Model.pixelHead or changed then
         if changed then
@@ -82,7 +104,8 @@ function Model.Refresh()
             end
             local first = snapshot.entries[1]
             ns.Log("head", first and first.id or "none",
-                (casting and "c" or "") .. (outOfRange and "r" or "") .. (outOfCombat and "o" or "") .. "-")
+                (casting and "c" or "") .. (outOfRange and "r" or "") .. (noTarget and "t" or "")
+                    .. (outOfCombat and "o" or "") .. "-")
         end
         Model.pixelHead = head
         ns.Pixel.Update(head)
@@ -127,7 +150,7 @@ end
 -- Forget everything shown, e.g. while the UI is torn down. Nothing obsolete
 -- may stay on screen looking current.
 function Model.Reset()
-    lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat = nil, nil, nil, nil
+    lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat, lastNoTarget = nil, nil, nil, nil, nil
     Model.snapshot = {status = ns.STATUS.MISSING, entries = {}, count = 0}
     Model.pixelHead = nil
     Model.interrupt = nil
@@ -150,12 +173,14 @@ local function OnUpdate(_, elapsed)
 end
 
 function Model.Start()
+    Model.running = true
     elapsedSinceRefresh = Model.POLL_SECONDS
     driver:SetScript("OnUpdate", OnUpdate)
     driver:Show()
 end
 
 function Model.Stop()
+    Model.running = false
     driver:SetScript("OnUpdate", nil)
     Model.Reset()
 end

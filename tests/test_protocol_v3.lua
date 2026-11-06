@@ -145,4 +145,41 @@ for _, colour in ipairs(_G.ForeverOneButtonDiagPixel.regions[1].colorHistory) do
     H.Check(DecodeV3(b8(colour[1]), b8(colour[2]), b8(colour[3])) ~= "invalid", "every written colour decodes")
 end
 
+-- An attack with no living enemy targeted: black. Pressed then, the client
+-- would pick the nearest enemy by itself. Spells on the player stay.
+ns.Commands.Handle("pixel combat off")
+H.spells[7008].harmful = true
+H.units.target = {health = 100, healthMax = 100, attackable = true}
+lib.Set({7008})
+H.Tick(0.1)
+H.Equal(Decoded(), 8, "attack on a living enemy")
+H.units.target.dead = true
+H.Fire("UNIT_HEALTH", "target")
+H.Equal(Decoded(), "none", "target died: black at once, without waiting for the poll")
+H.Equal(ns.Model.observation.noTarget, true, "observation says no enemy targeted")
+H.Check(ns.Grid.statusText:GetText():find("no enemy targeted") ~= nil, "grid says no enemy is targeted")
+H.Equal(ns.Grid.buttons[8].positionText:GetText(), "1", "grid still shows the suggestion")
+H.units.target = nil
+H.Fire("PLAYER_TARGET_CHANGED")
+H.Tick(0.1)
+H.Equal(Decoded(), "none", "no target at all: still black")
+lib.Set({7010})
+H.Tick(0.1)
+H.Equal(Decoded(), 10, "a spell the client does not call harmful stays without a target")
+H.spells[7008].harmful = H.Secret()
+lib.Set({7008})
+H.Tick(0.1)
+H.Equal(Decoded(), 8, "a secret 'harmful' answer never suppresses")
+H.spells[7008].harmful = true
+H.Tick(0.1)
+H.Equal(Decoded(), "none", "harmful again: black")
+H.units.target = {health = 100, healthMax = 100, attackable = true}
+H.Fire("PLAYER_TARGET_CHANGED")
+H.Equal(Decoded(), 8, "a living enemy targeted: back at once")
+H.units.target = {health = 100, healthMax = 100, attackable = false}
+H.Fire("PLAYER_TARGET_CHANGED")
+H.Equal(Decoded(), "none", "a friendly target is not an enemy")
+H.units.target = nil
+ns.Commands.Handle("pixel combat on")
+
 H.Done("test_protocol_v3")

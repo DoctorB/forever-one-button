@@ -613,6 +613,7 @@ function Grid.ShowQueue(snapshot, observation)
         elseif unmappedHead then text = tree .. ": suggestion is not on the grid (--)"
         elseif observation.casting then text = tree .. ": casting"
         elseif observation.outOfRange then text = tree .. ": out of range"
+        elseif observation.noTarget then text = tree .. ": no enemy targeted"
         else text = tree end
     end
     if Grid.pendingLayout or ns.Actions.pendingApply or (ns.AutoFill and ns.AutoFill.pending) then
