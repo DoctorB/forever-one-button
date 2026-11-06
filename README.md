@@ -136,7 +136,10 @@ least 60 ms before the next suggestion, as in HCOneButton. Details:
    whose spell ID was secret.
 3. `/reload` (or log out) so the client writes
    `WTF\Account\<account>\SavedVariables\ForeverOneButton.lua`, then run
-   `python scripts/analyze_log.py` for the full list of edges.
+   `python scripts/analyze_log.py` for the full list of edges. From 1.1.5
+   a pressed spell leaves the pixel before its cast succeeds, so there is
+   usually no edge: the report then lists the suggested casts (spell shown,
+   then cast) with how long each slot was visible and the delay to the cast.
    The report also shows the sequence of visible pixel states (black, white,
    slot N with the cell's spell and key) with their durations, the number of
    recommendation cycles and any state shorter than 20 ms.
