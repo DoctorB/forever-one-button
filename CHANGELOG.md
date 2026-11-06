@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.1.5 - 2026-11-06
+
+- No more unwanted target switch at the end of a fight. With a pixel reader,
+  the last key presses could reach the game just after the target died; the
+  game then picked the nearest enemy by itself. Now:
+  - Heroic Strike (and other attacks on the next swing: Cleave, Maul,
+    Raptor Strike) is no longer suggested again once it is queued; the next
+    ready spell takes position 1 until the swing.
+  - The pixel turns black when the suggestion is an attack and no living
+    enemy is targeted (dead target, no target, friendly target). Spells on
+    yourself (shouts, seals, stances, the emergency heal) are still shown.
+    The grid status line says "no enemy targeted".
+  - The pixel follows a target change or a target's death at once instead
+    of at the next refresh.
+
 ## 1.1.4 - 2026-11-05
 
 - Live WoW Forever client: the installation instructions point to the live

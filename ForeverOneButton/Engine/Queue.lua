@@ -3,7 +3,8 @@
 -- Only the entries of the active tree's list are candidates (plus the class's
 -- gap closers): a spell the list does not name, such as the other stance, is
 -- never suggested, nor one the target cannot be affected by (Engine/Targets.lua). Each entry is ready when it is known, usable, off cooldown,
--- in range, not held back by a gate and not a DoT already ticking. Ready
+-- in range, not held back by a gate, not a DoT already ticking and not an
+-- on-next-swing attack already queued. Ready
 -- entries come first in list order; the others follow as "coming up". With
 -- nothing ready in a fight, position 1 is a deliberate wait.
 --
@@ -41,11 +42,17 @@ local function Same(a, b)
     return true
 end
 
-local function Attacking()
+-- True when the client reports the spell as current: Attack swinging, or an
+-- on-next-swing attack (Heroic Strike, Cleave, Maul, Raptor Strike) already
+-- queued. Unknown or secret answers count as false.
+local function Current(spellID)
     if not (C_Spell and C_Spell.IsCurrentSpell) then return false end
-    local ok, on = pcall(C_Spell.IsCurrentSpell, ATTACK_SPELL)
+    local ok, on = pcall(C_Spell.IsCurrentSpell, spellID)
     return ok and not ns.IsSecret(on) and on == true
 end
+Queue.Current = Current
+
+local function Attacking() return Current(ATTACK_SPELL) end
 
 -- Auto-repeat spells (Auto Shot, a wand's Shoot) toggle off when pressed
 -- again: never suggested while running.
@@ -56,11 +63,14 @@ local function Repeating(spellID)
 end
 
 -- Ready or the tier it waits in: 1 cooldown/resources, 2 barred (wrong
--- stance or form), 3 held back (gate, range, DoT up).
+-- stance or form), 3 held back (gate, range, DoT up, already queued).
+-- A queued on-next-swing attack is not pressed again: it waits for the
+-- swing, and repeated presses can land after the target has died.
 local function Evaluate(entry, id, ctx)
     local usable, noResources = ns.State.Usable(id)
     if ns.State.OnCooldown(id) == true or noResources == true then return false, 1 end
     if usable == false then return false, 2 end
+    if Current(id) then return false, 3 end
     if ctx.targetAttackable and ns.State.InRange(id) == false then return false, 3 end
     if ns.Dots.Active(id) == true then return false, 3 end
     if ns.Gates.Blocks(entry.gates, ctx) then return false, 3 end

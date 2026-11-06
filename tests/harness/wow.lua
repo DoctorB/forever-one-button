@@ -633,7 +633,14 @@ function UnitGUID(unit) local u = Unit(unit); return u and (u.guid or ("guid-" .
 -- the second return, when the client gives it.
 function UnitCreatureType(unit) local u = Unit(unit); if u then return u.creatureType, u.creatureTypeID end end
 H.autoAttack = false
-function C_Spell.IsCurrentSpell(id) if H.secretSpellbook then return H.Secret() end return id == 6603 and H.autoAttack end
+H.currentSpells = {} -- spellID -> true while queued (Heroic Strike before the swing)
+function C_Spell.IsCurrentSpell(id)
+    if H.secretSpellbook then return H.Secret() end
+    if id == 6603 then return H.autoAttack end
+    return H.currentSpells[id] == true
+end
+-- H.spells[id].harmful: true for attacks; nil = the client does not say.
+function C_Spell.IsSpellHarmful(id) local s = H.spells[id]; return s and s.harmful end
 H.autoRepeat = {} -- spellID -> true while Auto Shot / Shoot runs
 function C_Spell.IsAutoRepeatSpell(id) return H.autoRepeat[id] == true end
 -- Talents: H.talents = {["Arms"] = points, ...}; nil = no talent API data.

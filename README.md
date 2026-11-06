@@ -111,7 +111,7 @@ closes when combat starts.
 | State | RGB |
 |---|---|
 | Cell *n* (1–20) holds the first ready suggestion | `R = n × 12, G = 96, B = 224` |
-| Out of combat (default "pixel only in combat"), or no executable suggestion (none, wait, no priority list for the class, engine error, player casting or channeling, confirmed out of range) | `0, 0, 0` |
+| Out of combat (default "pixel only in combat"), or no executable suggestion (none, wait, no priority list for the class, engine error, player casting or channeling, confirmed out of range, an attack with no living enemy targeted) | `0, 0, 0` |
 | Suggestion not on any cell | `255, 255, 255` |
 
 Only the damage queue reaches the pixel, plus one exception: with health
