@@ -12,6 +12,12 @@ encoded spell): its duration, the colour before and after, and casts whose
 spell ID was secret (no edge possible). Pixel lines carry the frame time
 (GetTime) used by the edge timer and by the screen; durations use it when
 present (logs from before it fall back to the precise write time).
+
+From 1.1.5 a pressed spell is pending (C_Spell.IsCurrentSpell) and leaves
+the pixel before the cast succeeds, so a cast rarely finds its spell still
+encoded and there is no edge. The report then counts suggested casts
+instead: casts whose spell was on the pixel just before, how long the slot
+was visible and how long after it left the pixel the cast succeeded.
 """
 import argparse
 import glob
@@ -124,13 +130,63 @@ def timeline_report(view, limit=200):
     return "\n".join(lines)
 
 
-def report(result):
+def suggested_casts(entries):
+    """Casts of a spell the pixel showed last: (spell, visible seconds,
+    seconds from the pixel leaving it to the cast). Casts of spells never
+    shown (typed by hand, out of combat) are not counted."""
+    shown = {}  # spell -> (on, off) of its last visible slot
+    current = None
+    found = []
+    for entry in entries:
+        parts = entry.split("|")
+        t, event = float(parts[0]), parts[1]
+        if event == "pixel":
+            if len(parts) > 3:
+                try:
+                    t = float(parts[3])
+                except ValueError:
+                    pass
+            if parts[2] in ("black", "white"):
+                if current:
+                    shown[current[0]] = (current[1], t)
+                    current = None
+            else:
+                match = re.search(r"spell (\d+)", parts[4] if len(parts) > 4 else "")
+                spell = match.group(1) if match else None
+                if not current or current[0] != spell:
+                    if current:
+                        shown[current[0]] = (current[1], t)
+                    current = (spell, t) if spell else None
+        elif event == "cast" and len(parts) > 2 and parts[2] in shown:
+            on, off = shown.pop(parts[2])
+            found.append({"spell": parts[2], "visible": off - on, "to_cast": t - off})
+    return found
+
+
+def suggested_report(found):
+    if not found:
+        return "suggested casts: 0"
+    by_spell = {}
+    for item in found:
+        by_spell.setdefault(item["spell"], []).append(item)
+    lines = [f"suggested casts: {len(found)} (spell shown on the pixel, then cast)"]
+    for spell, items in sorted(by_spell.items(), key=lambda kv: -len(kv[1])):
+        waits = sorted(round(i["to_cast"] * 1000) for i in items)
+        visible = min(i["visible"] for i in items) * 1000
+        lines.append(f"  spell {spell}: {len(items)} casts, shortest visible {visible:.0f} ms, "
+                     f"pixel left -> cast ms: median {waits[(len(waits) - 1) // 2]}, max {waits[-1]}")
+    return "\n".join(lines)
+
+
+def report(result, found=None):
     lines = [
         f"pixel writes: {result['pixel_writes']}, combats: {result['combats']}",
         f"casts: {result['casts']} (secret spell ID: {result['secret_casts']}), acknowledged: {result['acknowledged']}",
         f"edges: {len(result['edges'])}, shorter than 60 ms: {result['short']}, "
         f"restarted: {result['restarted']}, not closed: {result['open']}",
     ]
+    if found is not None:
+        lines.append(suggested_report(found))
     if result["edges"]:
         durations = [e["duration"] * 1000 for e in result["edges"]]
         same = sum(1 for e in result["edges"] if e["before"] == e["after"])
@@ -140,7 +196,12 @@ def report(result):
             lines.append(f"  {e['at']:.3f}s  {e['before']} -> black {e['duration'] * 1000:.1f} ms -> {e['after']}")
     verdict = "OK" if result["edges"] and result["short"] == 0 else "CHECK"
     if result["acknowledged"] == 0:
-        verdict = "NO ACKNOWLEDGED CASTS" + (" (spell IDs secret)" if result["secret_casts"] else "")
+        if found and not result["secret_casts"]:
+            short = sum(1 for i in found if i["visible"] + 1e-6 < SAMPLE_SECONDS)
+            verdict = ("OK (1.1.5+: each suggested spell leaves the pixel when pressed, no edge after the cast)"
+                       if short == 0 else f"CHECK ({short} suggested spells visible less than one 50 Hz sample)")
+        else:
+            verdict = "NO ACKNOWLEDGED CASTS" + (" (spell IDs secret)" if result["secret_casts"] else "")
     lines.append(f"verdict: {verdict}")
     return "\n".join(lines)
 
@@ -157,7 +218,7 @@ def main(argv=None):
         with open(path, encoding="utf-8", errors="replace") as handle:
             entries = read_entries(handle.read())
         print(f"== {os.path.basename(os.path.dirname(os.path.dirname(path)))}: {len(entries)} entries")
-        print(report(summarize(entries)))
+        print(report(summarize(entries), suggested_casts(entries)))
         print(timeline_report(timeline(entries)))
     return 0
 

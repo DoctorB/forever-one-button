@@ -79,6 +79,33 @@ class AnalyzeLogTest(unittest.TestCase):
         self.assertIn("Strike / SHIFT-3", text)
         self.assertIn("shorter than one 50 Hz sample", text)
 
+    def test_pending_casts_without_edge(self):
+        # 1.1.5 on live 70790 (2026-11-06): Rend leaves the pixel when
+        # pressed, the cast succeeds later; Heroic Strike waits for the swing.
+        entries = [
+            "10.000|combat|in",
+            "10.000|pixel|5|10.000|spell 772 Rend / SHIFT-5",
+            "10.210|pixel|black|10.210",
+            "10.680|cast|772|0",
+            "11.000|pixel|1|11.000|spell 78 Heroic Strike / SHIFT-1",
+            "11.050|pixel|black|11.050",
+            "12.430|cast|78|0",
+            "13.000|cast|100|0",  # Charge pressed by hand, never suggested
+        ]
+        result = analyze_log.summarize(entries)
+        found = analyze_log.suggested_casts(entries)
+        self.assertEqual([f["spell"] for f in found], ["772", "78"])
+        self.assertAlmostEqual(found[0]["visible"], 0.210, places=4)
+        self.assertAlmostEqual(found[0]["to_cast"], 0.470, places=4)
+        self.assertAlmostEqual(found[1]["to_cast"], 1.380, places=4)
+        text = analyze_log.report(result, found)
+        self.assertIn("suggested casts: 2", text)
+        self.assertIn("verdict: OK (1.1.5+", text)
+        # A suggestion visible less than one 50 Hz sample is flagged.
+        entries[4] = "11.040|pixel|1|11.040|spell 78 Heroic Strike / SHIFT-1"
+        found = analyze_log.suggested_casts(entries)
+        self.assertIn("verdict: CHECK (1 suggested", analyze_log.report(analyze_log.summarize(entries), found))
+
     def test_no_log(self):
         self.assertEqual(analyze_log.read_entries("ForeverOneButtonDB = {}"), [])
         report = analyze_log.report(analyze_log.summarize([]))

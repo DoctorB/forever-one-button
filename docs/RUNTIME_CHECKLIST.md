@@ -80,3 +80,22 @@ Esito al 2026-10-19: 34 e 35 verificati in gioco dal proprietario sulla build 1.
 Esito al 2026-10-20: 36 verificato in gioco dal proprietario sulla build 1.1.1 ("funziona").
 
 Esito al 2026-10-21: 37 verificato in gioco dal proprietario sulla build dell'icona, pubblicata come 1.1.2 ("funziona").
+
+Esito al 2026-11-06, client ufficiale 1.60.1.70790, 1.1.5, Guerriero Arms
+livello 7 (contesto `arms+leveling`, `st`), pixel reader senza `--diag-log`,
+log dell'addon (`scripts/analyze_log.py`), 11 combattimenti, 63 lanci:
+- 3: nessun errore Lua (proprietario, `scriptErrors 1`).
+- 16a: 36 lanci suggeriti (Heroic Strike 15, Rend 14, Thunder Clap 5,
+  Battle Shout 2), nessuna cella visibile meno di 50 ms, nessuno stato del
+  pixel sotto 20 ms; ID segreti 0. Nessun fronte dopo il lancio, come atteso
+  dalla 1.1.5: la spell premuta è in attesa (`C_Spell.IsCurrentSpell`) e
+  lascia il pixel prima del lancio. Le istantanee partono 25–150 ms dopo che
+  il pixel le lascia (3 su 21 a 460–500 ms); Heroic Strike al colpo
+  successivo (0,5–2,5 s). Lo script ora dà il verdetto su questo schema.
+- 20: nessun ID segreto nei lanci (solo mondo aperto, non istanza).
+- 21: non chiusa: `Logs\taint.log` assente dopo `/console taintLog 1`
+  (nessuna voce o impostazione non applicata).
+- 16b: non eseguita (reader senza `--diag-log`; il proprietario lo
+  considera a posto).
+- Rabbia al massimo con Heroic Strike grigio (segnalazione 1.1.5): non
+  vista dal proprietario; il log non registra la rabbia.
