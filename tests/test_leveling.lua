@@ -9,6 +9,7 @@ local GATES = {
     dot = true, power = true, buff = true, swing = true, any = true, targets = true, cd = true,
     stack = true, starved = true, health = true, resource = true, known = true, near = true,
     all = true, stealth = true, unconfirmed = true, execute = true, totem = true, tick = true,
+    fleeing = true, since = true,
 }
 
 local function CheckGates(gates, label, abilities)
@@ -103,6 +104,38 @@ H.now = H.now + 1
 s = ns.Queue.Build(nil)
 H.Equal(s.entries[1].id, 7384, "Overpower when usable")
 H.Check(ns.AutoFill.ReadPool(), "pool from the leveling list")
+local inPool = false
+for _, id in ipairs(ns.AutoFill.ReadPool()) do if id == 1715 then inPool = true end end
+H.Check(inPool, "Hamstring gets a cell from the leveling list")
+
+-- Hamstring only on a target running away (owner request, 2026-11-06).
+for i = 1, s.count do H.Check(s.entries[i].id ~= 1715 or not s.entries[i].ready, "no Hamstring before the flight") end
+H.units.target.name = "Defias Thug"
+H.Fire("CHAT_MSG_MONSTER_EMOTE", "%s attempts to run away in fear!", "Other Mob")
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Check(s.entries[1].id ~= 1715, "another mob's emote is ignored")
+H.Fire("CHAT_MSG_MONSTER_EMOTE", "%s versucht, voller Angst zu fliehen!", "Defias Thug")
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Check(s.entries[1].id ~= 1715, "a localized emote at full health is ignored")
+H.Fire("CHAT_MSG_MONSTER_EMOTE", "%s attempts to run away in fear!", "Defias Thug")
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 1715, "fleeing target: Hamstring first")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 1715)
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Check(s.entries[1].id ~= 1715, "Hamstring once per flight")
+H.now = H.now + ns.State.FLEE_WINDOW
+H.Equal(ns.State.TargetFleeing(), false, "the flight mark expires")
+H.units.target.health = 20
+H.Fire("CHAT_MSG_MONSTER_EMOTE", "%s versucht, voller Angst zu fliehen!", "Defias Thug")
+H.Equal(ns.State.TargetFleeing(), true, "a localized emote below 35% health counts")
+H.units.target.guid = "another mob"
+H.Equal(ns.State.TargetFleeing(), false, "the mark does not pass to a new target")
+H.units.target.guid, H.units.target.health = "mob", 100
+H.now = H.now + ns.State.FLEE_WINDOW -- no flight left for the cases below
 
 -- Level 40 with Death Wish: the burst cue works on the leveling list too
 -- (it leads the ready entries here, so it stays at position 1, marked).

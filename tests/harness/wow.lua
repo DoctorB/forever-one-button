@@ -629,6 +629,7 @@ function C_UnitAuras.GetUnitAuraBySpellID(unit, id) return Aura(unit, id) end
 H.class = "WARRIOR"
 function UnitClass(unit) if unit == "player" then return H.class:sub(1, 1) .. H.class:sub(2):lower(), H.class end end
 function UnitGUID(unit) local u = Unit(unit); return u and (u.guid or ("guid-" .. unit)) end
+function UnitName(unit) local u = Unit(unit); return u and u.name end
 -- H.units[unit].creatureType: localized type name ("Undead"); creatureTypeID:
 -- the second return, when the client gives it.
 function UnitCreatureType(unit) local u = Unit(unit); if u then return u.creatureType, u.creatureTypeID end end

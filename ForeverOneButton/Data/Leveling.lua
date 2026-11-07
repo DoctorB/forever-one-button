@@ -31,6 +31,8 @@ local function near(yards) return {t = "near", n = yards} end
 local function totemDown(slot) return {t = "totem", slot = slot, neg = true} end
 local function onCooldown(id) return {t = "cd", id = id, neg = true} end
 local function stealthed() return {t = "stealth"} end
+local function fleeing() return {t = "fleeing"} end
+local function castAgo(id, seconds) return {t = "since", id = id, op = ">=", n = seconds} end
 local function any(...) return {t = "any", g = {...}} end
 local function all(...) return {t = "all", g = {...}} end
 local function e(id, ...) return {id = id, gates = {...}} end
@@ -43,6 +45,9 @@ local BLOODRAGE = e(2687, rageBelow(30), healthAbove(50))
 -- only the excess. In game (2026-10-16, level 13) a 20-rage threshold left
 -- the queue waiting with 15-19 rage.
 local HEROIC_STRIKE = e(78, any(all(unknown(23881), unknown(12294)), rageAtLeast(45)))
+-- Hamstring on a target running away (owner request, 2026-11-06): a fleeing
+-- humanoid comes back with friends. Once per flight: the slow lasts 15 s.
+local HAMSTRING = e(1715, fleeing(), castAgo(1715, 10))
 local WARRIOR_AOE_HEAD = {
     BATTLE_SHOUT, BLOODRAGE,
     e(6343, targetsAtLeast(2)),           -- Thunder Clap
@@ -53,7 +58,7 @@ local WARRIOR_AOE_HEAD = {
 local warrior = {
     arms = {
         st = {
-            BATTLE_SHOUT, BLOODRAGE,
+            HAMSTRING, BATTLE_SHOUT, BLOODRAGE,
             e(5308, execute()),                -- Execute
             e(7384),                           -- Overpower (after a dodge)
             e(12294),                          -- Mortal Strike
@@ -67,7 +72,7 @@ local warrior = {
             e(2457, buffMissing(2457)),        -- Battle Stance
         },
         aoe = {
-            WARRIOR_AOE_HEAD[1], WARRIOR_AOE_HEAD[2], WARRIOR_AOE_HEAD[3], WARRIOR_AOE_HEAD[4],
+            HAMSTRING, WARRIOR_AOE_HEAD[1], WARRIOR_AOE_HEAD[2], WARRIOR_AOE_HEAD[3], WARRIOR_AOE_HEAD[4],
             e(5308, execute()), e(12294), WARRIOR_AOE_HEAD[5], WARRIOR_AOE_HEAD[6],
             e(7384), e(772, dot(772)), HEROIC_STRIKE,
             e(2457, buffMissing(2457)),
@@ -75,7 +80,7 @@ local warrior = {
     },
     fury = {
         st = {
-            BATTLE_SHOUT, BLOODRAGE,
+            HAMSTRING, BATTLE_SHOUT, BLOODRAGE,
             e(12328),                          -- Death Wish
             e(1719),                           -- Recklessness (Berserker Stance)
             e(5308, execute()),                -- Execute
@@ -90,7 +95,7 @@ local warrior = {
             e(2458, buffMissing(2458)),        -- Berserker Stance (Battle Stance until learned)
         },
         aoe = {
-            WARRIOR_AOE_HEAD[1], WARRIOR_AOE_HEAD[2], WARRIOR_AOE_HEAD[3], WARRIOR_AOE_HEAD[4],
+            HAMSTRING, WARRIOR_AOE_HEAD[1], WARRIOR_AOE_HEAD[2], WARRIOR_AOE_HEAD[3], WARRIOR_AOE_HEAD[4],
             e(12328), e(1719),                 -- Death Wish, Recklessness
             e(5308, execute()), e(23881), WARRIOR_AOE_HEAD[5], WARRIOR_AOE_HEAD[6],
             e(772, dot(772)), HEROIC_STRIKE,
