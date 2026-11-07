@@ -85,6 +85,16 @@ handlers.UNIT_SPELLCAST_SUCCEEDED = function(unit, _, spellID)
     ns.Log("cast", spellID, acknowledged and 1 or 0)
 end
 
+-- Diagnostic log only: why a press was refused (the pixel reader presses
+-- again until the spell goes out). Nothing else reads these events.
+handlers.UI_ERROR_MESSAGE = function(errorType, message)
+    if ns.Diagnostics.IsEnabled() then ns.Log("error", errorType, message) end
+end
+handlers.UNIT_SPELLCAST_FAILED = function(unit, _, spellID)
+    if ns.IsSecret(unit) or unit ~= "player" or not ns.Diagnostics.IsEnabled() then return end
+    ns.Log("failed", spellID)
+end
+
 frame:SetScript("OnEvent", function(_, event, ...)
     local handler = handlers[event]
     if handler then handler(...) end
@@ -104,10 +114,12 @@ local function Register(event, unit)
 end
 for _, event in ipairs({"ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_REGEN_DISABLED",
     "PLAYER_REGEN_ENABLED", "SPELLS_CHANGED", "PLAYER_SPECIALIZATION_CHANGED", "ACTIONBAR_SLOT_CHANGED", "PLAYER_ENTERING_WORLD",
-    "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "BAG_UPDATE_DELAYED", "PLAYER_TARGET_CHANGED"}) do
+    "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "BAG_UPDATE_DELAYED", "PLAYER_TARGET_CHANGED",
+    "UI_ERROR_MESSAGE"}) do
     Register(event)
 end
 Register("UNIT_SPELLCAST_SUCCEEDED", "player")
+Register("UNIT_SPELLCAST_FAILED", "player")
 Register("UNIT_HEALTH", "target")
 
 Events.handlers = handlers

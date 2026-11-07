@@ -206,6 +206,31 @@ def report(result, found=None):
     return "\n".join(lines)
 
 
+def refusals(entries):
+    """Refused presses (UI_ERROR_MESSAGE, "error" lines) and failed casts
+    ("failed" lines, logged from 1.1.6): counts by message and by spell."""
+    messages, failed = {}, {}
+    for entry in entries:
+        parts = entry.split("|")
+        if len(parts) > 3 and parts[1] == "error":
+            key = "|".join(parts[3:])
+            messages[key] = messages.get(key, 0) + 1
+        elif len(parts) > 2 and parts[1] == "failed":
+            failed[parts[2]] = failed.get(parts[2], 0) + 1
+    return messages, failed
+
+
+def refusals_report(messages, failed):
+    if not messages and not failed:
+        return "refused presses: none logged"
+    lines = [f"refused presses: {sum(messages.values())} errors, {sum(failed.values())} failed casts"]
+    for text, count in sorted(messages.items(), key=lambda item: (-item[1], item[0])):
+        lines.append(f"  {count:5d}  {text}")
+    for spell, count in sorted(failed.items(), key=lambda item: (-item[1], item[0])):
+        lines.append(f"  {count:5d}  failed spell {spell}")
+    return "\n".join(lines)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("path", nargs="?")
@@ -219,6 +244,7 @@ def main(argv=None):
             entries = read_entries(handle.read())
         print(f"== {os.path.basename(os.path.dirname(os.path.dirname(path)))}: {len(entries)} entries")
         print(report(summarize(entries), suggested_casts(entries)))
+        print(refusals_report(*refusals(entries)))
         print(timeline_report(timeline(entries)))
     return 0
 

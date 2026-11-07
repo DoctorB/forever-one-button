@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.6 - 2026-11-07
+
+- Warrior, leveling lists (Arms and Fury): Hamstring is suggested first when
+  the target runs away in fear, so it cannot come back with friends. Once
+  per flight: it is not suggested again for 10 seconds.
+- Diagnostic log (`/fob log on`): it now holds 20,000 entries instead of
+  5,000, enough for a 2-3 hour session (5,000 held about 76 minutes of
+  leveling). It also records why a press was refused by the game (target
+  not in front, out of range, not enough energy...) and failed casts, and
+  `scripts/analyze_log.py` lists them. Suggestions and the pixel are
+  unchanged.
+
 ## 1.1.5 - 2026-11-06
 
 - No more unwanted target switch at the end of a fight. With a pixel reader,

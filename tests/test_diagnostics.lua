@@ -84,8 +84,26 @@ H.Equal(#ForeverOneButtonLog.entries, count, "entries kept across reload")
 H.Check(ns.Diagnostics.IsEnabled(), "still on after reload")
 
 -- Bounded size.
-for i = 1, ns.Diagnostics.MAX_ENTRIES + 50 do ns.Log("pixel", "black") end
-H.Equal(#ForeverOneButtonLog.entries, ns.Diagnostics.MAX_ENTRIES, "capped")
+H.Equal(ns.Diagnostics.MAX_ENTRIES, 20000, "a 2-3 hour session fits")
+ns.Commands.Handle("log clear")
+for i = 1, ns.Diagnostics.MAX_ENTRIES + 50 do ns.Log("pixel", "black", i) end
+local entries = ForeverOneButtonLog.entries
+H.Check(#entries <= ns.Diagnostics.MAX_ENTRIES, "capped")
+H.Equal(#entries, ns.Diagnostics.MAX_ENTRIES - ns.Diagnostics.TRIM_ENTRIES + 50, "oldest dropped in one batch")
+H.Check(entries[#entries]:find("|" .. (ns.Diagnostics.MAX_ENTRIES + 50) .. "$"), "newest kept last")
+for i = 2, #entries do
+    local previous, current = tonumber(entries[i - 1]:match("(%d+)$")), tonumber(entries[i]:match("(%d+)$"))
+    if previous and current and current ~= previous + 1 then H.Check(false, "order kept") break end
+end
+
+-- Refused presses and failed casts are logged (only while logging).
+ns.Commands.Handle("log clear")
+H.Fire("UI_ERROR_MESSAGE", 50, "Target needs to be in front of you.")
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "guid", 1752)
+H.Fire("UNIT_SPELLCAST_FAILED", "target", "guid", 1752)
+H.Check(ForeverOneButtonLog.entries[1]:find("|error|50|Target needs to be in front of you.", 1, true), "ui error logged")
+H.Check(ForeverOneButtonLog.entries[2]:find("|failed|1752", 1, true), "failed cast logged")
+H.Equal(#ForeverOneButtonLog.entries, 2, "other units ignored")
 
 ns.Commands.Handle("log clear")
 H.Equal(#ForeverOneButtonLog.entries, 0, "cleared")

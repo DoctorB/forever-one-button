@@ -105,3 +105,18 @@ log dell'addon (`scripts/analyze_log.py`), 11 combattimenti, 63 lanci:
   considera a posto).
 - Rabbia al massimo con Heroic Strike grigio (segnalazione 1.1.5): non
   vista dal proprietario; il log non registra la rabbia.
+
+Esito al 2026-11-07, client ufficiale 1.60.1.70862, 1.1.5 (ramo Hamstring),
+Ladro livelli 1-10 (contesto `combat+leveling`, `st`), log dell'addon: il
+buffer da 5000 righe teneva solo gli ultimi 76 minuti (dal livello 8 circa),
+68 combattimenti, 480 lanci:
+- 16a: 327 lanci suggeriti (Sinister Strike 279, Eviscerate 48), dal pixel
+  al lancio mediana 96-115 ms, massimo 685 ms; ID segreti 0; verdetto OK.
+- Eviscerate a 5 punti combo o con 2+ sotto il 20% di salute del bersaglio,
+  come da lista; Minor Healing Potion suggerita 5 volte, bevuta 4.
+- Slice and Dice (livello 10) mai suggerito né lanciato: da verificare.
+- 5 momenti in cui Sinister Strike compare e sparisce ogni 50-150 ms per
+  0,5-2,4 s prima di partire (pressione rifiutata dal gioco, motivo non
+  registrato): dalla 1.1.6 il log registra `error` e `failed`.
+- Hamstring sul bersaglio in fuga (Guerriero): pubblicato in 1.1.6 senza
+  aver ancora visto un mob in fuga in gioco.

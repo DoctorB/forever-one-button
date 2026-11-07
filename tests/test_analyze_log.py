@@ -106,6 +106,22 @@ class AnalyzeLogTest(unittest.TestCase):
         found = analyze_log.suggested_casts(entries)
         self.assertIn("verdict: CHECK (1 suggested", analyze_log.report(analyze_log.summarize(entries), found))
 
+    def test_refused_presses(self):
+        entries = [
+            "10.0000|error|50|Target needs to be in front of you.",
+            "10.0500|error|50|Target needs to be in front of you.",
+            "10.1000|error|51|Out of range.",
+            "10.1500|failed|1752",
+            "10.2000|cast|1752|0",
+        ]
+        messages, failed = analyze_log.refusals(entries)
+        self.assertEqual(messages, {"Target needs to be in front of you.": 2, "Out of range.": 1})
+        self.assertEqual(failed, {"1752": 1})
+        text = analyze_log.refusals_report(messages, failed)
+        self.assertIn("refused presses: 3 errors, 1 failed casts", text)
+        self.assertIn("    2  Target needs to be in front of you.", text)
+        self.assertEqual(analyze_log.refusals_report({}, {}), "refused presses: none logged")
+
     def test_no_log(self):
         self.assertEqual(analyze_log.read_entries("ForeverOneButtonDB = {}"), [])
         report = analyze_log.report(analyze_log.summarize([]))

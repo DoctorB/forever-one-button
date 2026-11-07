@@ -17,6 +17,9 @@
 --   "<seconds>|defense|<id r(eady) w(aiting),... or none>|<health band 1-4 or ->"
 --   "<seconds>|interrupt|<spell ID or none>|<interrupt or cc>"
 --   "<seconds>|combat|in|out"
+--   "<seconds>|error|<error type>|<message>"   (UI_ERROR_MESSAGE: why a press
+--     was refused, e.g. target not in front, out of range, not enough energy)
+--   "<seconds>|failed|<spellID>"               (UNIT_SPELLCAST_FAILED, player)
 --   "<seconds>|session|<addon version>|<client build>"
 -- <seconds> is GetTimePreciseSec (when the code ran). <frame time> is GetTime,
 -- the time of the frame being built: the acknowledgement edge is timed on it,
@@ -30,7 +33,11 @@ local ADDON_NAME, ns = ...
 local Diagnostics = {}
 ns.Diagnostics = Diagnostics
 
-Diagnostics.MAX_ENTRIES = 5000
+-- 20000 entries hold a 2-3 hour leveling session (5000 held 76 minutes).
+-- When full, the oldest TRIM_ENTRIES go in one pass instead of one shift of
+-- the whole table per entry.
+Diagnostics.MAX_ENTRIES = 20000
+Diagnostics.TRIM_ENTRIES = 500
 Diagnostics.ACK_MIN_SECONDS = 0.060
 -- 20 ms is one frame at 50 Hz (HCOneButton DiagnosticPixel.lua comment):
 -- a visible state shorter than that can be missed when sampled at that rate.
@@ -93,7 +100,12 @@ end
 -- are dropped.
 function ns.Log(event, a, ...)
     if not log then return end
-    if #log >= Diagnostics.MAX_ENTRIES then table.remove(log, 1) end
+    local count = #log
+    if count >= Diagnostics.MAX_ENTRIES then
+        local drop = math.min(count, Diagnostics.TRIM_ENTRIES)
+        for i = 1, count - drop do log[i] = log[i + drop] end
+        for i = count - drop + 1, count do log[i] = nil end
+    end
     local entry = string.format("%.4f|%s|%s", Now(), event, Field(a))
     local extra = {...}
     local last = select("#", ...)

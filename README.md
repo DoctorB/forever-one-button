@@ -142,7 +142,9 @@ least 60 ms before the next suggestion, as in HCOneButton. Details:
    then cast) with how long each slot was visible and the delay to the cast.
    The report also shows the sequence of visible pixel states (black, white,
    slot N with the cell's spell and key) with their durations, the number of
-   recommendation cycles and any state shorter than 20 ms.
+   recommendation cycles and any state shorter than 20 ms, and from 1.1.6
+   the presses the game refused, by message (target not in front, out of
+   range...), and the failed casts.
 4. `/fob log off` when done. The log stores no secret values and does not
    change the pixel; times are those of the addon's colour writes.
 
