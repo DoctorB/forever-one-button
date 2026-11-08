@@ -239,7 +239,7 @@ def refusals_report(messages, failed):
 def readiness(entries):
     """Why each spell waits, from the last field of "queue" lines (logged
     after 1.1.6): {spell: {state: lines}} and {spell: {"from>to": changes}},
-    state "+" for ready or the reason (cd, res, use, cur, range, dot, gate)."""
+    state "+" for ready or the reason (cd, res, use, cur, range, dot, gate, held)."""
     states, changes, last = {}, {}, {}
     for entry in entries:
         parts = entry.split("|")

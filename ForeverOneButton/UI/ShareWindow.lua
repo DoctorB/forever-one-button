@@ -117,7 +117,7 @@ function ShareWindow.Open()
     pending = share
     ReadOnly(frame.line, share.text)
     frame.stats:SetText(string.format("%d entries, about %s of play, %d KB to paste%s.",
-        share.entries, Duration(share.final and share.first and share.final - share.first),
+        share.entries, Duration(share.played),
         math.ceil(#share.text / 1024), share.compressed and "" or " (not compressed)"))
     frame.sent:Show()
     frame:Show()

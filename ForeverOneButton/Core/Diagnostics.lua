@@ -15,7 +15,7 @@
 --   "<seconds>|head|<queue ID or none>|<flags: c casting, r out of range, o out of combat>"
 --   "<seconds>|queue|<status>|<tree>|<context>|<entries>|<candidates>|<ready>|<detail or error>|<why>"
 --     <why>: every candidate in list order, "<id>+" ready or "<id>-<reason>"
---     waiting (cd, res, use, cur, range, dot, gate; Engine/Queue.lua)
+--     waiting (cd, res, use, cur, range, dot, gate, held; Engine/Queue.lua)
 --   "<seconds>|defense|<id r(eady) w(aiting),... or none>|<health band 1-4 or ->"
 --   "<seconds>|interrupt|<spell ID or none>|<interrupt or cc>"
 --   "<seconds>|combat|in|out"

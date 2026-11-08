@@ -127,8 +127,24 @@ function Share.Compress(text)
     return nil
 end
 
+-- Seconds of play the entries cover: gaps up to IDLE_GAP between entries
+-- count, longer ones (logged out, AFK) and clock restarts do not. In game
+-- the first-to-last difference read "11 h 20 min" for a few hours of play.
+Share.IDLE_GAP = 300
+function Share.Played(entries)
+    local played, previous = 0, nil
+    for _, entry in ipairs(entries) do
+        local t = tonumber((entry:match("^([%d.]+)|")))
+        if t then
+            if previous and t >= previous and t - previous <= Share.IDLE_GAP then played = played + t - previous end
+            previous = t
+        end
+    end
+    return played
+end
+
 -- What /fob share shows: {text = the line to paste, entries = count, last =
--- the last entry shared, compressed, size}, or nil and a reason.
+-- the last entry shared, compressed, size, played seconds}, or nil and a reason.
 function Share.Build()
     local entries = ForeverOneButtonLog and ForeverOneButtonLog.entries
     if type(entries) ~= "table" or #entries == 0 then return nil, "empty" end
@@ -143,8 +159,7 @@ function Share.Build()
         last = snapshot[#snapshot],
         compressed = compressed ~= nil,
         size = #text,
-        first = tonumber((snapshot[1]:match("^([%d.]+)|"))),
-        final = tonumber((snapshot[#snapshot]:match("^([%d.]+)|"))),
+        played = Share.Played(snapshot),
     }
 end
 

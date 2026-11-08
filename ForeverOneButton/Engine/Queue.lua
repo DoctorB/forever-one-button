@@ -10,6 +10,8 @@
 --
 -- The result has the shape the panel and the pixel read:
 --   {status, detail, entries = {{kind, id, base, ready}...}, count, tree, context}
+-- A spell queued by the client during the global cooldown holds the spells
+-- below it (Queue.PENDING_HOLD).
 -- and an unchanged queue returns the previous snapshot object.
 local ADDON_NAME, ns = ...
 
@@ -20,6 +22,16 @@ Queue.MAX_ENTRIES = 10
 Queue.GAP_CLOSER_MIN_YARDS = 8 -- Charge and Intercept start at 8 yards
 Queue.GAP_CLOSER_DEBOUNCE = 3
 local ATTACK_SPELL = 6603 -- "Attack": skipped while already swinging
+-- A spell pressed during the global cooldown is queued by the client and
+-- reported as current until it goes off. While it is, the spells below it
+-- in the list wait: suggesting the next one made a pixel reader press it,
+-- and the client replaced the queued spell with it (Rogue, 2026-11-08:
+-- Slice and Dice queued, Sinister Strike suggested, pressed and cast in
+-- its place; "Another action is in progress"). Not for on-next-swing
+-- attacks, which stay queued until the swing, and at most PENDING_HOLD
+-- seconds, so a spell that stays current for another reason holds nothing.
+Queue.PENDING_HOLD = 1.5
+local pendingSince = {}
 
 local STATUS, ENTRY = ns.STATUS, ns.ENTRY
 
@@ -184,13 +196,29 @@ function Queue.Build(previous)
     -- why: each candidate in list order, "5171+" ready or "1757-res" with
     -- the reason it waits (diagnostic log only).
     local ready, waiting, why = {}, {{}, {}, {}}, {}
+    local now, heldBy, stillPending = GetTime(), nil, {}
+    local nextSwing = ns.Data.Defaults.nextSwing or {}
     for _, c in ipairs(candidates) do
         local ok, tier, reason = Evaluate(c.entry, c.id, ctx)
+        if reason == "cur" then
+            pendingSince[c.id] = pendingSince[c.id] or now
+            stillPending[c.id] = true
+            if not heldBy and not nextSwing[c.id] and not nextSwing[c.first]
+                and now - pendingSince[c.id] <= Queue.PENDING_HOLD then
+                heldBy = c.id
+            end
+        else
+            pendingSince[c.id] = nil
+            if ok and heldBy then ok, tier, reason = false, 3, "held" end
+        end
         local item = {kind = ENTRY.SPELL, id = c.id, base = c.first, ready = ok}
         if ok then ready[#ready + 1] = item else table.insert(waiting[tier], item) end
         why[#why + 1] = c.id .. (ok and "+" or ("-" .. reason))
     end
     result.why = table.concat(why, ",")
+    for id in pairs(pendingSince) do
+        if not stillPending[id] then pendingSince[id] = nil end
+    end
 
     local entries = {}
     local gapID, gapFirst = GapCloser(class, ctx)

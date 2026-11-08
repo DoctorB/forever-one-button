@@ -57,8 +57,9 @@ test("header keeps known keys; entries and summary", () => {
 });
 
 test("a client restart does not count as play time", () => {
-  const s = summarize(["5000.0|combat|in", "5060.0|combat|out", "10.0|combat|in", "70.0|combat|out"]);
-  assert.equal(s.minutes, 2);
+  const s = summarize(["5000.0|combat|in", "5060.0|combat|out", "10.0|combat|in", "70.0|combat|out",
+    "9000.0|combat|in", "9060.0|combat|out"]);
+  assert.equal(s.minutes, 3, "restart and a long idle gap do not count");
 });
 
 test("storage key", () => {

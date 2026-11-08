@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- With a pixel reader, a spell pressed during the global cooldown is no
+  longer replaced by the next one. The game queues the pressed spell; the
+  addon used to suggest the spell below it at once, the reader pressed it
+  and the game cast that one instead (Rogue: Sinister Strike in place of
+  Slice and Dice in 61 of 151 cases, with "Another action is in progress").
+  Now, while a spell is queued, the spells below it wait and the pixel
+  stays black, for at most 1.5 seconds. Heroic Strike and the other attacks
+  on the next swing are not affected.
 - `/fob share`: send the diagnostic log to the author, to help fix wrong
   suggestions. A window shows one line of text: copy it and paste it at
   <https://trace.lucabottani.dev>. Nothing is sent unless you do that, the

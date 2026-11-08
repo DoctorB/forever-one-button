@@ -8,6 +8,7 @@ export const MAX_PASTE_BYTES = 4 * 1024 * 1024;
 export const MAX_TEXT_BYTES = 24 * 1024 * 1024;
 const PREFIX = /^!FOB:(\d+):([zt])!/;
 const SUFFIX = "!END:FOB!";
+const IDLE_GAP = 300; // seconds, as Share.IDLE_GAP in the addon
 const HEADER_KEYS = new Set(["addon", "build", "class", "level", "locale", "exported", "entries"]);
 
 export class ShareError extends Error {
@@ -114,8 +115,9 @@ export function summarize(entries) {
     const t = Number(parts[0]);
     if (Number.isFinite(t)) {
       if (first === null) first = t;
-      // The clock restarts with the client: count each run on its own.
-      if (previous !== null && t >= previous) span += t - previous;
+      // Only gaps up to IDLE_GAP count: the clock restarts with the client,
+      // and logged-out or AFK time is not play.
+      if (previous !== null && t >= previous && t - previous <= IDLE_GAP) span += t - previous;
       previous = t;
       last = t;
     }

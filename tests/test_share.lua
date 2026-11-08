@@ -95,6 +95,10 @@ H.Check(not window:IsShown(), "closed after sending")
 ns.ShareWindow.Sent()
 H.Equal(#ForeverOneButtonLog.entries, 1, "a second click removes nothing")
 
+-- Play time: idle gaps (logged out, AFK) and clock restarts do not count.
+H.Equal(Share.Played({"100.0|combat|in", "160.0|cast|1|1", "5000.0|combat|in", "5030.0|combat|out",
+    "20.0|combat|in", "50.0|combat|out"}), 120, "60 + 30 + 30 seconds")
+
 -- Trimmed meanwhile: the shared entries are found by content, not counted.
 ns.Commands.Handle("log clear")
 for i = 1, 5 do ns.Log("cast", 100 + i, 1) end
