@@ -40,6 +40,15 @@ H.Fire("PLAYER_REGEN_ENABLED")
 
 local s = ns.Diagnostics.Summary()
 H.Equal(s.casts, 6, "six casts logged")
+-- Queue lines end with why each candidate waits ("-" when the queue has none).
+local queueLine
+for _, line in ipairs(ForeverOneButtonLog.entries) do
+    if line:find("|queue|", 1, true) then queueLine = line end
+end
+H.Check(queueLine ~= nil, "queue logged")
+local fields = 0
+for _ in (queueLine .. "|"):gmatch("([^|]*)|") do fields = fields + 1 end
+H.Equal(fields, 10, "queue line: time, kind, status, tree, context, count, candidates, ready, detail, why")
 H.Equal(s.secretCasts, 1, "secret ID recorded as such")
 H.Equal(s.acknowledged, 4, "four acknowledged casts")
 H.Equal(#s.edges, 4, "four black edges")

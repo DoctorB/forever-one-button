@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Diagnostic log: each queue change records, for every suggestion, whether
+  it is ready or why it waits (cooldown, not enough energy/rage/mana, gate,
+  range...); `scripts/analyze_log.py` counts them per spell. It serves to
+  explain why, with a Rogue, Slice and Dice and Sinister Strike swap on the
+  pixel at the end of the global cooldown. Suggestions and the pixel are
+  unchanged.
+
 ## 1.1.6 - 2026-11-07
 
 - Warrior, leveling lists (Arms and Fury): Hamstring is suggested first when

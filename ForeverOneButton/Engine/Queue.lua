@@ -29,7 +29,7 @@ end
 
 local function Same(a, b)
     if not b or a.status ~= b.status or a.count ~= b.count or a.tree ~= b.tree or a.context ~= b.context
-        or a.detail ~= b.detail or a.leveling ~= b.leveling then
+        or a.detail ~= b.detail or a.leveling ~= b.leveling or a.why ~= b.why then
         return false
     end
     for i = 1, a.count do
@@ -63,17 +63,19 @@ local function Repeating(spellID)
 end
 
 -- Ready or the tier it waits in: 1 cooldown/resources, 2 barred (wrong
--- stance or form), 3 held back (gate, range, DoT up, already queued).
+-- stance or form), 3 held back (gate, range, DoT up, already queued), and
+-- the reason, for the diagnostic log: cd, res, use, cur, range, dot, gate.
 -- A queued on-next-swing attack is not pressed again: it waits for the
 -- swing, and repeated presses can land after the target has died.
 local function Evaluate(entry, id, ctx)
     local usable, noResources = ns.State.Usable(id)
-    if ns.State.OnCooldown(id) == true or noResources == true then return false, 1 end
-    if usable == false then return false, 2 end
-    if Current(id) then return false, 3 end
-    if ctx.targetAttackable and ns.State.InRange(id) == false then return false, 3 end
-    if ns.Dots.Active(id) == true then return false, 3 end
-    if ns.Gates.Blocks(entry.gates, ctx) then return false, 3 end
+    if ns.State.OnCooldown(id) == true then return false, 1, "cd" end
+    if noResources == true then return false, 1, "res" end
+    if usable == false then return false, 2, "use" end
+    if Current(id) then return false, 3, "cur" end
+    if ctx.targetAttackable and ns.State.InRange(id) == false then return false, 3, "range" end
+    if ns.Dots.Active(id) == true then return false, 3, "dot" end
+    if ns.Gates.Blocks(entry.gates, ctx) then return false, 3, "gate" end
     return true
 end
 
@@ -179,12 +181,16 @@ function Queue.Build(previous)
         result.detail = string.format("none of %d list entries known or usable here", #list)
     end
 
-    local ready, waiting = {}, {{}, {}, {}}
+    -- why: each candidate in list order, "5171+" ready or "1757-res" with
+    -- the reason it waits (diagnostic log only).
+    local ready, waiting, why = {}, {{}, {}, {}}, {}
     for _, c in ipairs(candidates) do
-        local ok, tier = Evaluate(c.entry, c.id, ctx)
+        local ok, tier, reason = Evaluate(c.entry, c.id, ctx)
         local item = {kind = ENTRY.SPELL, id = c.id, base = c.first, ready = ok}
         if ok then ready[#ready + 1] = item else table.insert(waiting[tier], item) end
+        why[#why + 1] = c.id .. (ok and "+" or ("-" .. reason))
     end
+    result.why = table.concat(why, ",")
 
     local entries = {}
     local gapID, gapFirst = GapCloser(class, ctx)

@@ -231,6 +231,40 @@ def refusals_report(messages, failed):
     return "\n".join(lines)
 
 
+def readiness(entries):
+    """Why each spell waits, from the last field of "queue" lines (logged
+    after 1.1.6): {spell: {state: lines}} and {spell: {"from>to": changes}},
+    state "+" for ready or the reason (cd, res, use, cur, range, dot, gate)."""
+    states, changes, last = {}, {}, {}
+    for entry in entries:
+        parts = entry.split("|")
+        if len(parts) < 10 or parts[1] != "queue" or parts[9] == "-":
+            continue
+        for item in parts[9].split(","):
+            spell, ready, reason = item.partition("-") if "-" in item else (item.rstrip("+"), "+", "")
+            state = "+" if ready == "+" else reason
+            states.setdefault(spell, {})
+            states[spell][state] = states[spell].get(state, 0) + 1
+            before = last.get(spell)
+            if before is not None and before != state:
+                key = f"{before}>{state}"
+                changes.setdefault(spell, {})
+                changes[spell][key] = changes[spell].get(key, 0) + 1
+            last[spell] = state
+    return states, changes
+
+
+def readiness_report(states, changes):
+    if not states:
+        return "readiness: not in this log (1.1.6 or older)"
+    lines = ["readiness per spell (queue lines; + ready, else the reason it waits):"]
+    for spell in sorted(states, key=lambda s: -sum(states[s].values())):
+        counts = " ".join(f"{state}={n}" for state, n in sorted(states[spell].items(), key=lambda i: -i[1]))
+        moves = " ".join(f"{key}={n}" for key, n in sorted(changes.get(spell, {}).items(), key=lambda i: -i[1])[:6])
+        lines.append(f"  spell {spell}: {counts}" + (f"  changes: {moves}" if moves else ""))
+    return "\n".join(lines)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("path", nargs="?")
@@ -245,6 +279,7 @@ def main(argv=None):
         print(f"== {os.path.basename(os.path.dirname(os.path.dirname(path)))}: {len(entries)} entries")
         print(report(summarize(entries), suggested_casts(entries)))
         print(refusals_report(*refusals(entries)))
+        print(readiness_report(*readiness(entries)))
         print(timeline_report(timeline(entries)))
     return 0
 

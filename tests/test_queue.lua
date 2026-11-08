@@ -44,6 +44,13 @@ H.Equal(s.context, "st", "one target")
 -- it); Battle Shout waits (buff up); Hamstring waits (rage not > 80).
 H.Equal(Ids(s), "7386,772,78,2687,6673~,1715~", "arms list order")
 H.Equal(Q.Head(s), 7386, "head")
+-- The diagnostic log reads why each candidate waits.
+H.Check(s.why:find("7386+", 1, true) ~= nil, "ready entry marked +: " .. s.why)
+H.Check(s.why:find("6673-gate", 1, true) ~= nil, "Battle Shout held by its gate: " .. s.why)
+H.spells[772].noResources = true
+local starved = Build()
+H.Check(starved.why:find("772-res", 1, true) ~= nil, "Rend short of rage: " .. starved.why)
+H.spells[772].noResources = nil
 
 -- An unchanged queue is the same snapshot object.
 Fresh()
