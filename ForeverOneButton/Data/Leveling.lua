@@ -108,11 +108,16 @@ local warrior = {
             e(23922),                          -- Shield Slam
             e(6572),                           -- Revenge (after a block, dodge or parry)
             e(7386, stacksBelow(7386, 5)),     -- Sunder Armor up to 5
+            e(772, dot(772)),                  -- Rend
             e(1160, dot(1160)),                -- Demoralizing Shout
             e(6343, targetsAtLeast(2)),        -- Thunder Clap
             e(845, targetsAtLeast(2), rageAtLeast(30)), -- Cleave
             e(5308, execute()),                -- Execute
-            e(78, rageAtLeast(40)),            -- Heroic Strike with spare rage
+            -- Heroic Strike: whenever affordable until Shield Slam is known,
+            -- then only with spare rage. A level-11 log (2026-11-08) with a
+            -- 40-rage threshold from the start: the button waited 436 s of
+            -- about 900 s in combat with nothing else to press.
+            e(78, any(unknown(23922), rageAtLeast(40))),
             e(71, buffMissing(71)),            -- Defensive Stance
         },
         aoe = {

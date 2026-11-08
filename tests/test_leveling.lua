@@ -153,6 +153,37 @@ s = ns.Queue.Build(nil)
 H.Equal(s.leveling, false, "level 60: imported list")
 H.units.player.level = 13
 
+-- Protection talents at level 11 (shared log of 2026-11-08): Rend, then
+-- Heroic Strike whenever affordable; with Shield Slam known, Heroic Strike
+-- only from 40 rage.
+H.talents = {Arms = 0, Fury = 0, Protection = 2}
+ns.Trees.Invalidate()
+H.known[7386], H.spells[7386] = nil, nil -- Sunder not trained, as in the log
+H.units.player.level = 11
+H.units.player.power[RAGE] = 20
+H.auras.target = H.auras.target or {}
+H.auras.target[772] = nil
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Equal(s.tree, "protection", "protection talents")
+H.Equal(s.entries[1].id, 772, "protection lv 11: Rend first")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 772)
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 284, "protection lv 11: Heroic Strike with 20 rage")
+H.known[23922], H.spells[23922] = true, {name = "Shield Slam", inRange = true, cooldown = true}
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+for i = 1, s.count do
+    H.Check(s.entries[i].id ~= 284 or not s.entries[i].ready, "Shield Slam known: no Heroic Strike under 40 rage")
+end
+H.units.player.power[RAGE] = 45
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 284, "Shield Slam on cooldown, 45 rage: Heroic Strike")
+H.known[23922], H.spells[23922] = nil, nil
+H.units.player.power[RAGE] = 20
+
 -- A priest's wand: never suggested while Shoot is already running.
 H.class = "PRIEST"
 H.talents = nil
