@@ -145,5 +145,8 @@ client 1.60.1.70862, Ladro 13 in locanda:
 - Promemoria in chat al rientro in locanda con il link [Share the log]; il
   link apre la finestra; "I sent it" ha tolto 19.887 righe e il log salvato
   è vuoto, `remindedAt` scritto.
-- Da verificare: la correzione della spell in coda (`held`) con una nuova
-  sessione di combattimento.
+- Correzione della spell in coda (`held`) verificata il 2026-11-08 (log
+  condiviso, Ladro 13, 13 combattimenti): Slice and Dice parte in 14
+  raffiche su 14 (prima 86 su 151, 61 volte Sinister Strike al suo posto),
+  "Another action is in progress" 0 (prima 254). Restano gli "Ability is
+  not ready yet": pressioni del lettore pixel durante il GCD, non di FOB.
