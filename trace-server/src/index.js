@@ -1,12 +1,15 @@
 // trace.lucabottani.dev: collection point for Forever One Button logs.
 //   GET  /            the page: paste the line from /fob share, send it
-//   POST /api/share   the pasted line (text/plain) -> stored in R2, summary back
+//   POST /api/share   the pasted line (text/plain) -> stored in KV, summary back
 //   GET  /admin/list  ?prefix=&cursor=   (Authorization: Bearer ADMIN_TOKEN)
 //   GET  /admin/get   ?key=              (same)
 // No IP address or other request data is stored: only the log and the
 // header it carries (addon version, client build, class, level, locale).
 import { decodeShare, parseText, summarize, storageKey, ShareError, MAX_PASTE_BYTES } from "./share.js";
 import { page } from "./page.js";
+
+// Logs are deleted by KV itself after this long (privacy notice: 180 days).
+export const KEEP_SECONDS = 180 * 24 * 3600;
 
 const SECURITY_HEADERS = {
   "Content-Security-Policy": "default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
@@ -73,8 +76,8 @@ async function share(request, env) {
     const id = crypto.randomUUID();
     const key = storageKey(new Date(), id);
     await env.SHARES.put(key, decoded.text, {
-      httpMetadata: { contentType: "text/plain; charset=utf-8" },
-      customMetadata: {
+      expirationTtl: KEEP_SECONDS,
+      metadata: {
         addon: header.addon ?? "", build: header.build ?? "", class: header.class ?? "",
         level: header.level ?? "", locale: header.locale ?? "", entries: String(entries.length),
         compressed: decoded.compressed ? "1" : "0",
@@ -98,18 +101,17 @@ async function admin(request, env, url) {
       prefix: url.searchParams.get("prefix") ?? "fob/",
       cursor: url.searchParams.get("cursor") ?? undefined,
       limit: 1000,
-      include: ["customMetadata"],
     });
     return json({
       ok: true,
-      objects: listed.objects.map((o) => ({ key: o.key, size: o.size, uploaded: o.uploaded, meta: o.customMetadata })),
-      cursor: listed.truncated ? listed.cursor : null,
+      objects: listed.keys.map((k) => ({ key: k.name, expiration: k.expiration, meta: k.metadata })),
+      cursor: listed.list_complete ? null : listed.cursor,
     });
   }
   if (url.pathname === "/admin/get") {
-    const object = await env.SHARES.get(url.searchParams.get("key") ?? "");
-    if (!object) return json({ ok: false }, 404);
-    return new Response(object.body, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
+    const text = await env.SHARES.get(url.searchParams.get("key") ?? "");
+    if (text === null) return json({ ok: false }, 404);
+    return new Response(text, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
   }
   return json({ ok: false }, 404);
 }

@@ -72,8 +72,8 @@ function fakeEnv() {
     ADMIN_TOKEN: "x".repeat(40),
     SHARES: {
       async put(key, value, options) { stored.set(key, { value, options }); },
-      async get(key) { const o = stored.get(key); return o ? { body: o.value } : null; },
-      async list() { return { objects: [...stored.keys()].map((key) => ({ key, size: 1, uploaded: new Date(0), customMetadata: stored.get(key).options.customMetadata })), truncated: false }; },
+      async get(key) { const o = stored.get(key); return o ? o.value : null; },
+      async list() { return { keys: [...stored.keys()].map((name) => ({ name, metadata: stored.get(name).options.metadata })), list_complete: true }; },
     },
     LIMITER: { calls: 0, async limit() { this.calls++; return { success: this.calls <= 5 }; } },
   };
@@ -97,7 +97,8 @@ test("worker: page, share stored without request data, admin behind the token", 
   const [[key, saved]] = [...env.stored];
   assert.match(key, /^fob\/\d{4}-\d\d-\d\d\/\d{6}-[0-9a-f-]{36}\.txt$/);
   assert.equal(saved.value, TEXT);
-  assert.equal(saved.options.customMetadata.class, "ROGUE");
+  assert.equal(saved.options.metadata.class, "ROGUE");
+  assert.equal(saved.options.expirationTtl, 180 * 24 * 3600, "deleted after 180 days");
   assert.ok(!JSON.stringify(saved).includes("203.0.113.9"), "no IP stored");
 
   const bad = await worker.fetch(new Request("https://trace.lucabottani.dev/api/share", { method: "POST", body: "hello" }), env);
