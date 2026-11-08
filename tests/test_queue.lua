@@ -44,6 +44,13 @@ H.Equal(s.context, "st", "one target")
 -- it); Battle Shout waits (buff up); Hamstring waits (rage not > 80).
 H.Equal(Ids(s), "7386,772,78,2687,6673~,1715~", "arms list order")
 H.Equal(Q.Head(s), 7386, "head")
+-- The diagnostic log reads why each candidate waits.
+H.Check(s.why:find("7386+", 1, true) ~= nil, "ready entry marked +: " .. s.why)
+H.Check(s.why:find("6673-gate", 1, true) ~= nil, "Battle Shout held by its gate: " .. s.why)
+H.spells[772].noResources = true
+local starved = Build()
+H.Check(starved.why:find("772-res", 1, true) ~= nil, "Rend short of rage: " .. starved.why)
+H.spells[772].noResources = nil
 
 -- An unchanged queue is the same snapshot object.
 Fresh()
@@ -65,6 +72,35 @@ H.Equal(Q.Head(s), 7386, "head unchanged")
 H.currentSpells[78] = nil
 s = Build()
 H.Equal(ReadyOf(s, 78), true, "swing done: Heroic Strike ready again")
+-- A spell queued during the global cooldown holds the spells below it: the
+-- next one is not suggested, so a pixel reader cannot press it and replace
+-- the queued spell (Rogue 2026-11-08, Slice and Dice / Sinister Strike).
+H.currentSpells[7386] = true
+s = Build()
+H.Equal(Q.Head(s), nil, "Sunder queued: nothing below it is pressed")
+H.Equal(s.entries[1].kind, ns.ENTRY.WAIT, "a deliberate wait")
+H.Check(s.why:find("772-held", 1, true) ~= nil, "Rend held: " .. s.why)
+H.Check(s.why:find("7386-cur", 1, true) ~= nil, "Sunder pending")
+H.currentSpells[7386] = nil
+H.currentSpells[772] = true
+s = Build()
+H.Equal(Q.Head(s), 7386, "a spell above the queued one is still suggested")
+H.Check(s.why:find("2687-held", 1, true) ~= nil, "Bloodrage, below Rend, held: " .. s.why)
+-- Current for longer than a global cooldown: not a queued press, holds nothing.
+Build()
+s = Build()
+H.Check(s.why:find("held", 1, true) == nil, "no hold after PENDING_HOLD: " .. s.why)
+H.currentSpells[772] = nil
+H.currentSpells[78] = true
+s = Build()
+H.Check(s.why:find("held", 1, true) == nil, "a queued Heroic Strike holds nothing: " .. s.why)
+H.currentSpells[78] = nil
+H.currentSpells[772] = true
+s = Build()
+H.Check(s.why:find("2687-held", 1, true) ~= nil, "queued again: the hold starts over")
+H.currentSpells[772] = nil
+s = Build()
+H.Equal(Q.Head(s), 7386, "nothing queued: normal list")
 H.secretSpellbook = true
 H.Equal(Q.Current(78), false, "a secret answer is not 'queued'")
 H.secretSpellbook = false

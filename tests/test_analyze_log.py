@@ -122,6 +122,28 @@ class AnalyzeLogTest(unittest.TestCase):
         self.assertIn("    2  Target needs to be in front of you.", text)
         self.assertEqual(analyze_log.refusals_report({}, {}), "refused presses: none logged")
 
+    def test_readiness(self):
+        entries = [
+            "10.00|queue|ok|combat+leveling|st|3|3|2|-|5171+,1757+,6760-gate",
+            "10.05|queue|ok|combat+leveling|st|3|3|1|-|5171-res,1757+,6760-gate",
+            "10.10|queue|ok|combat+leveling|st|3|3|0|-|5171-res,1757-cd,6760-gate",
+            "10.15|queue|ok|combat|st|3|3|0|-",
+            "10.20|queue|ok|combat|st|3|3|0|-|-",
+        ]
+        states, changes = analyze_log.readiness(entries)
+        self.assertEqual(states["5171"], {"+": 1, "res": 2})
+        self.assertEqual(states["6760"], {"gate": 3})
+        self.assertEqual(changes["5171"], {"+>res": 1})
+        self.assertEqual(changes["1757"], {"+>cd": 1})
+        text = analyze_log.readiness_report(states, changes)
+        self.assertIn("spell 5171: res=2 +=1  changes: +>res=1", text)
+        self.assertEqual(analyze_log.readiness_report({}, {}), "readiness: not in this log (1.1.6 or older)")
+
+    def test_shared_log(self):
+        text = "fob-share 1\naddon=1.1.6\nentries=2\n\n10.0|combat|in\n11.0|cast|1752|0\n"
+        self.assertEqual(analyze_log.read_entries(text), ["10.0|combat|in", "11.0|cast|1752|0"])
+        self.assertEqual(analyze_log.read_entries("fob-share 1\naddon=1"), [])
+
     def test_no_log(self):
         self.assertEqual(analyze_log.read_entries("ForeverOneButtonDB = {}"), [])
         report = analyze_log.report(analyze_log.summarize([]))

@@ -100,7 +100,8 @@ function Model.Refresh()
                 lastLogged = snapshot
                 ns.Log("queue", snapshot.status, (snapshot.tree or "-") .. (snapshot.leveling and "+leveling" or ""),
                     snapshot.context or "-", snapshot.count or 0,
-                    snapshot.candidates or "-", snapshot.ready or "-", snapshot.detail or "-")
+                    snapshot.candidates or "-", snapshot.ready or "-", snapshot.detail or "-",
+                    snapshot.why or "-")
             end
             local first = snapshot.entries[1]
             ns.Log("head", first and first.id or "none",

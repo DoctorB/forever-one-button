@@ -115,8 +115,38 @@ buffer da 5000 righe teneva solo gli ultimi 76 minuti (dal livello 8 circa),
 - Eviscerate a 5 punti combo o con 2+ sotto il 20% di salute del bersaglio,
   come da lista; Minor Healing Potion suggerita 5 volte, bevuta 4.
 - Slice and Dice (livello 10) mai suggerito né lanciato: da verificare.
+  Verificato il 2026-11-08 (1.1.6, Ladro, 117 combattimenti): suggerito con
+  1+ punti combo e buff assente, lanciato 107 volte.
+- 2026-11-08: Slice and Dice compare durante il GCD subito dopo Sinister
+  Strike e il lettore pixel lo preme ogni 20 ms (151 raffiche, 3081
+  "Ability is not ready yet"); a fine GCD il pixel alterna Sinister Strike,
+  Slice and Dice e nero ogni 50-100 ms e in 61 raffiche su 151 parte
+  Sinister Strike. Causa da leggere nel log: dopo la 1.1.6 ogni riga `queue`
+  dice perché ogni voce aspetta (`5171-res`, `1757-cd`...), riassunto da
+  `scripts/analyze_log.py` ("readiness per spell").
+  Causa trovata il 2026-11-08 (log inviato con /fob share, Ladro 13): la
+  spell premuta durante il GCD resta "current" (in coda nel client), FOB
+  la saltava e suggeriva la successiva (`5171-cur` -> head 1757), il
+  lettore la premeva e il client la metteva al posto di Slice and Dice.
+  Corretto: una spell in coda trattiene quelle sotto (`held`) per al
+  massimo 1,5 s; da verificare in gioco che gli "Another action is in
+  progress" e i Sinister Strike al posto di Slice and Dice spariscano.
 - 5 momenti in cui Sinister Strike compare e sparisce ogni 50-150 ms per
   0,5-2,4 s prima di partire (pressione rifiutata dal gioco, motivo non
   registrato): dalla 1.1.6 il log registra `error` e `failed`.
 - Hamstring sul bersaglio in fuga (Guerriero): pubblicato in 1.1.6 senza
   aver ancora visto un mob in fuga in gioco.
+
+Condivisione del log (`/fob share`, branch feat/share-log), 2026-11-08,
+client 1.60.1.70862, Ladro 13 in locanda:
+- Finestra: riga compressa con `C_EncodingUtil` (19.873 righe, 143 KB),
+  incollata su trace.lucabottani.dev e ricevuta intera (analisi identica
+  a quella del file).
+- Promemoria in chat al rientro in locanda con il link [Share the log]; il
+  link apre la finestra; "I sent it" ha tolto 19.887 righe e il log salvato
+  è vuoto, `remindedAt` scritto.
+- Correzione della spell in coda (`held`) verificata il 2026-11-08 (log
+  condiviso, Ladro 13, 13 combattimenti): Slice and Dice parte in 14
+  raffiche su 14 (prima 86 su 151, 61 volte Sinister Strike al suo posto),
+  "Another action is in progress" 0 (prima 254). Restano gli "Ability is
+  not ready yet": pressioni del lettore pixel durante il GCD, non di FOB.

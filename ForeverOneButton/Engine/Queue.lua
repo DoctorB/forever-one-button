@@ -10,6 +10,8 @@
 --
 -- The result has the shape the panel and the pixel read:
 --   {status, detail, entries = {{kind, id, base, ready}...}, count, tree, context}
+-- A spell queued by the client during the global cooldown holds the spells
+-- below it (Queue.PENDING_HOLD).
 -- and an unchanged queue returns the previous snapshot object.
 local ADDON_NAME, ns = ...
 
@@ -20,6 +22,16 @@ Queue.MAX_ENTRIES = 10
 Queue.GAP_CLOSER_MIN_YARDS = 8 -- Charge and Intercept start at 8 yards
 Queue.GAP_CLOSER_DEBOUNCE = 3
 local ATTACK_SPELL = 6603 -- "Attack": skipped while already swinging
+-- A spell pressed during the global cooldown is queued by the client and
+-- reported as current until it goes off. While it is, the spells below it
+-- in the list wait: suggesting the next one made a pixel reader press it,
+-- and the client replaced the queued spell with it (Rogue, 2026-11-08:
+-- Slice and Dice queued, Sinister Strike suggested, pressed and cast in
+-- its place; "Another action is in progress"). Not for on-next-swing
+-- attacks, which stay queued until the swing, and at most PENDING_HOLD
+-- seconds, so a spell that stays current for another reason holds nothing.
+Queue.PENDING_HOLD = 1.5
+local pendingSince = {}
 
 local STATUS, ENTRY = ns.STATUS, ns.ENTRY
 
@@ -29,7 +41,7 @@ end
 
 local function Same(a, b)
     if not b or a.status ~= b.status or a.count ~= b.count or a.tree ~= b.tree or a.context ~= b.context
-        or a.detail ~= b.detail or a.leveling ~= b.leveling then
+        or a.detail ~= b.detail or a.leveling ~= b.leveling or a.why ~= b.why then
         return false
     end
     for i = 1, a.count do
@@ -63,17 +75,19 @@ local function Repeating(spellID)
 end
 
 -- Ready or the tier it waits in: 1 cooldown/resources, 2 barred (wrong
--- stance or form), 3 held back (gate, range, DoT up, already queued).
+-- stance or form), 3 held back (gate, range, DoT up, already queued), and
+-- the reason, for the diagnostic log: cd, res, use, cur, range, dot, gate.
 -- A queued on-next-swing attack is not pressed again: it waits for the
 -- swing, and repeated presses can land after the target has died.
 local function Evaluate(entry, id, ctx)
     local usable, noResources = ns.State.Usable(id)
-    if ns.State.OnCooldown(id) == true or noResources == true then return false, 1 end
-    if usable == false then return false, 2 end
-    if Current(id) then return false, 3 end
-    if ctx.targetAttackable and ns.State.InRange(id) == false then return false, 3 end
-    if ns.Dots.Active(id) == true then return false, 3 end
-    if ns.Gates.Blocks(entry.gates, ctx) then return false, 3 end
+    if ns.State.OnCooldown(id) == true then return false, 1, "cd" end
+    if noResources == true then return false, 1, "res" end
+    if usable == false then return false, 2, "use" end
+    if Current(id) then return false, 3, "cur" end
+    if ctx.targetAttackable and ns.State.InRange(id) == false then return false, 3, "range" end
+    if ns.Dots.Active(id) == true then return false, 3, "dot" end
+    if ns.Gates.Blocks(entry.gates, ctx) then return false, 3, "gate" end
     return true
 end
 
@@ -179,11 +193,31 @@ function Queue.Build(previous)
         result.detail = string.format("none of %d list entries known or usable here", #list)
     end
 
-    local ready, waiting = {}, {{}, {}, {}}
+    -- why: each candidate in list order, "5171+" ready or "1757-res" with
+    -- the reason it waits (diagnostic log only).
+    local ready, waiting, why = {}, {{}, {}, {}}, {}
+    local now, heldBy, stillPending = GetTime(), nil, {}
+    local nextSwing = ns.Data.Defaults.nextSwing or {}
     for _, c in ipairs(candidates) do
-        local ok, tier = Evaluate(c.entry, c.id, ctx)
+        local ok, tier, reason = Evaluate(c.entry, c.id, ctx)
+        if reason == "cur" then
+            pendingSince[c.id] = pendingSince[c.id] or now
+            stillPending[c.id] = true
+            if not heldBy and not nextSwing[c.id] and not nextSwing[c.first]
+                and now - pendingSince[c.id] <= Queue.PENDING_HOLD then
+                heldBy = c.id
+            end
+        else
+            pendingSince[c.id] = nil
+            if ok and heldBy then ok, tier, reason = false, 3, "held" end
+        end
         local item = {kind = ENTRY.SPELL, id = c.id, base = c.first, ready = ok}
         if ok then ready[#ready + 1] = item else table.insert(waiting[tier], item) end
+        why[#why + 1] = c.id .. (ok and "+" or ("-" .. reason))
+    end
+    result.why = table.concat(why, ",")
+    for id in pairs(pendingSince) do
+        if not stillPending[id] then pendingSince[id] = nil end
     end
 
     local entries = {}

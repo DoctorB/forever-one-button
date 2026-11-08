@@ -57,6 +57,7 @@ local HELP = {
     "/fob autofill on | off | now | reset",
     "/fob features | feature <name> on | off | <value>  (engine features)",
     "/fob log on | off | show | clear  (diagnostic log of pixel and casts)",
+    "/fob share  (send the diagnostic log to the author: copy and paste on a web page)",
     "/fob probe spellbook | probe frames  (read-only client data for development)",
     "/fob blizzardbar hide | show  (Blizzard's bottom bar; stance and XP bars stay)",
     "/fob show | hide | lock | unlock | reset",
@@ -137,6 +138,8 @@ function Commands.Handle(input)
         elseif sub == "show" then ns.Diagnostics.Show(tonumber(args[3]))
         elseif sub == "clear" then ns.Diagnostics.Clear(); Done(true)
         else ns.Print("/fob log on | off | show [lines] | clear") end
+    elseif command == "share" then
+        ns.ShareWindow.Open()
     elseif command == "autofill" then
         local sub = (args[2] or ""):lower()
         if sub == "on" or sub == "off" then ns.AutoFill.SetEnabled(sub == "on"); Done(true)

@@ -37,6 +37,10 @@ jobs:
         shell: pwsh
         run: ./tests/run.ps1 -LuaPath /usr/bin/lua5.1 -LuacPath /usr/bin/luac5.1 -PythonPath /usr/bin/python3
 
+      - name: Log collection page (trace-server, no dependencies needed)
+        working-directory: trace-server
+        run: node --version && node --test test/*.test.js
+
       - name: Authorship check (commit metadata and distributed fields)
         run: python3 -B scripts/check_attribution.py HEAD
 
