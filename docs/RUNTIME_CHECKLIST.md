@@ -136,3 +136,14 @@ buffer da 5000 righe teneva solo gli ultimi 76 minuti (dal livello 8 circa),
   registrato): dalla 1.1.6 il log registra `error` e `failed`.
 - Hamstring sul bersaglio in fuga (Guerriero): pubblicato in 1.1.6 senza
   aver ancora visto un mob in fuga in gioco.
+
+Condivisione del log (`/fob share`, branch feat/share-log), 2026-11-08,
+client 1.60.1.70862, Ladro 13 in locanda:
+- Finestra: riga compressa con `C_EncodingUtil` (19.873 righe, 143 KB),
+  incollata su trace.lucabottani.dev e ricevuta intera (analisi identica
+  a quella del file).
+- Promemoria in chat al rientro in locanda con il link [Share the log]; il
+  link apre la finestra; "I sent it" ha tolto 19.887 righe e il log salvato
+  è vuoto, `remindedAt` scritto.
+- Da verificare: la correzione della spell in coda (`held`) con una nuova
+  sessione di combattimento.
