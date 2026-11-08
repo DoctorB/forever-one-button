@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.1.8 - 2026-11-08
+
+### Fixed
+
+- Warrior with Protection talents, while leveling: the button no longer sits
+  idle for half of every fight. Heroic Strike waited for 40 rage, and at low
+  level there was nothing else to press in the meantime. Now Heroic Strike
+  is suggested as soon as you can afford it, until you learn Shield Slam;
+  from then on it again waits for spare rage, so Shield Slam and Revenge
+  keep theirs. Rend is now part of the list too, after Sunder Armor.
+  In game, at level 11, the time the button waited for Heroic Strike went
+  from about half of each fight to none.
+
+### Thank you
+
+This fix came straight from a shared diagnostic log. If you would like to
+help in the same way, type `/fob log on`, play as usual, then click the
+green **[Share the log]** link that appears in chat (or type `/fob share`)
+and paste the line at <https://trace.lucabottani.dev>. Your character and
+realm names are removed first, and nothing is sent unless you paste it
+there. The addon works the same with the log off: helping is entirely up to
+you, and every log is welcome.
+
 ## 1.1.7 - 2026-11-08
 
 ### You can help make Forever One Button better
