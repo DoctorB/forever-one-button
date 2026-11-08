@@ -110,4 +110,59 @@ H.Equal(Share.Forget(share.last), 3, "the three shared entries still there")
 H.Equal(#ForeverOneButtonLog.entries, 1, "the new one stays")
 H.Equal(Share.Forget("not in the log"), 0, "unknown entry: nothing removed")
 
+-- Reminder: a chat link to the share window, in a resting area, out of
+-- combat, with 30 minutes of unshared play, at most once an hour.
+local R = ns.ShareReminder
+H.Equal(R.linkHandler, "SetItemRef", "no LinkUtil in the harness: SetItemRef hook")
+local clock = 1000000
+time = function() return clock end
+local resting = false
+IsResting = function() return resting end
+ns.Commands.Handle("log clear")
+for i = 0, 40 do ns.Log("combat", "in"); end
+-- 40 minutes of entries, one a minute.
+for i = 1, #ForeverOneButtonLog.entries do
+    ForeverOneButtonLog.entries[i] = string.format("%.4f|cast|1752|1", 100 + i * 60)
+end
+ForeverOneButtonLog.remindedAt = nil
+local function Reminders()
+    local n = 0
+    for _, line in ipairs(H.printed) do if line:find("|Hfobshare:open|h", 1, true) then n = n + 1 end end
+    return n
+end
+local before = Reminders()
+H.Fire("PLAYER_UPDATE_RESTING")
+H.Equal(Reminders(), before, "not resting: no reminder")
+resting = true
+H.inCombat = true
+H.Fire("PLAYER_UPDATE_RESTING")
+H.Equal(Reminders(), before, "in combat: no reminder")
+H.inCombat = false
+H.Fire("PLAYER_REGEN_ENABLED")
+H.Equal(Reminders(), before + 1, "out of combat in an inn: reminder with the link")
+H.Fire("PLAYER_UPDATE_RESTING")
+H.Equal(Reminders(), before + 1, "once an hour")
+clock = clock + 3601
+ns.Commands.Handle("log off")
+H.Fire("PLAYER_UPDATE_RESTING")
+H.Equal(Reminders(), before + 1, "log off: no reminder")
+ns.Commands.Handle("log on")
+for i = #ForeverOneButtonLog.entries, 1, -1 do
+    if not ForeverOneButtonLog.entries[i]:find("|cast|", 1, true) then table.remove(ForeverOneButtonLog.entries, i) end
+end
+H.Fire("PLAYER_UPDATE_RESTING")
+H.Equal(Reminders(), before + 2, "an hour later: again")
+-- The link opens the window; opening it counts as a reminder.
+_G.ForeverOneButtonShare:Hide()
+SetItemRef("fobshare:open", "[Share the log]", "LeftButton")
+H.Check(_G.ForeverOneButtonShare:IsShown(), "the link opens the share window")
+H.Equal(ForeverOneButtonLog.remindedAt, clock, "opening counts as reminded")
+H.Equal(R.HandleLink("item:123"), false, "other links are not ours")
+-- Too little play: no reminder.
+ns.ShareWindow.Sent()
+clock = clock + 7200
+for i = 1, 5 do ns.Log("cast", 1, 1) end
+H.Fire("PLAYER_UPDATE_RESTING")
+H.Equal(Reminders(), before + 2, "under 30 minutes of play: no reminder")
+
 H.Done("test_share")

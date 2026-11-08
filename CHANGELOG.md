@@ -16,6 +16,9 @@
   log stays off unless you turn it on (`/fob log on`), and your character
   and realm names are removed. After sending, **I sent it** removes the
   shared entries; **Close** keeps them for another try.
+  With the log on, once there are 30 minutes of play to send, a chat line
+  with a link that opens the window appears in an inn or a city, out of
+  combat, at most once an hour.
 - Diagnostic log: each queue change records, for every suggestion, whether
   it is ready or why it waits (cooldown, not enough energy/rage/mana, gate,
   range...); `scripts/analyze_log.py` counts them per spell. It serves to

@@ -114,6 +114,7 @@ function ShareWindow.Open()
         return false
     end
     if not frame then Build() end
+    if ns.ShareReminder then ns.ShareReminder.MarkShown() end
     pending = share
     ReadOnly(frame.line, share.text)
     frame.stats:SetText(string.format("%d entries, about %s of play, %d KB to paste%s.",

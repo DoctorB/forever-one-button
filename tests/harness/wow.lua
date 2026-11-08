@@ -345,6 +345,16 @@ for _, name in ipairs({"CastSpellByName", "CastSpellByID", "UseAction", "RunMacr
     _G[name] = function() H.calls[name] = (H.calls[name] or 0) + 1 end
 end
 
+-- Chat links: Blizzard's handler, and post-hooks as the client runs them.
+function SetItemRef() end
+function hooksecurefunc(name, hook)
+    local original = _G[name]
+    _G[name] = function(...)
+        local a, b, c = original(...)
+        hook(...)
+        return a, b, c
+    end
+end
 DEFAULT_CHAT_FRAME = {AddMessage = function(_, m) H.printed[#H.printed + 1] = m end}
 GameTooltip = {SetOwner = function() end, AddLine = function() end, SetText = function() end, Show = function() end,
     Hide = function() end}

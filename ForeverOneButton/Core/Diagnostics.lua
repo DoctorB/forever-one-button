@@ -84,6 +84,7 @@ function Diagnostics.Load()
         return out
     end
     ForeverOneButtonLog = {version = 1, enabled = saved.enabled == true, entries = entries,
+        remindedAt = type(saved.remindedAt) == "number" and saved.remindedAt or nil,
         probe = Lines(saved.probe), probeFrames = Lines(saved.probeFrames)}
     log = ForeverOneButtonLog.enabled and ForeverOneButtonLog.entries or nil
 end
