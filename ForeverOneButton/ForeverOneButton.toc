@@ -28,6 +28,7 @@ Engine\Interrupts.lua
 Engine\Defensives.lua
 Engine\Precombat.lua
 Core\Diagnostics.lua
+Core\Share.lua
 Core\Probe.lua
 Core\Settings.lua
 Panel\Keys.lua
@@ -38,6 +39,7 @@ Panel\Grid.lua
 Panel\Reminders.lua
 Bridge\Model.lua
 UI\Options.lua
+UI\ShareWindow.lua
 UI\BlizzardBar.lua
 Core\Commands.lua
 Core\Events.lua

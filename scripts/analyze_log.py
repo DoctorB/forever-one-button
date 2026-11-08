@@ -1,6 +1,6 @@
 """Analyze the Forever One Button diagnostic log (ForeverOneButtonLog).
 
-    python scripts/analyze_log.py [path\\to\\ForeverOneButton.lua]
+    python scripts/analyze_log.py [path\\to\\ForeverOneButton.lua | shared-log.txt]
 
 Without a path it looks in the Forever client's SavedVariables:
 World of Warcraft\\_forever_\\WTF\\Account\\*\\SavedVariables\\ForeverOneButton.lua
@@ -31,6 +31,11 @@ DEFAULT_GLOB = r"C:\Program Files (x86)\World of Warcraft\_forever_\WTF\Account\
 
 
 def read_entries(text):
+    # A log shared with /fob share and downloaded by scripts/fetch_shares.py:
+    # "fob-share 1", header lines, an empty line, then one entry per line.
+    if text.startswith("fob-share "):
+        body = text.replace("\r\n", "\n").split("\n\n", 1)
+        return [line for line in body[1].split("\n") if line] if len(body) == 2 else []
     start = text.find("ForeverOneButtonLog")
     if start < 0:
         return []

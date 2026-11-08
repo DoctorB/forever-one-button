@@ -216,6 +216,14 @@ function Frame:StartMoving() Guard(self, "StartMoving"); self.moving = true end
 function Frame:StopMovingOrSizing() self.moving = false end
 function Frame:SetUserPlaced(u) self.userPlaced = u end
 function Frame:SetText(t) self.text = t end
+function Frame:GetText() return self.text end
+-- EditBox
+function Frame:SetAutoFocus(on) self.autoFocus = on end
+function Frame:SetFontObject(font) self.font = font end
+function Frame:SetMaxLetters(n) self.maxLetters = n end
+function Frame:HighlightText() self.highlighted = true end
+function Frame:SetFocus() self.focused = true end
+function Frame:ClearFocus() self.focused = false end
 function Frame:SetChecked(c) self.checked = c end
 function Frame:GetChecked() return self.checked end
 function Frame:Click(button)
@@ -338,7 +346,8 @@ for _, name in ipairs({"CastSpellByName", "CastSpellByID", "UseAction", "RunMacr
 end
 
 DEFAULT_CHAT_FRAME = {AddMessage = function(_, m) H.printed[#H.printed + 1] = m end}
-GameTooltip = {SetOwner = function() end, AddLine = function() end, Show = function() end, Hide = function() end}
+GameTooltip = {SetOwner = function() end, AddLine = function() end, SetText = function() end, Show = function() end,
+    Hide = function() end}
 UISpecialFrames = {}
 SlashCmdList = {}
 function wipe(t) for k in pairs(t) do t[k] = nil end return t end

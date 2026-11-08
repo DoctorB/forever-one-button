@@ -165,6 +165,7 @@ least 60 ms before the next suggestion, as in HCOneButton. Details:
 | `/fob pixel combat on` / `combat off` | Pixel only in combat (default on) or always |
 | `/fob blizzardbar hide` / `show` | Hide or show Blizzard's bottom bar (stance and XP bars stay) |
 | `/fob log on` / `off` / `show [lines]` / `clear` | Diagnostic log of pixel writes, casts and edges (off by default) |
+| `/fob share` | Send the diagnostic log to the author: a window shows one line to copy and paste at <https://trace.lucabottani.dev> |
 
 ## Troubleshooting
 

@@ -139,6 +139,11 @@ class AnalyzeLogTest(unittest.TestCase):
         self.assertIn("spell 5171: res=2 +=1  changes: +>res=1", text)
         self.assertEqual(analyze_log.readiness_report({}, {}), "readiness: not in this log (1.1.6 or older)")
 
+    def test_shared_log(self):
+        text = "fob-share 1\naddon=1.1.6\nentries=2\n\n10.0|combat|in\n11.0|cast|1752|0\n"
+        self.assertEqual(analyze_log.read_entries(text), ["10.0|combat|in", "11.0|cast|1752|0"])
+        self.assertEqual(analyze_log.read_entries("fob-share 1\naddon=1"), [])
+
     def test_no_log(self):
         self.assertEqual(analyze_log.read_entries("ForeverOneButtonDB = {}"), [])
         report = analyze_log.report(analyze_log.summarize([]))

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `/fob share`: send the diagnostic log to the author, to help fix wrong
+  suggestions. A window shows one line of text: copy it and paste it at
+  <https://trace.lucabottani.dev>. Nothing is sent unless you do that, the
+  log stays off unless you turn it on (`/fob log on`), and your character
+  and realm names are removed. After sending, **I sent it** removes the
+  shared entries; **Close** keeps them for another try.
 - Diagnostic log: each queue change records, for every suggestion, whether
   it is ready or why it waits (cooldown, not enough energy/rage/mana, gate,
   range...); `scripts/analyze_log.py` counts them per spell. It serves to
