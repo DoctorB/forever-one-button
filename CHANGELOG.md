@@ -1,30 +1,52 @@
 # Changelog
 
-## Unreleased
+## 1.1.7 - 2026-11-08
 
-- With a pixel reader, a spell pressed during the global cooldown is no
-  longer replaced by the next one. The game queues the pressed spell; the
-  addon used to suggest the spell below it at once, the reader pressed it
-  and the game cast that one instead (Rogue: Sinister Strike in place of
-  Slice and Dice in 61 of 151 cases, with "Another action is in progress").
-  Now, while a spell is queued, the spells below it wait and the pixel
-  stays black, for at most 1.5 seconds. Heroic Strike and the other attacks
-  on the next swing are not affected.
-- `/fob share`: send the diagnostic log to the author, to help fix wrong
-  suggestions. A window shows one line of text: copy it and paste it at
-  <https://trace.lucabottani.dev>. Nothing is sent unless you do that, the
-  log stays off unless you turn it on (`/fob log on`), and your character
-  and realm names are removed. After sending, **I sent it** removes the
-  shared entries; **Close** keeps them for another try.
-  With the log on, once there are 30 minutes of play to send, a chat line
-  with a link that opens the window appears in an inn or a city, out of
-  combat, at most once an hour.
-- Diagnostic log: each queue change records, for every suggestion, whether
-  it is ready or why it waits (cooldown, not enough energy/rage/mana, gate,
-  range...); `scripts/analyze_log.py` counts them per spell. It serves to
-  explain why, with a Rogue, Slice and Dice and Sinister Strike swap on the
-  pixel at the end of the global cooldown. Suggestions and the pixel are
-  unchanged.
+### You can help make Forever One Button better
+
+Every class, level and situation plays a little differently, and we can
+only test so many of them ourselves. If the addon ever suggests the wrong spell, or
+the right one at the wrong moment, the quickest way to get it fixed is a
+diagnostic log from your own play. If you would like to help, it takes a
+minute:
+
+1. Type `/fob log on` and play as usual. The log is off until you do this.
+2. After about 30 minutes of play, when you are in an inn or a city, a chat
+   line appears with a green **[Share the log]** link. (You can also type
+   `/fob share` at any time.)
+3. Click the link, copy the line in the window (Ctrl+A, Ctrl+C), paste it at
+   <https://trace.lucabottani.dev> and press Send. Back in game, click
+   **I sent it**.
+
+What you send: the spells and items the addon suggested and you cast, the
+game's own messages (such as "Out of range"), timings, your class, level,
+language and the addon version. Your character and realm names are removed
+before you see the line, and nothing leaves your computer unless you paste
+it on that page. The page does not store your IP address, logs are read only
+to improve the addon and are deleted after 180 days.
+
+You do not have to do anything: the addon works the same with the log off.
+But every log helps, and the fix below came straight from one. Thank you!
+
+### Fixed
+
+- Spells pressed during the global cooldown are no longer replaced by the
+  next suggestion. The game queues a spell pressed during the global
+  cooldown; the addon then moved on to the next spell at once, and pressing
+  that one made the game cast it instead. With a Rogue, Sinister Strike went
+  off in place of Slice and Dice about 4 times in 10, with "Another action
+  is in progress" errors. Now the spells below a queued spell wait for it, at
+  most 1.5 seconds. Heroic Strike and the other attacks on the next swing
+  are not affected.
+
+### Diagnostic log
+
+- Each change of the suggestions records, for every spell, whether it is
+  ready or why it waits (cooldown, not enough energy, rage or mana, its
+  condition, range...). This is what showed the problem above.
+- `/fob share` and the chat reminder are new (see above). After you click
+  **I sent it**, the shared part of the log is removed; **Close** keeps it
+  so you can try again.
 
 ## 1.1.6 - 2026-11-07
 
