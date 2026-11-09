@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.1.9 - 2026-11-09
+
+### New
+
+- When you come back from being away (AFK), the addon now reminds you about
+  a log that is ready to send, wherever you are, not only in an inn or a
+  city.
+- If the log is off, coming back from being away may show a short, friendly
+  question: would you like to help improve the addon? Click
+  **[Turn on the log]** or **[No thanks]**. It asks at most three times, a
+  week apart, and never again once you answer. The addon works exactly the
+  same either way.
+
 ## 1.1.8 - 2026-11-08
 
 ### Fixed
