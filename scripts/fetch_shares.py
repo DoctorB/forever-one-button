@@ -1,10 +1,12 @@
 """Download the logs players shared at trace.lucabottani.dev and analyze them.
 
-    py -B scripts/fetch_shares.py [--all]
+    py -B scripts/fetch_shares.py [--all | --check]
 
 Reads ADMIN_TOKEN from trace-server/.dev.vars (git-ignored), lists the
 stored logs, downloads the ones not yet in local/shares/ and runs
 scripts/analyze_log.py on each new one (--all: on every downloaded log).
+--check only lists the logs not downloaded yet, so they stay "new" for
+the next full run.
 """
 import argparse
 import json
@@ -44,6 +46,8 @@ def local_path(key):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--all", action="store_true", help="analyze every downloaded log, not only new ones")
+    parser.add_argument("--check", action="store_true",
+                        help="only list the logs not downloaded yet; download nothing (exit 1 if any)")
     args = parser.parse_args(argv)
     secret = token()
     objects, cursor = [], None
@@ -54,6 +58,14 @@ def main(argv=None):
         cursor = page.get("cursor")
         if not cursor:
             break
+    if args.check:
+        pending = [obj for obj in objects if not os.path.exists(local_path(obj["key"]))]
+        print(f"{len(objects)} logs stored, {len(pending)} not downloaded yet")
+        for obj in pending:
+            meta = obj.get("meta") or {}
+            print(f"  {obj['key']}  {meta.get('class', '?')} lv {meta.get('level', '?')}"
+                  f"  FOB {meta.get('addon', '?')}")
+        return 1 if pending else 0
     os.makedirs(OUT, exist_ok=True)
     new = []
     for obj in objects:

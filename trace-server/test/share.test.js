@@ -126,3 +126,24 @@ test("worker: rate limit and size limit", async () => {
   const get = await worker.fetch(new Request("https://trace.lucabottani.dev/api/share"), fakeEnv());
   assert.equal(get.status, 405);
 });
+
+test("worker: /admin page holds no data and is not cached", async () => {
+  const res = await worker.fetch(new Request("https://trace.lucabottani.dev/admin"), { ADMIN_TOKEN: "x".repeat(40) });
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("Cache-Control"), "no-store");
+  const body = await res.text();
+  assert.ok(body.includes("/admin/list"));
+  assert.ok(!body.includes("x".repeat(40)));
+});
+
+test("worker: favicon served and linked from both pages", async () => {
+  const env = { ADMIN_TOKEN: "x".repeat(40) };
+  const icon = await worker.fetch(new Request("https://trace.lucabottani.dev/favicon.svg"), env);
+  assert.equal(icon.status, 200);
+  assert.equal(icon.headers.get("Content-Type"), "image/svg+xml");
+  assert.ok((await icon.text()).startsWith("<svg"));
+  for (const path of ["/", "/admin"]) {
+    const body = await (await worker.fetch(new Request("https://trace.lucabottani.dev" + path), env)).text();
+    assert.ok(body.includes('rel="icon" href="/favicon.svg"'), path);
+  }
+});
