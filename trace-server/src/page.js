@@ -9,6 +9,7 @@ export function page() {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <title>Forever One Button: share a log</title>
 <style>
 :root { --bg:#f6f7f9; --card:#fff; --ink:#1b1f24; --muted:#5b6470; --line:#d8dde3; --accent:#2f6fde; --ok:#1f8a4c; --bad:#c0392b; }

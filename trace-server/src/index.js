@@ -1,12 +1,15 @@
 // trace.lucabottani.dev: collection point for Forever One Button logs.
 //   GET  /            the page: paste the line from /fob share, send it
 //   POST /api/share   the pasted line (text/plain) -> stored in KV, summary back
+//   GET  /admin       the owner's list page (token in the #fragment, kept in localStorage)
 //   GET  /admin/list  ?prefix=&cursor=   (Authorization: Bearer ADMIN_TOKEN)
 //   GET  /admin/get   ?key=              (same)
 // No IP address or other request data is stored: only the log and the
 // header it carries (addon version, client build, class, level, locale).
 import { decodeShare, parseText, summarize, storageKey, ShareError, MAX_PASTE_BYTES } from "./share.js";
 import { page } from "./page.js";
+import { adminPage } from "./admin-page.js";
+import { FAVICON } from "./favicon.js";
 
 // Logs are deleted by KV itself after this long (privacy notice: 180 days).
 export const KEEP_SECONDS = 180 * 24 * 3600;
@@ -123,6 +126,14 @@ export default {
     if (url.pathname === "/api/share") {
       if (request.method !== "POST") return json({ ok: false, code: "method" }, 405);
       return share(request, env);
+    }
+    if (url.pathname === "/favicon.svg" && (request.method === "GET" || request.method === "HEAD")) {
+      return new Response(FAVICON, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400", ...SECURITY_HEADERS } });
+    }
+    if (url.pathname === "/admin" && request.method === "GET") {
+      const response = html(adminPage());
+      response.headers.set("Cache-Control", "no-store");
+      return response;
     }
     if (url.pathname.startsWith("/admin/") && request.method === "GET") return admin(request, env, url);
     return json({ ok: false, code: "not_found" }, 404);
