@@ -83,8 +83,11 @@ function Diagnostics.Load()
         end
         return out
     end
+    local invite = type(saved.invite) == "table" and saved.invite or {}
     ForeverOneButtonLog = {version = 1, enabled = saved.enabled == true, entries = entries,
         remindedAt = type(saved.remindedAt) == "number" and saved.remindedAt or nil,
+        invite = {count = type(invite.count) == "number" and invite.count or 0,
+            at = type(invite.at) == "number" and invite.at or nil, declined = invite.declined == true},
         probe = Lines(saved.probe), probeFrames = Lines(saved.probeFrames)}
     log = ForeverOneButtonLog.enabled and ForeverOneButtonLog.entries or nil
 end

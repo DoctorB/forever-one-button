@@ -165,4 +165,74 @@ for i = 1, 5 do ns.Log("cast", 1, 1) end
 H.Fire("PLAYER_UPDATE_RESTING")
 H.Equal(Reminders(), before + 2, "under 30 minutes of play: no reminder")
 
+-- Back from AFK: the share reminder anywhere (no resting area needed).
+local afk = false
+UnitIsAFK = function() return afk end
+local function Invites()
+    local n = 0
+    for _, line in ipairs(H.printed) do if line:find("|Hfobshare:logon|h", 1, true) then n = n + 1 end end
+    return n
+end
+for i = 1, 40 do ForeverOneButtonLog.entries[#ForeverOneButtonLog.entries + 1] = string.format("%.4f|cast|1752|1", 20000 + i * 60) end
+resting = false
+clock = clock + 3601
+afk = true
+H.Fire("PLAYER_FLAGS_CHANGED", "player")
+H.Equal(Reminders(), before + 2, "going AFK: nothing")
+afk = false
+H.Fire("PLAYER_FLAGS_CHANGED", "target")
+H.Equal(Reminders(), before + 2, "flags of another unit: ignored")
+H.Fire("PLAYER_FLAGS_CHANGED", "player")
+H.Equal(Reminders(), before + 3, "back from AFK outside a resting area: reminder")
+H.Equal(Invites(), 0, "log on: never the invitation")
+afk = true; H.Fire("PLAYER_FLAGS_CHANGED", "player")
+afk = false; H.Fire("PLAYER_FLAGS_CHANGED", "player")
+H.Equal(Reminders(), before + 3, "back from AFK again within the hour: no reminder")
+
+-- Log off: the invitation to turn it on, at most 3 times, a week apart.
+ns.Commands.Handle("log off")
+ForeverOneButtonLog.invite = {count = 0}
+local function BackFromAfk()
+    afk = true; H.Fire("PLAYER_FLAGS_CHANGED", "player")
+    afk = false; H.Fire("PLAYER_FLAGS_CHANGED", "player")
+end
+H.inCombat = true
+BackFromAfk()
+H.Equal(Invites(), 0, "in combat: no invitation")
+H.inCombat = false
+BackFromAfk()
+H.Equal(Invites(), 1, "back from AFK with the log off: invitation")
+H.Check(H.printed[#H.printed]:find("|Hfobshare:nothanks|h", 1, true) ~= nil, "with a No thanks link")
+BackFromAfk()
+H.Equal(Invites(), 1, "not again within the week")
+clock = clock + R.INVITE_INTERVAL
+BackFromAfk()
+clock = clock + R.INVITE_INTERVAL
+BackFromAfk()
+H.Equal(Invites(), 3, "a week later each time")
+clock = clock + R.INVITE_INTERVAL
+BackFromAfk()
+H.Equal(Invites(), 3, "never more than three times")
+-- No thanks: never again.
+ForeverOneButtonLog.invite = {count = 0}
+SetItemRef("fobshare:nothanks", "[No thanks]", "LeftButton")
+H.Equal(ForeverOneButtonLog.invite.declined, true, "No thanks is remembered")
+H.Check(not ns.Diagnostics.IsEnabled(), "No thanks leaves the log off")
+clock = clock + R.INVITE_INTERVAL
+BackFromAfk()
+H.Equal(Invites(), 3, "after No thanks: no invitation")
+-- Turn on the log: the log starts, no more invitations.
+ForeverOneButtonLog.invite = {count = 0}
+SetItemRef("fobshare:logon", "[Turn on the log]", "LeftButton")
+H.Check(ns.Diagnostics.IsEnabled(), "the link turns the log on")
+H.Equal(ForeverOneButtonLog.invite.declined, true, "and the invitation stops")
+-- The invitation state survives a reload; bad values are repaired.
+ForeverOneButtonLog.invite = {count = 2, at = 123, declined = false}
+ns.Diagnostics.Load()
+H.Equal(ForeverOneButtonLog.invite.count, 2, "count kept")
+H.Equal(ForeverOneButtonLog.invite.at, 123, "time kept")
+ForeverOneButtonLog.invite = "broken"
+ns.Diagnostics.Load()
+H.Equal(ForeverOneButtonLog.invite.count, 0, "broken invite repaired")
+
 H.Done("test_share")

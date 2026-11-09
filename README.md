@@ -155,8 +155,9 @@ moment, a diagnostic log from your play is the quickest way to get it fixed.
 Sharing one is optional and takes a minute:
 
 1. `/fob log on`, then play as usual (the log is off until you turn it on).
-2. After about 30 minutes of play, in an inn or a city, click the green
-   **[Share the log]** link in chat, or type `/fob share`.
+2. After about 30 minutes of play, in an inn or a city or when you come
+   back from being away, click the green **[Share the log]** link in chat,
+   or type `/fob share`.
 3. Copy the line (Ctrl+A, Ctrl+C), paste it at
    <https://trace.lucabottani.dev>, press Send, then click **I sent it**.
 
@@ -164,6 +165,11 @@ The log holds spells, items, game messages, timings, class, level, language
 and addon version; character and realm names are removed, nothing is sent
 unless you paste it, the page stores no IP address and logs are deleted
 after 180 days.
+
+With the log off, when you come back from being away the addon may ask,
+once in a while, whether you would like to help: click **[Turn on the log]**
+or **[No thanks]**. It asks at most three times, a week apart, and never
+again after either answer.
 
 ## Commands
 
