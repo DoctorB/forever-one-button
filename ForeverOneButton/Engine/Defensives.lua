@@ -190,15 +190,22 @@ end
 -- cell, else the best healing item if it has a cell. Queue.Build puts it at
 -- position 1, so the grid and the pixel both name it. Health that cannot be
 -- read never triggers it.
+-- While the player moves, heals with a cast time are skipped (shared logs,
+-- 2026-11-08: Holy Light held position 1 for up to 8 s of "Can't do that
+-- while moving" and stopped the rotation); an instant heal or the item may
+-- take the place, else the rotation goes on. Unknown speed or cast time
+-- skips nothing.
 function Defensives.EmergencyHeal()
     if not ns.Settings.Feature("emergencyHeal") or not ns.InCombat() then return nil end
     if ns.State.HealthBelow("player", ns.Settings.Feature("emergencyHealBelow")) ~= true then return nil end
     local class = ns.Trees.Class()
     local healing = ns.Data.Defaults.categories.healing
+    local moving = ns.State.Moving() == true
     for _, first in ipairs(class and ns.Data.Defaults.defensive[class] or {}) do
         if healing[first] then
             local entry = SpellEntry(first, 2)
-            if entry and entry.ready and ns.Actions.SlotFor(entry.id) then
+            if entry and entry.ready and ns.Actions.SlotFor(entry.id)
+                and not (moving and ns.State.HasCastTime(entry.id) == true) then
                 entry.emergency = true
                 return entry
             end

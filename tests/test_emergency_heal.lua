@@ -86,4 +86,42 @@ C_CurveUtil = savedCurve
 H.secretStats = false
 H.Equal(Heal(), HOLY_LIGHT, "readable again")
 
+-- Moving (shared logs 2026-11-08: Holy Light pressed for up to 8 s of "Can't
+-- do that while moving"): heals with a cast time are skipped.
+H.spells[HOLY_LIGHT].castTime = 2500
+H.spells[FLASH].castTime = 1500
+H.speed = 7
+H.Equal(Heal(), "none", "moving, Holy Light only, no item cell: nothing")
+H.inCombat = false
+H.Check(A.Assign(3, "item", POTION), "potion back on cell 3")
+H.inCombat = true
+H.Equal(Heal(), -POTION, "moving: the potion instead of Holy Light")
+-- The queue: the rotation goes on instead of a heal that cannot start.
+Fresh()
+local moving = ns.Queue.Build()
+H.Check(not (moving.entries[1] and moving.entries[1].id == HOLY_LIGHT), "Holy Light not at position 1 while moving")
+H.speed = 0
+H.Equal(Heal(), HOLY_LIGHT, "stopped: Holy Light again")
+-- An instant heal is kept while moving.
+H.speed = 7
+H.spells[HOLY_LIGHT].castTime = 0
+H.Equal(Heal(), HOLY_LIGHT, "instant heal kept while moving")
+H.spells[HOLY_LIGHT].castTime = 2500
+-- Unknown speed or cast time: no change from before.
+local savedSpeed = GetUnitSpeed
+GetUnitSpeed = nil
+H.Equal(Heal(), HOLY_LIGHT, "speed unknown: Holy Light as before")
+GetUnitSpeed = savedSpeed
+H.Equal(Heal(), -POTION, "speed readable again: the potion")
+H.spells[HOLY_LIGHT].castTime = nil
+H.Equal(Heal(), -POTION, "cast time unreadable now: the last value read (2.5 s) counts")
+-- Never read at all: no change from before.
+local LAY = 633
+H.known[LAY], H.spells[LAY] = true, {name = "Lay on Hands"}
+H.inCombat = false
+H.Check(A.Assign(5, "spell", LAY), "Lay on Hands on cell 5")
+H.inCombat = true
+H.Equal(Heal(), LAY, "never-read cast time: listed first, kept while moving")
+H.speed = 0
+
 H.Done("test_emergency_heal")

@@ -329,8 +329,13 @@ function C_Spell.GetOverrideSpell(id) local s = H.spells[id]; return s and s.ove
 function C_Spell.IsSpellInRange(id) local s = H.spells[id]; if s then return s.inRange end end
 function C_Spell.GetSpellInfo(query)
     for id, s in pairs(H.spells) do
-        if id == query or s.name == query then return {spellID = id, name = s.name} end
+        if id == query or s.name == query then return {spellID = id, name = s.name, castTime = s.castTime} end
     end
+end
+-- Player speed: H.speed (nil = the function is missing, as on an unknown client).
+function GetUnitSpeed(unit)
+    if unit == "player" and H.speed ~= nil then return H.speed end
+    return 0
 end
 C_Item = {}
 function C_Item.GetItemNameByID(id) local i = H.items[id]; return i and i.name end

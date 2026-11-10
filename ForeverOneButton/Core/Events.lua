@@ -85,6 +85,14 @@ handlers.UNIT_SPELLCAST_SUCCEEDED = function(unit, _, spellID)
     ns.Log("cast", spellID, acknowledged and 1 or 0)
 end
 
+-- Moving changes which emergency heal can go out (Engine/Defensives.lua).
+local function MovingChanged(moving)
+    if ns.Diagnostics.IsEnabled() then ns.Log("moving", moving) end
+    if ns.Model.running then ns.Model.Refresh() end
+end
+handlers.PLAYER_STARTED_MOVING = function() MovingChanged(1) end
+handlers.PLAYER_STOPPED_MOVING = function() MovingChanged(0) end
+
 -- Diagnostic log only: why a press was refused (the pixel reader presses
 -- again until the spell goes out). Nothing else reads these events.
 handlers.UI_ERROR_MESSAGE = function(errorType, message)
@@ -115,7 +123,7 @@ end
 for _, event in ipairs({"ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_REGEN_DISABLED",
     "PLAYER_REGEN_ENABLED", "SPELLS_CHANGED", "PLAYER_SPECIALIZATION_CHANGED", "ACTIONBAR_SLOT_CHANGED", "PLAYER_ENTERING_WORLD",
     "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "BAG_UPDATE_DELAYED", "PLAYER_TARGET_CHANGED",
-    "UI_ERROR_MESSAGE"}) do
+    "UI_ERROR_MESSAGE", "PLAYER_STARTED_MOVING", "PLAYER_STOPPED_MOVING"}) do
     Register(event)
 end
 Register("UNIT_SPELLCAST_SUCCEEDED", "player")

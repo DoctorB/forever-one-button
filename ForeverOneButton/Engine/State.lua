@@ -234,6 +234,34 @@ function State.IsForm(spellID)
     return false
 end
 
+-- Movement and cast times ---------------------------------------------------
+-- Moving: true/false from the player's speed, nil when the client does not
+-- give it (missing or secret). Not memoized: read right after the start /
+-- stop moving events.
+function State.Moving()
+    local speed = Plain(Call(GetUnitSpeed, "player"))
+    if type(speed) ~= "number" then return nil end
+    return speed > 0
+end
+
+-- True when the spell cannot go out while moving: a cast time, or a
+-- channel (Defaults.channeled); false for an instant; nil when unknown.
+-- The client's value is read each time (a talent or buff can make a spell
+-- instant); the last plain value stands in when it is secret.
+local castTimes = {}
+function State.HasCastTime(spellID)
+    local base = ns.Ranks.Base(spellID)
+    if ns.Data.Defaults.channeled[base] or ns.Data.Defaults.channeled[spellID] then return true end
+    local ms
+    if C_Spell and C_Spell.GetSpellInfo then
+        local info = Call(C_Spell.GetSpellInfo, spellID)
+        ms = type(info) == "table" and Plain(info.castTime) or nil
+    end
+    if type(ms) == "number" then castTimes[spellID] = ms else ms = castTimes[spellID] end
+    if ms == nil then return nil end
+    return ms > 0
+end
+
 -- Own casts and buffs -------------------------------------------------------
 -- Player auras are unreadable in combat on Forever; the cast that opened a
 -- buff window is the evidence there.
