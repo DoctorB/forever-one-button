@@ -129,8 +129,9 @@ buffer da 5000 righe teneva solo gli ultimi 76 minuti (dal livello 8 circa),
   la saltava e suggeriva la successiva (`5171-cur` -> head 1757), il
   lettore la premeva e il client la metteva al posto di Slice and Dice.
   Corretto: una spell in coda trattiene quelle sotto (`held`) per al
-  massimo 1,5 s; da verificare in gioco che gli "Another action is in
-  progress" e i Sinister Strike al posto di Slice and Dice spariscano.
+  massimo 1,5 s. Verificato in gioco il 2026-11-08: Slice and Dice
+  lanciato 14 volte su 14 suggerimenti, nessun "Another action is in
+  progress" e nessun Sinister Strike al posto di Slice and Dice.
 - 5 momenti in cui Sinister Strike compare e sparisce ogni 50-150 ms per
   0,5-2,4 s prima di partire (pressione rifiutata dal gioco, motivo non
   registrato): dalla 1.1.6 il log registra `error` e `failed`.
