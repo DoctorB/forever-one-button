@@ -1,18 +1,25 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 - 2026-11-11
 
 ### New
 
-- Weapon coatings with one key. Bind **Apply the next weapon coating** in
-  Key Bindings > AddOns > Forever One Button, then press it out of combat:
-  each press puts the next missing coating on the right weapon, no clicking
-  on the weapon. Wait for each one to finish before pressing again.
-- Rogues: a poison on each hand, Instant on the main hand and Deadly on the
-  off hand by default (change them on the Reminders page). Poison and
-  sharpening stone can both be on the same weapon, and both are reminded.
-- Stones and oils are now reminded for the off-hand weapon too, and again
-  when they are about to run out.
+- **Poisons, stones and oils with one key.** No more picking the item and
+  then clicking your weapon: press one key and the right coating goes on
+  the right weapon.
+  - To set it up: Game Menu > Options > Key Bindings > AddOns >
+    Forever One Button > **Apply the next weapon coating**, and pick a key.
+  - Press it out of combat. Each press applies one coating; wait until it
+    finishes, then press again for the next one. When everything is on,
+    the key does nothing.
+  - You can also just click the icon in the reminder row, as before.
+- **Rogues:** a poison on each weapon. Instant Poison on the main hand and
+  Deadly Poison on the off hand, unless you choose others on the
+  *Reminders* page of the options. A poison and a sharpening stone can sit
+  on the same weapon, so you are reminded of both.
+- Stones and oils are now reminded for your off-hand weapon too.
+- Coatings are reminded again shortly before they run out, not only once
+  they are gone.
 
 ## 1.1.9 - 2026-11-09
 
