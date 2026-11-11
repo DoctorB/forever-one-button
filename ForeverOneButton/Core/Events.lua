@@ -39,6 +39,7 @@ handlers.UPDATE_BONUS_ACTIONBAR = ReapplyBar
 handlers.PLAYER_REGEN_DISABLED = function()
     ns.Options.CloseForCombat()
     ns.Grid.StopMoving() -- before the lockdown: the grid holds protected buttons
+    ns.Reminders.ClearCoatingKey() -- the coating key does nothing in combat
     ns.Log("combat", "in")
     ns.Model.Refresh() -- combat-only pixel starts at once
 end

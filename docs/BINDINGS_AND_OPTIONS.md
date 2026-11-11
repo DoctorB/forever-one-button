@@ -86,9 +86,26 @@ cambiano solo ciò che il pannello mostra.
 ### Riga promemoria
 
 I pulsanti `ForeverOneButtonReminder1..6` (`Panel/Reminders.lua`) sono
-pulsanti secure senza tasto: nessun binding, nessuna voce in `keys`. Azione
+pulsanti secure senza tasto: nessun binding, nessuna voce in `keys` (il
+coating ha un pulsante a parte, sotto). Azione
 (`type1` = `spell` o `item`) impostata solo fuori combattimento; agiscono solo
 al clic del giocatore; in combattimento la riga è nascosta dal client.
+
+### Coating delle armi (decisione del proprietario, 2026-11-11)
+
+Il proprietario ha chiesto di applicare veleni, pietre e oli premendo un
+tasto, senza cliccare l'arma; scelto un unico tasto "prossimo coating" e,
+per il Ladro, Instant sulla mano principale e
+Deadly sulla secondaria.
+
+| Regola | Comportamento |
+|---|---|
+| Quale coating | `Engine/Coatings.lua`: per mano (16, 17) e tipo (imbue: veleno o imbue dello Sciamano; temporaneo: pietra o olio, che su Forever coesistono); dovuto se manca, se scade entro la finestra dei promemoria (3 min, 5 in gruppo) o con meno di 10 cariche; prima i mancanti nell'ordine veleno principale, veleno secondaria, pietra principale, pietra secondaria, poi il tempo minore |
+| Applicazione | voce `weaponEnchant` della riga: `type1 = item` più `target-slot` = 16 o 17 (attributo del template secure: l'oggetto va sull'arma senza cursore); niente macro |
+| Tasto | `ForeverOneButtonCoating`, pulsante secure senza frame visibile con la stessa azione della voce; `Bindings.xml` lo elenca in Key Bindings > AddOns: è il giocatore ad assegnare il tasto, l'addon non scrive binding |
+| Una pressione, un coating | ogni applicazione è un lancio; dopo l'uso (l'oggetto cala nelle borse) quell'arma attende 5 s che il client riporti il coating; durante un lancio nulla è proposto e il tasto è vuoto |
+| Combattimento | il tasto viene svuotato a `PLAYER_REGEN_DISABLED` (prima del lockdown) e reimpostato dopo il combattimento |
+| Client senza tipi | solo la mano principale, un coating qualsiasi la soddisfa (come prima) |
 
 ## Whitelist delle opzioni
 
@@ -132,7 +149,8 @@ pannello, mai cosa fa una cella o quando viene premuto un tasto.
 | `groupHeals` | sì/no (no) | cure di gruppo con alleati feriti |
 | `ccBreak` | sì/no (no) | liberazione dalla perdita di controllo |
 | `precombat` | sì/no (sì) | riga promemoria fuori combattimento |
-| `classBuffs`, `flask`, `food`, `scroll`, `weaponEnchant` | sì/no (sì) | categorie dei promemoria: buff di classe, fiasca/elisir, cibo Well Fed, pergamena, pietra/olio/imbue dell'arma |
+| `classBuffs`, `flask`, `food`, `scroll`, `weaponEnchant` | sì/no (sì) | categorie dei promemoria: buff di classe, fiasca/elisir, cibo Well Fed, pergamena, coating delle armi (veleno, pietra, olio, imbue; per mano) |
+| `poisonMainHand`, `poisonOffHand` | `instant`, `deadly`, `crippling`, `mindNumbing`, `wound`, `off` (`instant`, `deadly`) | veleno del Ladro per mano; se manca nelle borse, Instant o Deadly; `off`: nessun veleno su quella mano |
 | `recovery` | sì/no (sì) | mangiare, bere o bendarsi dopo un combattimento |
 | `stealthReminder` | sì/no (sì) | furtività (ladro, druido feral) |
 | `topoffHeal` | sì/no (no) | cura di rabbocco sotto `topoffBelow` (sotto il 35 % sempre) |

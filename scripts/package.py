@@ -4,8 +4,8 @@
     python scripts/package.py verify   # verify an existing package
 
 The package has one root folder, ForeverOneButton/, holding exactly the TOC,
-the files it lists, its IconTexture, the license, the attribution notice and
-the README.
+the files it lists, its IconTexture, Bindings.xml, the license, the
+attribution notice and the README.
 Entries use a fixed timestamp so the same commit gives the same bytes.
 """
 import argparse
@@ -57,7 +57,9 @@ def icon_file(fields):
 def expected_entries(addon_dir):
     fields, files = read_toc(addon_dir)
     icon = icon_file(fields)
-    names = [f"{ADDON}.toc", *files, *([icon] if icon else []), "LICENSE", "NOTICE.md", "README.md"]
+    # Bindings.xml is loaded by the client without a TOC line.
+    bindings = ["Bindings.xml"] if (addon_dir / "Bindings.xml").exists() else []
+    names = [f"{ADDON}.toc", *files, *([icon] if icon else []), *bindings, "LICENSE", "NOTICE.md", "README.md"]
     return [f"{ADDON}/{name}" for name in names]
 
 

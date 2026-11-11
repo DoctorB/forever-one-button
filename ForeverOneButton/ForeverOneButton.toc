@@ -26,6 +26,7 @@ Engine\Trees.lua
 Engine\Queue.lua
 Engine\Interrupts.lua
 Engine\Defensives.lua
+Engine\Coatings.lua
 Engine\Precombat.lua
 Core\Diagnostics.lua
 Core\Share.lua

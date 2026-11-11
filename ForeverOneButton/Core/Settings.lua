@@ -44,6 +44,11 @@ Settings.FEATURES = {
     food = {kind = "boolean", default = true},
     scroll = {kind = "boolean", default = true},
     weaponEnchant = {kind = "boolean", default = true},
+    -- Rogue poison per hand (owner's choice, 2026-11-11: Instant / Deadly).
+    poisonMainHand = {kind = "enum", default = "instant", values = {instant = true, deadly = true,
+        crippling = true, mindNumbing = true, wound = true, off = true}},
+    poisonOffHand = {kind = "enum", default = "deadly", values = {instant = true, deadly = true,
+        crippling = true, mindNumbing = true, wound = true, off = true}},
     recovery = {kind = "boolean", default = true},          -- eat, drink or bandage after a fight
     stealthReminder = {kind = "boolean", default = true},
     topoffHeal = {kind = "boolean", default = false},

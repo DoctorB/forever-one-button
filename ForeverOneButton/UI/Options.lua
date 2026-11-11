@@ -128,7 +128,9 @@ Options.FEATURE_PAGES = {
         {"flask", "Flask or elixir"},
         {"food", "Well Fed food"},
         {"scroll", "Scroll"},
-        {"weaponEnchant", "Weapon stone, oil or imbue"},
+        {"weaponEnchant", "Weapon coatings: poison, stone, oil or imbue (one press each)"},
+        {"poisonMainHand", "Rogue poison, main hand"},
+        {"poisonOffHand", "Rogue poison, off hand"},
         {"recovery", "Eat, drink or bandage after a fight"},
         {"stealthReminder", "Stealth (rogue, feral druid)"},
         {"topoffHeal", "Top-off heal (always below 35%)"},
@@ -139,7 +141,8 @@ Options.FEATURE_ORDER = {}
 for _, featurePage in ipairs(Options.FEATURE_PAGES) do
     for _, row in ipairs(featurePage.rows) do Options.FEATURE_ORDER[#Options.FEATURE_ORDER + 1] = row end
 end
-local ENUM_ORDER = {interruptMode = {"kickOnly", "kickPrefer", "ccPrefer"}}
+local ENUM_ORDER = {interruptMode = {"kickOnly", "kickPrefer", "ccPrefer"},
+    poisonMainHand = ns.Coatings.POISON_CHOICES, poisonOffHand = ns.Coatings.POISON_CHOICES}
 local CONTROL_X = 410
 
 local function BuildFeaturesPage(page, rows)

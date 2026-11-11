@@ -6,6 +6,14 @@
 -- out of combat, and a secure state driver hides the row as soon as combat
 -- starts. A button acts only on the player's click; nothing is pressed by
 -- the addon, and no key is bound to them.
+--
+-- The weapon coating entry goes on its weapon in one click: the item's
+-- targeting is resolved by the secure template's `target-slot` attribute
+-- (main hand 16, off hand 17), no macro. The same action is also on
+-- ForeverOneButtonCoating, a button without a frame on screen that the
+-- player may bind under Key Bindings > AddOns (Bindings.xml): pressed
+-- repeatedly, it applies the next coating each time (one cast per press).
+-- It is emptied before combat starts (Reminders.ClearCoatingKey).
 local ADDON_NAME, ns = ...
 
 local Reminders = {}
@@ -24,14 +32,26 @@ local REASON_TEXT = {buff = "Class buff", flask = "Flask or elixir", food = "Foo
 local row = CreateFrame("Frame", "ForeverOneButtonReminders", ns.Grid.container)
 Reminders.row = row
 
+local HAND_TEXT = {main = "main hand", off = "off hand"}
+local COATING_BINDING = "CLICK ForeverOneButtonCoating:LeftButton"
+BINDING_HEADER_FOREVERONEBUTTON = "Forever One Button"
+_G["BINDING_NAME_" .. COATING_BINDING] = "Apply the next weapon coating"
+
 local function OnEnter(button)
     if not GameTooltip or not button.entry then return end
     GameTooltip:SetOwner(button, "ANCHOR_BOTTOM")
     local entry = button.entry
     local name = entry.kind == ns.ENTRY.ITEM and ns.ItemName(entry.item) or ns.SpellName(entry.id)
     GameTooltip:AddLine(name or "?")
-    GameTooltip:AddLine(REASON_TEXT[entry.reason] or "", 0.8, 0.8, 0.8)
+    local reason = REASON_TEXT[entry.reason] or ""
+    if entry.hand then reason = reason .. " (" .. HAND_TEXT[entry.hand] .. ")" end
+    GameTooltip:AddLine(reason, 0.8, 0.8, 0.8)
     GameTooltip:AddLine("Click to use (out of combat)", 0.6, 0.6, 0.6)
+    if entry.reason == "weaponEnchant" then
+        local key = GetBindingKey and GetBindingKey(COATING_BINDING)
+        GameTooltip:AddLine(key and ("Next coating key: " .. key) or "Next coating key: Key Bindings > AddOns",
+            0.6, 0.6, 0.6)
+    end
     GameTooltip:Show()
 end
 
@@ -44,6 +64,11 @@ for i = 1, ns.Precombat.MAX_ENTRIES do
     button:SetScript("OnLeave", function() if GameTooltip then GameTooltip:Hide() end end)
     Reminders.buttons[i] = button
 end
+
+-- The bindable coating button: no size, no point, nothing drawn.
+-- Its clicks are registered in Reminders.Layout, out of combat.
+local coatingKey = CreateFrame("Button", "ForeverOneButtonCoating", UIParent, "SecureActionButtonTemplate")
+Reminders.coatingKey = coatingKey
 
 local laidOut = false
 function Reminders.Layout()
@@ -58,31 +83,33 @@ function Reminders.Layout()
         button:RegisterForClicks("AnyDown", "AnyUp")
         button:Hide()
     end
+    coatingKey:RegisterForClicks("AnyDown", "AnyUp")
     if RegisterStateDriver then RegisterStateDriver(row, "visibility", "[combat] hide; show") end
     laidOut = true
     return true
 end
 Reminders.Layout()
 
+-- The secure action of an entry (nil: none).
+local function SetAction(button, entry)
+    button:SetAttribute("useOnKeyDown", ns.Grid.UseKeyDown())
+    local item = entry and entry.kind == ns.ENTRY.ITEM
+    button:SetAttribute("type1", entry and (item and "item" or "spell") or nil)
+    button:SetAttribute("item", item and ("item:" .. entry.item) or nil)
+    button:SetAttribute("spell", entry and not item and entry.id or nil)
+    button:SetAttribute("target-slot", item and entry.slot or nil)
+end
+
 local function Configure(button, entry)
     button.entry = entry
-    button:SetAttribute("useOnKeyDown", ns.Grid.UseKeyDown())
+    SetAction(button, entry)
     if not entry then
-        button:SetAttribute("type1", nil)
-        button:SetAttribute("spell", nil)
-        button:SetAttribute("item", nil)
         button:Hide()
         return
     end
     if entry.kind == ns.ENTRY.ITEM then
-        button:SetAttribute("type1", "item")
-        button:SetAttribute("item", "item:" .. entry.item)
-        button:SetAttribute("spell", nil)
         button.icon:SetTexture(ns.ItemIcon(entry.item) or EMPTY_ICON)
     else
-        button:SetAttribute("type1", "spell")
-        button:SetAttribute("spell", entry.id)
-        button:SetAttribute("item", nil)
         button.icon:SetTexture(ns.SpellIcon(entry.id) or EMPTY_ICON)
     end
     button:Show()
@@ -95,13 +122,27 @@ function Reminders.Update()
     local ok, entries = pcall(ns.Precombat.Suggest)
     if not ok then entries = {} end
     ns.Precombat.SetOffered(entries)
-    local key = {}
-    for i, entry in ipairs(entries) do key[i] = entry.id end
+    local key, coating = {}, nil
+    for i, entry in ipairs(entries) do
+        key[i] = entry.id .. (entry.slot and ("@" .. entry.slot) or "")
+        if entry.reason == "weaponEnchant" then coating = entry end
+    end
     key = table.concat(key, ",")
     if key == signature then return false end
     signature = key
     for i, button in ipairs(Reminders.buttons) do Configure(button, entries[i]) end
+    coatingKey.entry = coating
+    SetAction(coatingKey, coating)
     return true
 end
 
 function Reminders.Reset() signature = nil end
+
+-- Before combat (PLAYER_REGEN_DISABLED, still outside the lockdown): the
+-- key does nothing in combat; the next update after combat sets it again.
+function Reminders.ClearCoatingKey()
+    if ns.InCombat() then return end
+    coatingKey.entry = nil
+    SetAction(coatingKey, nil)
+    signature = nil
+end

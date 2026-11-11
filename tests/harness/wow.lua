@@ -710,21 +710,34 @@ C_LossOfControl = {
     GetActiveLossOfControlDataCount = function() return #H.lossOfControl end,
     GetActiveLossOfControlData = function(i) return H.lossOfControl[i] end,
 }
--- Reminders: H.mounted, H.inGroup, H.mainHand = {id, classID, subclassID},
--- H.mainHandEnchant = {imbue = bool, temporary = bool}.
+-- Reminders: H.mounted, H.inGroup, H.mainHand / H.offHand = {id, classID,
+-- subclassID}, H.mainHandEnchant / H.offHandEnchant = {imbue = x, temporary = x}
+-- where x is true or {timeLeft = ms, charges = n}.
 H.mounted, H.inGroup, H.mainHand, H.mainHandEnchant = false, false, nil, {}
+H.offHand, H.offHandEnchant = nil, {}
 function IsMounted() return H.mounted end
 function IsInGroup() return H.inGroup end
 function UnitIsConnected(unit) return H.units[unit] ~= nil end
-function GetInventoryItemID(_, slot) return slot == 16 and H.mainHand and H.mainHand.id or nil end
-function C_Item.GetItemInfoInstant(id)
-    if H.mainHand and id == H.mainHand.id then return id, "Weapon", "", "", 0, H.mainHand.classID, H.mainHand.subclassID end
+function GetInventoryItemID(_, slot)
+    local weapon = slot == 16 and H.mainHand or slot == 17 and H.offHand
+    return weapon and weapon.id or nil
 end
-function C_Item.IsUsableItem() return true end
+function C_Item.GetItemInfoInstant(id)
+    for _, weapon in ipairs({H.mainHand or {}, H.offHand or {}}) do
+        if id == weapon.id then return id, "Weapon", "", "", 0, weapon.classID, weapon.subclassID end
+    end
+end
+H.unusable = {}
+function C_Item.IsUsableItem(id) return not H.unusable[id] end
 Enum.ItemEnchantType = {Temporary = 0, Imbue = 1}
-function C_Item.GetWeaponEnchantInfo()
-    return {{hasEnchant = H.mainHandEnchant.temporary == true, enchantType = 0},
-        {hasEnchant = H.mainHandEnchant.imbue == true, enchantType = 1}}
+local function EnchantRecord(value, enchantType)
+    local record = {hasEnchant = value ~= nil and value ~= false, enchantType = enchantType}
+    if type(value) == "table" then record.timeLeft, record.charges = value.timeLeft, value.charges end
+    return record
+end
+function C_Item.GetWeaponEnchantInfo(hand)
+    local enchant = hand == 1 and H.offHandEnchant or H.mainHandEnchant
+    return {EnchantRecord(enchant.temporary, 0), EnchantRecord(enchant.imbue, 1)}
 end
 H.stateDrivers = {}
 function RegisterStateDriver(frame, attribute, value) H.stateDrivers[frame] = {attribute = attribute, value = value} end

@@ -27,7 +27,7 @@ class PackageTest(unittest.TestCase):
             self.assertTrue(all(n.startswith("ForeverOneButton/") for n in names))
             for required in ("ForeverOneButton/ForeverOneButton.toc", "ForeverOneButton/LICENSE",
                              "ForeverOneButton/NOTICE.md", "ForeverOneButton/README.md",
-                             "ForeverOneButton/Media/icon.tga"):
+                             "ForeverOneButton/Media/icon.tga", "ForeverOneButton/Bindings.xml"):
                 self.assertIn(required, names)
             self.assertFalse(any("/tests/" in n or "fixtures" in n for n in names))
             for name in names:

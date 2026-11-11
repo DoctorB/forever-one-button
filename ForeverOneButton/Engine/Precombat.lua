@@ -6,9 +6,10 @@
 --     solo, 5 in a group); group-wide buffs also when a party member in
 --     range lacks them;
 --   * consumables (Consumables.precombat): flask/elixir, Well Fed food,
---     scroll, weapon stone or oil, each category when no buff of it is up;
---     the first item owned whose stat the class uses; shamans get their
---     weapon imbue (Defaults.weaponImbues) instead of oils and stones;
+--     scroll, each category when no buff of it is up; the first item owned
+--     whose stat the class uses; and the next weapon coating
+--     (Engine/Coatings.lua: rogue poisons, shaman imbue, stones and oils,
+--     per hand), applied to its weapon with one click;
 --   * stealth for rogues (and Prowl for feral druids);
 --   * a top-off heal below the threshold (off by default);
 --   * recovery: drink below 50% mana (not warriors and rogues), food below
@@ -128,32 +129,19 @@ end
 -- Consumables -----------------------------------------------------------------
 local function Count(itemID) return ns.Defensives.ItemCount(itemID) end
 
-local function WeaponFits(entry)
-    if not entry.wmask then return true end
-    local weapon = Plain(Call(GetInventoryItemID, "player", 16))
-    if type(weapon) ~= "number" then return false end
-    local _, _, _, _, _, classID, subclassID = Call(C_Item and C_Item.GetItemInfoInstant, weapon)
-    if Plain(classID) ~= 2 or type(Plain(subclassID)) ~= "number" then return false end
-    return math.floor(entry.wmask / 2 ^ subclassID) % 2 == 1
-end
-
--- Main-hand enhancement of the kind (imbue or temporary enchant). Forever
--- tells them apart (C_Item.GetWeaponEnchantInfo, as JustAC reads it); other
--- clients only say whether the main hand has a temporary enchant.
-local MAIN_HAND = 0
-local function MainHandEnhanced(imbue)
-    if C_Item and C_Item.GetWeaponEnchantInfo and Enum and Enum.ItemEnchantType then
-        local enchants = Call(C_Item.GetWeaponEnchantInfo, MAIN_HAND)
-        if type(enchants) ~= "table" then return nil end
-        local wanted = imbue and Enum.ItemEnchantType.Imbue or Enum.ItemEnchantType.Temporary
-        for _, enchant in pairs(enchants) do
-            if Plain(enchant.hasEnchant) == true and Plain(enchant.enchantType) == wanted then return true end
-        end
-        return false
+-- The next weapon coating (Engine/Coatings.lua): one entry, the most urgent
+-- hand and kind. An item entry carries the weapon slot it goes on.
+local function Coating(class, stats, add)
+    local imbue
+    if class == "SHAMAN" then
+        for _, id in ipairs(ns.Data.Defaults.weaponImbues) do imbue = imbue or Usable(id) end
     end
-    local has = Plain(Call(GetWeaponEnchantInfo))
-    if has == nil then return nil end
-    return has == true
+    local window = InGroup() and Precombat.LAPSE_GROUP or Precombat.LAPSE_SOLO
+    local coating = ns.Coatings.Next(class, stats, window, imbue)
+    if not coating then return end
+    local entry = coating.spell and SpellEntry(coating.spell, "weaponEnchant") or ItemEntry(coating.item, "weaponEnchant")
+    entry.slot, entry.hand = coating.slot, coating.hand
+    add(entry)
 end
 
 local function Consumables(class, add)
@@ -162,18 +150,7 @@ local function Consumables(class, add)
         local list = ns.Data.Consumables.precombat[category]
         if ns.Settings.Feature(category) and list then
             if category == "weaponEnchant" then
-                local imbue
-                for _, id in ipairs(ns.Data.Defaults.weaponImbues) do imbue = imbue or Usable(id) end
-                if imbue then
-                    if MainHandEnhanced(true) == false then add(SpellEntry(imbue, category)) end
-                elseif MainHandEnhanced(false) == false then
-                    for _, entry in ipairs(list) do
-                        if (not stats or stats[entry.stat]) and Count(entry.id) > 0 and WeaponFits(entry) then
-                            add(ItemEntry(entry.id, category))
-                            break
-                        end
-                    end
-                end
+                Coating(class, stats, add)
             else
                 local buffs = {}
                 for i, entry in ipairs(list) do buffs[i] = entry.buff end

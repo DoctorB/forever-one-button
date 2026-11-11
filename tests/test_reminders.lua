@@ -101,6 +101,86 @@ H.Equal(Ids(), "1784", "stealth reminder")
 H.stealthed = true
 H.Equal(Ids(), "", "stealthed")
 
+-- Rogue coatings on Forever: a poison (imbue) and a stone (temporary) on
+-- each hand coexist; one entry at a time, the most urgent, with its slot.
+local function Coating()
+    H.now = H.now + 1
+    for _, e in ipairs(P.Suggest()) do
+        if e.reason == "weaponEnchant" then return tostring(e.id) .. "@" .. tostring(e.slot) end
+    end
+    return ""
+end
+local LONG = 1800000 -- 30 minutes, in milliseconds as the client reports
+H.mainHandEnchant = {} -- the shaman's imbue is gone
+H.offHand = {id = 1001, classID = 2, subclassID = 15} -- dagger
+H.bags[8928], H.bags[20844], H.bags[217347] = 5, 5, 4 -- Instant VI, Deadly V, stone
+H.Equal(Coating(), "-8928@16", "Instant Poison on the main hand first")
+H.mainHandEnchant.imbue = {timeLeft = LONG, charges = 60}
+H.Equal(Coating(), "-20844@17", "then Deadly Poison on the off hand")
+H.offHandEnchant.imbue = {timeLeft = LONG, charges = 60}
+H.Equal(Coating(), "-217347@16", "then the stone on the main hand")
+H.mainHandEnchant.temporary = {timeLeft = LONG}
+H.Equal(Coating(), "-217347@17", "then the stone on the off hand")
+H.offHandEnchant.temporary = {timeLeft = LONG}
+H.Equal(Coating(), "", "all four coatings on")
+H.mainHandEnchant.imbue.timeLeft = 100000
+H.Equal(Coating(), "-8928@16", "a poison lapsing (100 s left) is offered again")
+H.mainHandEnchant.imbue = {timeLeft = LONG, charges = 5}
+H.Equal(Coating(), "-8928@16", "a poison down to its last charges is offered again")
+H.mainHandEnchant.imbue = {timeLeft = LONG, charges = 60}
+H.offHandEnchant.temporary = {timeLeft = 20000}
+H.mainHandEnchant.temporary = {timeLeft = 10000}
+H.Equal(Coating(), "-217347@16", "two lapsing: the shorter first")
+H.mainHandEnchant.temporary, H.offHandEnchant.temporary = {timeLeft = LONG}, {timeLeft = LONG}
+
+-- Poison choice per hand, with Instant/Deadly as the fallback.
+H.offHandEnchant.imbue = nil
+features.poisonOffHand = "crippling"
+H.Equal(Coating(), "-8928@17", "no Crippling Poison: Instant on the off hand")
+H.bags[3776] = 2
+H.Equal(Coating(), "-3776@17", "Crippling Poison II when owned")
+features.poisonOffHand = "off"
+H.Equal(Coating(), "", "off: no poison on the off hand")
+features.poisonOffHand = "deadly"
+H.bags[3776] = nil
+H.unusable[20844] = true
+H.bags[2893] = 3
+H.Equal(Coating(), "-2893@17", "a rank the rogue cannot use yet is skipped")
+H.unusable[20844], H.bags[2893] = nil, nil
+ns.Coatings.Reset() -- the poison left the bags: it would count as used
+
+-- After a use the weapon waits for the client to report the poison; while
+-- casting nothing is offered.
+H.Equal(Coating(), "-20844@17", "Deadly Poison offered")
+H.bags[20844] = 4
+H.Equal(Coating(), "", "used (one fewer in the bags): not offered again at once")
+H.now = H.now + ns.Coatings.RECENT_SECONDS
+H.Equal(Coating(), "-20844@17", "still missing after the wait: offered again")
+H.casting = "Deadly Poison V"
+H.Equal(Coating(), "", "nothing while casting")
+H.casting = nil
+H.offHandEnchant.imbue = {timeLeft = LONG, charges = 60}
+features.weaponEnchant = false
+H.mainHandEnchant.imbue = nil
+H.Equal(Coating(), "", "category off")
+features.weaponEnchant = true
+
+-- Clients without typed enchant info: the main hand only, poison for rogues.
+local typedInfo = C_Item.GetWeaponEnchantInfo
+C_Item.GetWeaponEnchantInfo = nil
+local legacyMain = false
+function GetWeaponEnchantInfo() return legacyMain, 0, 0, 0, false, 0, 0, 0 end
+ns.Coatings.Reset()
+H.Equal(Coating(), "-8928@16", "legacy: poison on the main hand")
+legacyMain = true
+H.Equal(Coating(), "", "legacy: main hand enhanced, nothing else")
+C_Item.GetWeaponEnchantInfo, GetWeaponEnchantInfo = typedInfo, nil
+ns.Coatings.Reset()
+H.Equal(Coating(), "-8928@16", "typed again")
+H.mainHandEnchant.imbue = {timeLeft = LONG, charges = 60}
+H.Equal(Coating(), "", "all coated again")
+H.stealthed = false
+
 -- Never in combat, mounted or when switched off.
 H.stealthed = false
 H.inCombat = true
@@ -141,5 +221,38 @@ H.useKeyDown = true
 R.Reset()
 R.Update()
 H.Equal(R.buttons[1]:GetAttribute("useOnKeyDown"), true, "follows ActionButtonUseKeyDown")
+H.useKeyDown = false
+H.bags[13453] = nil
+
+-- The coating button puts the item on its weapon (target-slot, no macro);
+-- the bindable key carries the same action and is emptied before combat.
+local K = R.coatingKey
+H.Equal(K:GetName(), "ForeverOneButtonCoating", "bindable button name (Bindings.xml)")
+H.Equal(table.concat(K.clickButtons, ","), "AnyDown,AnyUp", "key: press and release registered")
+H.offHandEnchant.imbue = nil
+R.Reset()
+H.Check(R.Update(), "row updated with a coating")
+H.Equal(R.buttons[1]:GetAttribute("item"), "item:20844", "Deadly Poison button")
+H.Equal(R.buttons[1]:GetAttribute("target-slot"), 17, "goes on the off hand")
+H.Equal(R.buttons[2]:GetAttribute("target-slot"), nil, "Stealth: no target slot")
+H.Equal(K:GetAttribute("type1"), "item", "key: item")
+H.Equal(K:GetAttribute("item"), "item:20844", "key: same coating")
+H.Equal(K:GetAttribute("target-slot"), 17, "key: same weapon")
+H.Equal(K:GetAttribute("macrotext"), nil, "no macro")
+H.Equal(K.scripts.OnClick, nil, "key: no Lua click handler")
+H.Equal(K.scripts.PreClick, nil, "key: nothing runs before the click")
+R.ClearCoatingKey()
+H.Equal(K:GetAttribute("type1"), nil, "key emptied before combat")
+H.Check(R.Update(), "set again after combat")
+H.Equal(K:GetAttribute("item"), "item:20844", "key set again")
+H.offHandEnchant.imbue = {timeLeft = LONG, charges = 60}
+H.Check(R.Update(), "coating applied: row changes")
+H.Equal(K:GetAttribute("type1"), nil, "key empty when nothing is due")
+H.Equal(R.buttons[1]:GetAttribute("target-slot"), nil, "target slot cleared")
+local bindings = io.open("ForeverOneButton/Bindings.xml", "rb")
+local xml = bindings and bindings:read("*a") or ""
+if bindings then bindings:close() end
+H.Check(xml:find('name="CLICK ForeverOneButtonCoating:LeftButton"', 1, true) ~= nil, "Bindings.xml lists the key")
+H.Equal(_G["BINDING_NAME_CLICK ForeverOneButtonCoating:LeftButton"], "Apply the next weapon coating", "binding label")
 
 H.Done("test_reminders")
