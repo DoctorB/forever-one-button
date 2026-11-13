@@ -6,6 +6,13 @@ it checks the line, stores the log in the Workers KV namespace `SHARES` and
 shows a short summary. No IP address or other request data is stored; KV
 deletes each log 180 days after it was sent (expirationTtl).
 
+The same Worker also collects the error reports of
+[Regia](https://github.com/DoctorB/regia) at `POST /api/regia/report`: a JSON
+report (src/regia.js checks every field and its length), sent by Regia only
+when the person using it has agreed, stored under the `regia/` prefix with the
+same 180-day expiry and rate limit. The admin page switches between the two
+lists; a Regia report opens with a click.
+
 Format: `!FOB:1:<z|t>!` + base64 + `!END:FOB!`; `z` is raw deflate, which
 is what `C_EncodingUtil.CompressString(..., Enum.CompressionMethod.Deflate)`
 writes on the Forever client (checked on 2026-11-08 by inflating data saved

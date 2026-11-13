@@ -1,6 +1,7 @@
 // trace.lucabottani.dev: collection point for Forever One Button logs.
 //   GET  /            the page: paste the line from /fob share, send it
 //   POST /api/share   the pasted line (text/plain) -> stored in KV, summary back
+//   POST /api/regia/report   an error report sent by Regia (JSON) -> stored in KV
 //   GET  /admin       the owner's list page (token in the #fragment, kept in localStorage)
 //   GET  /admin/list  ?prefix=&cursor=   (Authorization: Bearer ADMIN_TOKEN)
 //   GET  /admin/get   ?key=              (same)
@@ -10,6 +11,7 @@ import { decodeShare, parseText, summarize, storageKey, ShareError, MAX_PASTE_BY
 import { page } from "./page.js";
 import { adminPage } from "./admin-page.js";
 import { FAVICON } from "./favicon.js";
+import { parseReport, reportMeta, reportKey, ReportError, MAX_REPORT_BYTES } from "./regia.js";
 
 // Logs are deleted by KV itself after this long (privacy notice: 180 days).
 export const KEEP_SECONDS = 180 * 24 * 3600;
@@ -96,6 +98,27 @@ async function share(request, env) {
   }
 }
 
+// Regia error reports: sent by Regia itself (not by a browser), only with the
+// user's consent. Same rate limit, retention and no-IP rule as the shares.
+async function regiaReport(request, env) {
+  if (env.LIMITER) {
+    const { success } = await env.LIMITER.limit({ key: request.headers.get("CF-Connecting-IP") ?? "unknown" });
+    if (!success) return json({ ok: false, code: "rate" }, 429);
+  }
+  try {
+    const raw = await readLimited(request, MAX_REPORT_BYTES);
+    const report = parseReport(raw);
+    const id = crypto.randomUUID();
+    await env.SHARES.put(reportKey(new Date(), id), JSON.stringify(report), { expirationTtl: KEEP_SECONDS, metadata: reportMeta(report) });
+    return json({ ok: true, id });
+  } catch (error) {
+    if (error instanceof ReportError) return json({ ok: false, code: error.code, message: error.message }, 400);
+    if (error instanceof ShareError) return json({ ok: false, code: error.code }, 413);
+    console.error("regia report failed", error);
+    return json({ ok: false, code: "server" }, 500);
+  }
+}
+
 async function admin(request, env, url) {
   const auth = request.headers.get("Authorization") ?? "";
   if (!sameSecret(auth.replace(/^Bearer /, ""), env.ADMIN_TOKEN)) return json({ ok: false }, 404);
@@ -126,6 +149,10 @@ export default {
     if (url.pathname === "/api/share") {
       if (request.method !== "POST") return json({ ok: false, code: "method" }, 405);
       return share(request, env);
+    }
+    if (url.pathname === "/api/regia/report") {
+      if (request.method !== "POST") return json({ ok: false, code: "method" }, 405);
+      return regiaReport(request, env);
     }
     if (url.pathname === "/favicon.svg" && (request.method === "GET" || request.method === "HEAD")) {
       return new Response(FAVICON, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=86400", ...SECURITY_HEADERS } });
