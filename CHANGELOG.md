@@ -4,25 +4,18 @@
 
 ### New
 
-- **Interrupts on the pixel.** When your target starts casting, the pixel
-  shows your interrupt (Kick, or Gouge as a fallback) ahead of the
-  rotation, so a pixel reader presses it too. Only the emergency heal comes
-  first.
 - **Rogues, openers from stealth.** In stealth the addon suggests Garrote,
-  and Cheap Shot when you are in front of the target and Garrote is
-  refused. The opener also shows on the pixel out of combat, so it starts
-  the fight.
+  or Cheap Shot when you are in front of the target and Garrote is refused.
 - **Rogues:** Expose Armor on elites and bosses, at 5 combo points, once
   while it lasts. Gouge now gets a button next to Kick (not with the
   "Kick only" interrupt setting).
-- `/fob pixel on` and `/fob pixel off` also work in combat.
 
 ### Changed
 
 - **Rogues while leveling:** Slice and Dice waits for 3 combo points on a
   target above half health, and Eviscerate spends your points before the
-  target dies (5 points, 3 below 35% health, 2 below 20%). Short fights no
-  longer end with Slice and Dice wasted and points unspent.
+  target dies (5 points, 3 below 35% health, 2 below 20%). Fewer Slice and
+  Dice are wasted in short fights.
 
 ## 1.2.0 - 2026-11-11
 
