@@ -131,37 +131,31 @@ But every log helps, and the fix below came straight from one. Thank you!
   5,000, enough for a 2-3 hour session (5,000 held about 76 minutes of
   leveling). It also records why a press was refused by the game (target
   not in front, out of range, not enough energy...) and failed casts, and
-  `scripts/analyze_log.py` lists them. Suggestions and the pixel are
-  unchanged.
+  `scripts/analyze_log.py` lists them. Suggestions are unchanged.
 
 ## 1.1.5 - 2026-11-06
 
-- No more unwanted target switch at the end of a fight. With a pixel reader,
-  the last key presses could reach the game just after the target died; the
-  game then picked the nearest enemy by itself. Now:
+- No more unwanted target switch at the end of a fight. The last key
+  presses could reach the game just after the target died; the game then
+  picked the nearest enemy by itself. Now:
   - Heroic Strike (and other attacks on the next swing: Cleave, Maul,
     Raptor Strike) is no longer suggested again once it is queued; the next
     ready spell takes position 1 until the swing.
-  - The pixel turns black when the suggestion is an attack and no living
-    enemy is targeted (dead target, no target, friendly target). Spells on
-    yourself (shouts, seals, stances, the emergency heal) are still shown.
-    The grid status line says "no enemy targeted".
-  - The pixel follows a target change or a target's death at once instead
-    of at the next refresh.
+  - With no living enemy targeted (dead target, no target, friendly
+    target), the grid status line says "no enemy targeted". Spells on
+    yourself (shouts, seals, stances, the emergency heal) are still
+    suggested.
 
 ## 1.1.4 - 2026-11-05
 
 - Live WoW Forever client: the installation instructions point to the live
   client folder `World of Warcraft\_forever_\Interface\AddOns\` instead of
-  the beta folder. Suggestions, bindings and the pixel output are unchanged.
+  the beta folder. Suggestions and bindings are unchanged.
 
 ## 1.1.3 - 2026-10-21
 
-- Pixel reader: the short black after each cast of the suggested spell now
-  stays on screen for at least 60 ms, as the protocol says. It was timed from
-  the start of the game frame, while the cast arrives later in the frame, so
-  it could last only 40-58 ms and a pixel reader could miss it. Colours and
-  timings are otherwise unchanged.
+- Small internal timing fix. Suggestions, bindings and the panel are
+  unchanged.
 
 ## 1.1.2 - 2026-10-21
 
@@ -206,8 +200,7 @@ But every log helps, and the fix below came straight from one. Thank you!
   also with automatic filling off, now uses the highest rank you know.
 - Critical health: below 30 % health in a fight, a healing spell on a cell
   (the class's first ready one, else your healing potion or healthstone)
-  takes position 1, with a green frame, and the diagnostic pixel shows its
-  cell. Options *Combat*: on/off and the threshold (10-60 %).
+  takes position 1, with a green frame. Options *Combat*: on/off and the threshold (10-60 %).
 
 ## 1.0.1 - 2026-10-16
 
@@ -259,7 +252,6 @@ First public release for WoW Forever.
 - Cells are saved per character (`ForeverOneButtonCharDB`); 0.1.0 cells move
   to the first character that logs in.
 - Default grid: 20 cells in 10 columns.
-- Any rank of a cell's spell maps to that cell for the pixel.
 - Option to hide Blizzard's bottom bar (main action bar, micro menu, bags)
   while keeping the stance and experience bars; keys keep working.
 - The automatic fill also includes JustAC's gap closers (Charge, Intercept...),
@@ -267,15 +259,8 @@ First public release for WoW Forever.
 - The grid title bar is always shown: right-click locks or unlocks it, left-drag
   moves it while unlocked; the position is saved in SavedVariables (also when
   combat starts mid-drag) and restored after `/reload`.
-- The diagnostic log records the frame time of every pixel write; edges are
-  measured on it (the edge timer and the screen run on frame time).
-- The diagnostic log shows the visible pixel states with the cell
-  content and key, durations, cycles and states shorter than 20 ms.
-- Optional diagnostic log (`/fob log`, `ForeverOneButtonLog`) of pixel
-  writes, casts, acknowledgement edges and combat transitions, with
-  `scripts/analyze_log.py`.
-- The pixel is black out of combat by default ("pixel only in combat"): the
-  player picks the pull and the opener; JustAC is followed once combat starts.
+- Optional diagnostic log (`/fob log`, `ForeverOneButtonLog`) of casts and
+  combat transitions, with `scripts/analyze_log.py`.
 
 ## 0.1.0 - unreleased
 
@@ -286,8 +271,5 @@ First version. Offline suites pass; in-game verification is pending.
 - JustAC suggestions from `JustAC-SpellQueue` / `GetCurrentSpellQueue`:
   numbered marks on the cells and a queue strip in JustAC order; explicit
   states for missing JustAC, errors, unreadable data, empty queue and waits.
-- HCOneButton Diagnostic Pixel protocol v3 ported unchanged (colours,
-  8×8 geometry, TOOLTIP strata, 60 ms acknowledgement edge) on an anchor
-  independent of the grid.
-- `/fob` commands and an options window limited to bindings and UI/pixel
+- `/fob` commands and an options window limited to bindings and UI
   settings.
