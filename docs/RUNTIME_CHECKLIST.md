@@ -138,6 +138,37 @@ buffer da 5000 righe teneva solo gli ultimi 76 minuti (dal livello 8 circa),
   registrato): dalla 1.1.6 il log registra `error` e `failed`.
 - Hamstring sul bersaglio in fuga (Guerriero): pubblicato in 1.1.6 senza
   aver ancora visto un mob in fuga in gioco.
+- 2026-11-14, log del 2026-11-13 (1.2.0, Ladro Combat, 168 combattimenti,
+  durata mediana 6,5 s): 174 Slice and Dice contro 25 Eviscerate; Slice and
+  Dice a 1 punto apriva quasi ogni combattimento e in 100 lanci su 174 il
+  bersaglio moriva prima che il buff scadesse (44 entro 3 s); in circa 44
+  combattimenti il bersaglio moriva con 2-4 punti non spesi (punti
+  ricostruiti dai lanci: il log non li registra). Cambiato: Slice and Dice
+  da 2 punti e con il bersaglio al 50% o più; Eviscerate a 5 punti, 3+
+  sotto il 35%, 2+ sotto il 20% (`test_rogue_leveling`). Verifica in gioco
+  da fare: rapporto Slice and Dice / Eviscerate e punti non spesi.
+- 2026-11-14, richieste del proprietario (Ladro): dalla stealth Garrote
+  (anche Combat), Cheap Shot quando il gioco rifiuta Garrote con "You must
+  be behind your target" (trattenuto solo su quel bersaglio) o quando non
+  è ancora appreso; Expose Armor solo su elite e boss, a 5 punti, una volta
+  per 30 s; Gouge (e Blind) nel riempimento automatico come interruzione di
+  riserva; Feint escluso (solo minaccia in gruppo). Il pixel solo in
+  combattimento pubblica comunque l'apertura dalla stealth su un bersaglio
+  attaccabile, così il lettore la preme (richiesta dello stesso giorno).
+  Principio del proprietario: ciò che è suggerito il lettore lo preme;
+  scelto per ora solo per le interruzioni (Kick, Gouge): con una cella
+  passano davanti alla rotazione nel pixel, dopo la sola cura d'emergenza.
+- 2026-11-14, log dello stesso giorno (74 combattimenti, durata mediana
+  11 s): 52 Slice and Dice contro 29 Eviscerate, ma 26 Slice and Dice su 52
+  ancora entro 9 s dalla fine del combattimento. Su scelta del proprietario
+  Slice and Dice ora parte solo da 3 punti (sempre con il bersaglio al 50% o
+  più). Visti in gioco: Garrote dalla stealth sul pixel, rifiuto "behind"
+  seguito da Sinister Strike, Kick sul pixel (26 suggerimenti su 27 premuti;
+  13 pressioni rifiutate con "Out of range."). Non ancora visti: Expose
+  Armor su un elite, Gouge.
+  Difensivi, rotazione fuori combattimento e promemoria restano suggeriti.
+  Verifica in gioco da fare: Garrote alle spalle, Cheap Shot di
+  fronte, cella di Gouge, Expose Armor su un elite.
 
 Condivisione del log (`/fob share`, branch feat/share-log), 2026-11-08,
 client 1.60.1.70862, Ladro 13 in locanda:

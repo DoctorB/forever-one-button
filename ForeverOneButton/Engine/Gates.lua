@@ -99,6 +99,9 @@ local EVALUATE = {
         return Compare(g.op, ns.State.HealthBelow("player", g.pct), ns.State.HealthBelow("player", g.pct + 0.1))
     end,
     stack = Stacks,
+    -- Elite or boss target. Unlike the other gates an unknown answer
+    -- blocks: the entry is only worth it where the fight is long.
+    elite = function(g) return Neg(g, ns.State.TargetIsElite() == true) end,
     -- neg: the gate wants the spell ON cooldown. An unlearned spell counts
     -- as on cooldown (it cannot be pressed either).
     cd = function(g)

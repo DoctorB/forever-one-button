@@ -5,7 +5,10 @@
 --     and demons, Polymorph only on humanoids, beasts and critters...;
 --   * refusals seen: a cast the client refuses with "Invalid target" or
 --     "Immune" marks the spell for that kind of creature (its NPC ID, or the
---     unit itself for players) until the next /reload.
+--     unit itself for players) until the next /reload;
+--   * positional refusals: "You must be behind your target" (Garrote...)
+--     holds the spell back on that one target only, until the target
+--     changes, so the next opener is suggested instead.
 -- The combat log is forbidden on Forever, so a hit that lands as "Immune"
 -- after a successful cast is not learned.
 -- Allows(spellID) answers true, false or nil (unknown); nil never blocks.
@@ -70,6 +73,14 @@ end
 
 -- Answers ----------------------------------------------------------------------
 local refused = {} -- [target key] = {[rank-1 id] = true}
+local behind = {}  -- [rank-1 id] = GUID of the target that refused it
+
+local function TargetGUID()
+    if not UnitGUID then return nil end
+    local ok, guid = pcall(UnitGUID, "target")
+    if ok and ns.Readable(guid) and type(guid) == "string" then return guid end
+    return nil
+end
 
 -- The target's type and key, read once per frame.
 local cachedAt, cachedType, cachedKey = nil, nil, nil
@@ -85,6 +96,7 @@ function Targets.Allows(spellID)
     local base = ns.Ranks.Base(spellID)
     local creature, key = Target()
     if key and refused[key] and refused[key][base] then return false end
+    if behind[base] and behind[base] == TargetGUID() then return false end
     local types = ns.Data.TargetRules.creatureTypes[base]
     if not types or not creature then return nil end
     for _, allowed in ipairs(types) do
@@ -103,6 +115,7 @@ end
 
 function Targets.Forget()
     wipe(refused)
+    wipe(behind)
     cachedAt = nil
 end
 
@@ -117,11 +130,24 @@ local function RefusalMessages()
     }
 end
 
-local failedSpell, failedAt, errorAt = nil, nil, nil
+local function NotBehind()
+    return _G.SPELL_FAILED_NOT_BEHIND or "You must be behind your target."
+end
+
+-- Holds the spell back on the current target only (positional refusal).
+function Targets.RefuseHere(spellID)
+    local guid = TargetGUID()
+    if not (spellID and guid) then return end
+    behind[ns.Ranks.Base(spellID)] = guid
+    cachedAt = nil
+    ns.Log("refused", spellID, "behind")
+end
+
+local failedSpell, failedAt, errorAt, positional = nil, nil, nil, false
 local function Pair()
     if failedSpell and failedAt and errorAt and math.abs(failedAt - errorAt) <= Targets.PAIR_SECONDS then
-        Targets.Refuse(failedSpell, Targets.Key())
-        failedSpell, failedAt, errorAt = nil, nil, nil
+        if positional then Targets.RefuseHere(failedSpell) else Targets.Refuse(failedSpell, Targets.Key()) end
+        failedSpell, failedAt, errorAt, positional = nil, nil, nil, false
     end
 end
 
@@ -136,7 +162,14 @@ frame:SetScript("OnEvent", function(_, event, ...)
         failedSpell, failedAt = spellID, GetTime()
     else
         local message = Plain(select(2, ...))
-        if type(message) ~= "string" or not RefusalMessages()[message] then return end
+        if type(message) ~= "string" then return end
+        if message == NotBehind() then
+            positional = true
+        elseif RefusalMessages()[message] then
+            positional = false
+        else
+            return
+        end
         errorAt = GetTime()
     end
     Pair()

@@ -184,7 +184,7 @@ again after either answer.
 | `/fob autofill on` / `off` / `now` / `reset` | Automatic fill; `reset` forgets the spells you removed |
 | `/fob features` / `feature <name> on\|off\|<value>` | Engine features (burst, interrupts, defensives, reminders) |
 | `/fob show` / `hide` / `lock` / `unlock` / `reset` | Grid visibility, position lock, default layout |
-| `/fob pixel on` / `off` / `lock` / `unlock` / `reset` | Pixel visibility and position |
+| `/fob pixel on` / `off` / `lock` / `unlock` / `reset` | Pixel visibility and position; works in combat too |
 | `/fob pixel combat on` / `combat off` | Pixel only in combat (default on) or always |
 | `/fob blizzardbar hide` / `show` | Hide or show Blizzard's bottom bar (stance and XP bars stay) |
 | `/fob log on` / `off` / `show [lines]` / `clear` | Diagnostic log of pixel writes, casts and edges (off by default) |

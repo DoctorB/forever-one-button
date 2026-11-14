@@ -22,6 +22,8 @@ local function manaBelow(pct) return {t = "power", res = "mana", op = "<", n = p
 local function energyAtLeast(n) return {t = "power", res = "energy", op = ">=", n = n} end
 local function targetsAtLeast(n) return {t = "targets", op = ">=", n = n} end
 local function execute(pct) return {t = "execute", op = "<", pct = pct or 20} end
+local function targetAtLeast(pct) return {t = "execute", op = ">=", pct = pct} end
+local function elite() return {t = "elite"} end
 local function healthAbove(pct) return {t = "health", op = ">", pct = pct} end
 local function healthBelow(pct) return {t = "health", op = "<", pct = pct} end
 local function combo(op, n) return {t = "resource", res = "combo_points", op = op, n = n} end
@@ -133,13 +135,27 @@ local warrior = {
 }
 
 -- Rogue --------------------------------------------------------------------
-local SLICE_AND_DICE = e(5171, buffMissing(5171, 12), combo(">=", 1))
-local EVISCERATE = e(2098, any(combo(">=", 5), all(combo(">=", 2), execute(20))))
+-- Leveling fights are short (log of 2026-11-13: 168 fights, median 6.5 s).
+-- Slice and Dice at 1 point opened nearly every fight and in 100 of 174
+-- casts the target died before the buff ran out, so it waits for 3 points
+-- (2 points still wasted half the casts in the log of 2026-11-14) on a
+-- target above half health; 12 s is the duration assumed below.
+-- Eviscerate spends the points before the target dies: 5 points, 3 below
+-- 35 %, 2 below 20 %.
+local SLICE_AND_DICE = e(5171, buffMissing(5171, 12), combo(">=", 3), targetAtLeast(50))
+-- Expose Armor (owner decision 2026-11-14): only where the fight is long,
+-- elites and bosses, at 5 points, once while it lasts (Engine/Dots.lua).
+local EXPOSE_ARMOR = e(8647, elite(), combo(">=", 5))
+local EVISCERATE = e(2098, any(combo(">=", 5), all(combo(">=", 3), execute(35)), all(combo(">=", 2), execute(20))))
 local rogue = {
     base = {
         st = {
+            -- Openers (owner decision 2026-11-14): Garrote; Cheap Shot when
+            -- Garrote is refused because the target faces the player
+            -- (Engine/Targets.lua) or is not learned yet.
+            e(703, stealthed()),               -- Garrote from stealth
             e(1833, stealthed()),              -- Cheap Shot from stealth
-            SLICE_AND_DICE, EVISCERATE,
+            SLICE_AND_DICE, EXPOSE_ARMOR, EVISCERATE,
             e(13750),                          -- Adrenaline Rush
             e(13877, targetsAtLeast(2)),       -- Blade Flurry
             e(1752, energyAtLeast(40)),        -- Sinister Strike
@@ -150,7 +166,7 @@ local rogue = {
             e(703, stealthed()),               -- Garrote from stealth
             SLICE_AND_DICE,
             e(14177, combo(">=", 4)),          -- Cold Blood before a finisher
-            EVISCERATE,
+            EXPOSE_ARMOR, EVISCERATE,
             e(1310707),                        -- Mutilate
             e(1752, energyAtLeast(40)),        -- Sinister Strike until Mutilate
         },
@@ -159,7 +175,7 @@ local rogue = {
         st = {
             e(8676, stealthed()),              -- Ambush from stealth
             e(14183, stealthed()),             -- Premeditation
-            SLICE_AND_DICE, EVISCERATE,
+            SLICE_AND_DICE, EXPOSE_ARMOR, EVISCERATE,
             e(16511),                          -- Hemorrhage
             e(1752, energyAtLeast(40)),        -- Sinister Strike until Hemorrhage
         },

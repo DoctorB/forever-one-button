@@ -9,7 +9,13 @@ local GATES = {
     dot = true, power = true, buff = true, swing = true, any = true, targets = true, cd = true,
     stack = true, starved = true, health = true, resource = true, known = true, near = true,
     all = true, stealth = true, unconfirmed = true, execute = true, totem = true, tick = true,
-    fleeing = true, since = true,
+    fleeing = true, since = true, elite = true,
+}
+
+-- Abilities the leveling lists use beyond the imported class abilities; each
+-- must still be a rank-1 ID of the imported rank chains.
+local EXTRA_ABILITIES = {
+    ROGUE = {[8647] = "Expose Armor"},
 }
 
 local function CheckGates(gates, label, abilities)
@@ -28,6 +34,10 @@ for class, trees in pairs(R.classes) do
     H.Check(leveling, class .. ": leveling lists")
     local abilities = {}
     for _, id in ipairs(R.classAbilities[class]) do abilities[id] = true end
+    for id, name in pairs(EXTRA_ABILITIES[class] or {}) do
+        H.Check(R.rankChains[id] and R.rankChains[id][1] == id, class .. ": " .. name .. " is a rank-1 ID")
+        abilities[id] = true
+    end
     for tree in pairs(trees) do
         if tree ~= "default" then
             H.Check(leveling[tree] or leveling.base, class .. "/" .. tree .. ": a leveling list")

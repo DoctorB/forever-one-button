@@ -69,7 +69,8 @@ runtime.
 | Posizioni 2+ | voci pronte restanti, poi quelle in arrivo; il trigger di burst pronto può essere spostato in posizione 2 | solo griglia e striscia; mai nel pixel |
 | ID visualizzati | rango più alto conosciuto | una cella spell corrisponde se l'ID è uguale, se `C_Spell.GetOverrideSpell(cella)` è uguale, o altrimenti se il nome localizzato è uguale (altro rango della stessa spell) |
 | Cura d'emergenza | salute sotto `emergencyHealBelow` (30 %) in combattimento: `Defensives.EmergencyHeal` (spell di cura pronta con una cella, altrimenti l'oggetto di cura con una cella) va in posizione 1 e sostituisce il wait | pixel = sua cella; la portata del bersaglio non si applica; salute non leggibile → mai |
-| Fuori dalla coda | interruzioni (`Engine/Interrupts.lua`), il resto dei difensivi (`Engine/Defensives.lua`), promemoria (`Engine/Precombat.lua`) | mostrati accanto alla griglia; nessuno di essi viene passato a `Pixel.Update` |
+| Interruzione | `Interrupts.Suggest` (kick, o controllo come riserva; pronto, a portata, non subito dopo un'interruzione) | richiesta del proprietario del 2026-11-14 ("quello che è suggerito il lettore lo preme"): se ha una cella sostituisce la posizione 1 nel pixel; prima di essa solo la cura d'emergenza; valgono nero fuori combattimento, cast in corso e fuori portata (`test_rogue_leveling`) |
+| Fuori dalla coda | il resto dei difensivi (`Engine/Defensives.lua`), promemoria (`Engine/Precombat.lua`) | mostrati accanto alla griglia; non passati a `Pixel.Update` (scelta del proprietario del 2026-11-14: difensivi, rotazione fuori combattimento e promemoria restano solo suggeriti) |
 
 Conversioni introdotte, tutte necessarie al protocollo e nessuna decisionale:
 (1) ID della coda → numero di cella (lookup nelle associazioni, compresa
@@ -84,7 +85,7 @@ nero, perché il protocollo li definisce "nessuna raccomandazione eseguibile";
 
 | Caso | Pixel | Griglia | Motivo |
 |---|---|---|---|
-| Fuori combattimento (`InCombatLockdown()` falso) con `pixel.combatOnly` | nero; pubblicazione immediata a `PLAYER_REGEN_DISABLED`, nero immediato a `PLAYER_REGEN_ENABLED` | suggerimenti mostrati | cambia solo il momento: encoder e colori invariati; nero è uno stato già previsto dal v3 |
+| Fuori combattimento (`InCombatLockdown()` falso) con `pixel.combatOnly` | nero, salvo un'apertura dalla stealth su un bersaglio attaccabile (Garrote, Cheap Shot…: pubblicata perché il lettore la prema, richiesta del proprietario del 2026-11-14, `test_rogue_leveling`); pubblicazione immediata a `PLAYER_REGEN_DISABLED`, nero immediato a `PLAYER_REGEN_ENABLED` | suggerimenti mostrati | cambia solo il momento: encoder e colori invariati; nero è uno stato già previsto dal v3 |
 | Nessuna lista per la classe (`missing`) / errore del motore (`error`) | nero | stato esplicito, nessun segno sulle celle | nessun consiglio sostitutivo |
 | Salute, potere, cooldown, aure segreti | — | — | il motore non li confronta: risposte sì/no del client (`Engine/Secret.lua`) o "sconosciuto"; uno sconosciuto non blocca e non crea una voce |
 | Cast/canale con nome segreto | nero | "casting" | un valore segreto non-nil indica comunque un cast in corso |

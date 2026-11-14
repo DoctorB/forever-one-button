@@ -152,6 +152,15 @@ function State.TargetIsBoss()
     return false
 end
 
+-- Elite, rare elite or boss target: true, false, or nil when unreadable.
+local ELITE = {elite = true, rareelite = true, worldboss = true}
+function State.TargetIsElite()
+    if State.TargetIsBoss() == true then return true end
+    local classification = Plain(Call(UnitClassification, "target"))
+    if type(classification) ~= "string" then return nil end
+    return ELITE[classification] == true
+end
+
 -- Enemies engaged with the player: hostile nameplates with a threat entry.
 -- 0 when nameplates are off: callers read that as "one target".
 local enemyCount, enemyAt = 0, -1

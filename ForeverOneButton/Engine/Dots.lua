@@ -64,9 +64,13 @@ local function Stacked(first)
     return stacked[first] == true
 end
 
+-- Debuffs the imported table does not list, tracked the same way so an
+-- entry is not repeated while it lasts.
+Dots.EXTRA_DURATIONS = {[8647] = 30} -- Expose Armor
+
 local function DotDuration(first)
     local durations = ns.Data.Defaults.targetDots
-    return durations[first]
+    return durations[first] or Dots.EXTRA_DURATIONS[first]
 end
 
 function Dots.NoteCast(spellID)

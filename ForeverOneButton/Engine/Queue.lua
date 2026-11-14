@@ -91,6 +91,15 @@ local function Evaluate(entry, id, ctx)
     return true
 end
 
+-- An entry only used from stealth (Garrote, Cheap Shot...): it opens the
+-- fight, so the combat-only pixel publishes it (Bridge/Model.lua).
+local function StealthOpener(entry)
+    for _, gate in ipairs(entry.gates or {}) do
+        if gate.t == "stealth" and not gate.neg then return true end
+    end
+    return nil
+end
+
 -- A list's home stance that is not learned yet (Berserker Stance before
 -- level 30) stands for the stance the abilities use until then, with the
 -- same "not already in it" gate.
@@ -211,7 +220,7 @@ function Queue.Build(previous)
             pendingSince[c.id] = nil
             if ok and heldBy then ok, tier, reason = false, 3, "held" end
         end
-        local item = {kind = ENTRY.SPELL, id = c.id, base = c.first, ready = ok}
+        local item = {kind = ENTRY.SPELL, id = c.id, base = c.first, ready = ok, opener = StealthOpener(c.entry)}
         if ok then ready[#ready + 1] = item else table.insert(waiting[tier], item) end
         why[#why + 1] = c.id .. (ok and "+" or ("-" .. reason))
     end

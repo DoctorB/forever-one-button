@@ -58,6 +58,7 @@ end
 Model.AttackWithoutTarget = AttackWithoutTarget
 
 local lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat, lastNoTarget = nil, nil, nil, nil, nil
+local lastInterruptHead = nil
 local lastLogged -- the snapshot last written to the diagnostic log
 
 -- One refresh: build the queue, derive the pixel head, notify consumers.
@@ -76,6 +77,15 @@ function Model.Refresh()
     local casting = PlayerIsCasting()
     -- An emergency heal is cast on the player: the target's range does not apply.
     local selfHeal = snapshot.entries[1] and snapshot.entries[1].emergency
+    -- Interrupt (owner request 2026-11-14: what is suggested, the reader
+    -- presses): the suggested kick, or crowd control as fallback, takes the
+    -- pixel ahead of the rotation when it has a cell; only the emergency
+    -- heal comes before it. Engine/Interrupts.lua already checks readiness,
+    -- reach and the debounce after a cast.
+    local okInterrupt, interrupt = pcall(ns.Interrupts.Suggest)
+    if not okInterrupt then interrupt = nil end
+    local interruptHead = (interrupt and interrupt.id and not selfHeal and ns.Actions.SlotFor(interrupt.id) ~= nil) == true
+    if interruptHead then head = interrupt.id end
     local outOfRange = head ~= nil and not casting and not selfHeal and ConfirmedOutOfRange(head)
     local noTarget = head ~= nil and not casting and not selfHeal and AttackWithoutTarget(snapshot, head)
     Model.observation.casting = casting
@@ -85,14 +95,20 @@ function Model.Refresh()
     -- the pixel publishes protocol black, "no executable recommendation". Only
     -- the moment changes; the encoder and its colours do not. The grid still
     -- shows the suggestions.
-    local outOfCombat = ns.Settings.Get().pixel.combatOnly and not ns.InCombat()
+    -- Exception (owner request 2026-11-14): a stealth opener on an
+    -- attackable target is published out of combat too, so the reader
+    -- presses it; it is what starts the fight.
+    local opener = snapshot.entries[1] and snapshot.entries[1].opener and ns.State.Stealthed() == true
+        and ns.State.TargetAttackable() == true
+    local outOfCombat = ns.Settings.Get().pixel.combatOnly and not ns.InCombat() and not opener
     Model.observation.outOfCombat = outOfCombat
     if casting or outOfRange or noTarget or outOfCombat then head = nil end
 
     local changed = snapshot ~= lastSnapshot or casting ~= lastCasting or outOfRange ~= lastOutOfRange
-        or outOfCombat ~= lastOutOfCombat or noTarget ~= lastNoTarget
+        or outOfCombat ~= lastOutOfCombat or noTarget ~= lastNoTarget or interruptHead ~= lastInterruptHead
     lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat, lastNoTarget =
         snapshot, casting, outOfRange, outOfCombat, noTarget
+    lastInterruptHead = interruptHead
 
     if head ~= Model.pixelHead or changed then
         if changed then
@@ -104,7 +120,7 @@ function Model.Refresh()
                     snapshot.why or "-")
             end
             local first = snapshot.entries[1]
-            ns.Log("head", first and first.id or "none",
+            ns.Log("head", interruptHead and interrupt.id or (first and first.id) or "none",
                 (casting and "c" or "") .. (outOfRange and "r" or "") .. (noTarget and "t" or "")
                     .. (outOfCombat and "o" or "") .. "-")
         end
@@ -136,9 +152,7 @@ function Model.Refresh()
         if ns.Grid and ns.Grid.ShowDefensives then ns.Grid.ShowDefensives(row) end
     end
 
-    -- Interrupt suggestion: shown beside the grid, never in the pixel.
-    local okInterrupt, interrupt = pcall(ns.Interrupts.Suggest)
-    if not okInterrupt then interrupt = nil end
+    -- Interrupt suggestion: shown beside the grid; in the pixel above.
     local before = Model.interrupt
     if (interrupt and interrupt.id) ~= (before and before.id) then
         Model.interrupt = interrupt
@@ -152,6 +166,7 @@ end
 -- may stay on screen looking current.
 function Model.Reset()
     lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat, lastNoTarget = nil, nil, nil, nil, nil
+    lastInterruptHead = nil
     Model.snapshot = {status = ns.STATUS.MISSING, entries = {}, count = 0}
     Model.pixelHead = nil
     Model.interrupt = nil

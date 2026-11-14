@@ -61,7 +61,7 @@ local HELP = {
     "/fob probe spellbook | probe frames  (read-only client data for development)",
     "/fob blizzardbar hide | show  (Blizzard's bottom bar; stance and XP bars stay)",
     "/fob show | hide | lock | unlock | reset",
-    "/fob pixel on | off | lock | unlock | reset | combat on | combat off",
+    "/fob pixel on | off | lock | unlock | reset | combat on | combat off  (also in combat)",
 }
 
 local function Features()

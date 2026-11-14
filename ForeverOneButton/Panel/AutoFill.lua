@@ -29,13 +29,24 @@ local scheduled = false
 local CONTEXTS = {"st", "cleave", "aoe"}
 
 -- Interrupt spells of the data this character knows, best first (lockout
--- kicks before crowd control, then the data's tiebreaker).
+-- kicks before crowd control, then the data's tiebreaker). Crowd control
+-- joins when the interrupt mode can suggest it (not "kickOnly"; fears only
+-- with interruptFears), so the suggested spell has a cell (Gouge, owner
+-- request 2026-11-14).
+local MECH_FEAR = 5
 local function KnownInterrupts()
+    local mode = ns.Settings.Feature("interruptMode")
+    local fears = ns.Settings.Feature("interruptFears")
     local out = {}
     for id, info in pairs(ns.Data.Interrupts.abilities) do
-        if info.kind == "interrupt" and ns.Ranks.HighestKnown(id) then out[#out + 1] = {id = id, pri = info.pri or 9} end
+        local wanted = info.kind == "interrupt"
+            or (mode ~= "kickOnly" and (info.mech ~= MECH_FEAR or fears))
+        if wanted and ns.Ranks.HighestKnown(id) then
+            out[#out + 1] = {id = id, kick = info.kind == "interrupt", pri = info.pri or 9}
+        end
     end
     table.sort(out, function(a, b)
+        if a.kick ~= b.kick then return a.kick end
         if a.pri ~= b.pri then return a.pri < b.pri end
         return a.id < b.id
     end)
