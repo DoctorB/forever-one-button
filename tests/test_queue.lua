@@ -302,7 +302,25 @@ H.units.target.guid = "mob-1"
 H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 7386)
 H.now = H.now + 31
 H.Equal(ns.Dots.Stacks(7386), 0, "expired after 30 s")
+
+-- Demoralizing Shout hits the pack around the player: a new target does not
+-- ask for it again; it runs out after its duration or at the end of the fight.
+H.units.target.guid = "mob-1"
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 1160)
+H.Equal(ns.Dots.Active(1160), true, "shout up on the target")
+H.units.target.guid = "mob-2"
+H.Fire("PLAYER_TARGET_CHANGED")
+H.Equal(ns.Dots.Active(1160), true, "shout still up on the next mob of the pack")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 772)
+H.units.target.guid = "mob-3"
+H.Fire("PLAYER_TARGET_CHANGED")
+H.Equal(ns.Dots.Active(772), false, "Rend stays per target")
+H.now = H.now + 46
+H.Equal(ns.Dots.Active(1160), false, "shout ran out after 45 s")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 1160)
 H.inCombat = false
+H.Fire("PLAYER_REGEN_ENABLED")
+H.Equal(ns.Dots.Active(1160), false, "next fight: shout again")
 
 -- A class without data.
 H.class = "DEATHKNIGHT"

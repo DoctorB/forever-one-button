@@ -7,6 +7,9 @@
 --   * a stacking debuff named by a target stack gate of the lists (Sunder
 --     Armor...) counts one application per cast on the current target, each
 --     cast refreshing it, up to its maximum.
+--   * a debuff the player casts around itself (Demoralizing Shout...) hits
+--     the whole pack, so it counts as up on every target until it runs out
+--     or the fight ends: a target change does not ask for it again.
 -- A cast remembers the target's GUID (when readable) and a counter that
 -- changes on every target change; the GUID decides when both sides have
 -- one, the counter otherwise (the GUID can turn secret in combat).
@@ -68,6 +71,10 @@ end
 -- entry is not repeated while it lasts.
 Dots.EXTRA_DURATIONS = {[8647] = 30} -- Expose Armor
 
+-- Debuffs cast around the player: one cast covers every target in reach
+-- (log of 2026-11-15: 54 of 94 Demoralizing Shouts were repeats on a pack).
+Dots.AREA = {[1160] = true, [99] = true} -- Demoralizing Shout, Demoralizing Roar
+
 local function DotDuration(first)
     local durations = ns.Data.Defaults.targetDots
     return durations[first] or Dots.EXTRA_DURATIONS[first]
@@ -97,7 +104,8 @@ function Dots.Active(spellID)
     local duration = DotDuration(first)
     if not duration then return nil end
     local entry = applied[first]
-    if not entry or not SameTarget(entry) then return false end
+    if not entry then return false end
+    if not Dots.AREA[first] and not SameTarget(entry) then return false end
     return GetTime() - entry.at < duration
 end
 
@@ -120,4 +128,12 @@ end
 local frame = CreateFrame("Frame")
 Dots.frame = frame
 frame:RegisterEvent("PLAYER_TARGET_CHANGED")
-frame:SetScript("OnEvent", function() targetSerial = targetSerial + 1 end)
+frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+frame:SetScript("OnEvent", function(_, event)
+    if event == "PLAYER_REGEN_ENABLED" then
+        -- The next pack has not been hit by the last fight's shout.
+        for first in pairs(Dots.AREA) do applied[first] = nil end
+        return
+    end
+    targetSerial = targetSerial + 1
+end)
