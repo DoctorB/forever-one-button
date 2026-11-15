@@ -78,6 +78,17 @@ class ReleaseTests(unittest.TestCase):
         with self.assertRaises(release.ReleaseError):
             release.version_info(self.tmp)
 
+    def test_notes_never_mention_pixel_or_reader(self):
+        changelog = self.tmp / "CHANGELOG.md"
+        clean = changelog.read_text(encoding="utf-8")
+        heading = clean.index("\n", clean.index("## " + self.version)) + 1
+        for line in ("- The opener also shows on the Pixel.\n", "- A READER presses it too.\n"):
+            changelog.write_text(clean[:heading] + line + clean[heading:], encoding="utf-8")
+            with self.assertRaises(release.ReleaseError):
+                release.check_version("v" + self.version, self.tmp)
+        changelog.write_text(clean, encoding="utf-8")
+        self.assertEqual(release.check_version("v" + self.version, self.tmp), self.version)
+
     def test_release_type_from_the_version(self):
         self.assertEqual(release.release_type("1.0.0"), "release")
         self.assertEqual(release.release_type("1.0.0-beta.1"), "beta")

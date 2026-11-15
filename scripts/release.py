@@ -74,11 +74,18 @@ def version_info(root=ROOT):
     return version, interface, game_version
 
 
+# Release notes are for players: the pixel and its reader never appear in them.
+PRIVATE_NOTE_WORDS = re.compile(r"pixel|reader", re.IGNORECASE)
+
+
 def changelog_section(version, root=ROOT):
     text = (root / "CHANGELOG.md").read_text(encoding="utf-8")
     match = re.search(r"^## " + re.escape(version) + r"(?![\w.-])[^\n]*\n.*?(?=^## |\Z)",
                       text, re.MULTILINE | re.DOTALL)
     require(match, f"CHANGELOG.md has no section for {version}")
+    private = PRIVATE_NOTE_WORDS.search(match[0])
+    require(not private, f"CHANGELOG.md {version} mentions {private[0] if private else ''!r}: "
+                         "release notes are for players, leave pixel and reader changes out")
     return match[0].strip() + "\n"
 
 
