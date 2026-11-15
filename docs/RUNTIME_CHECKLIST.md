@@ -206,6 +206,20 @@ buffer da 5000 righe teneva solo gli ultimi 76 minuti (dal livello 8 circa),
   gate `reserve` in `Engine/Gates.lua`, `bashRage` in `Data/Leveling.lua`
   (`test_leveling`). Nel log la mossa trattenuta appare come `-gate`.
   Verifica in gioco da fare: più cast interrotti, quanta attesa in più.
+- 2026-11-15 pomeriggio, log 1.2.2 (113 combattimenti, 38 min): 88 cast
+  nemici in combattimento, Shield Bash riuscito 35, suggerito ma bloccato
+  dal GCD 7, in cooldown 40 (37 registrati come `res` perché la rage era
+  controllata prima del cooldown: ordine corretto, `test_interrupts`),
+  senza rage 4, fuori portata 2. Defensive Stance mai subito dopo il Charge
+  (40 Charge). Revenge 146 su 196 finestre.
+- 2026-11-15 sera, log 1.2.2 (50 combattimenti, 935 s, molti pack in aoe):
+  Demoralizing Shout lanciato 94 volte, 54 entro 30 s dal precedente nello
+  stesso combattimento: il debuff era contato per bersaglio e ogni cambio
+  di bersaglio lo richiedeva (9 volte in un solo combattimento). Ora i
+  debuff attorno al giocatore (`Dots.AREA`: Demoralizing Shout, Demoralizing
+  Roar) valgono per tutto il pack fino alla scadenza o alla fine del
+  combattimento (`test_queue`). Shield Bash: 12 cast nemici, 6 interrotti.
+  Revenge 74 su 100 finestre. Taunt premuto a mano, fuori da FOB.
 
 Condivisione del log (`/fob share`, branch feat/share-log), 2026-11-08,
 client 1.60.1.70862, Ladro 13 in locanda:

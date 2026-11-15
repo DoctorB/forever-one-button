@@ -28,7 +28,10 @@ H.spells[72].noResources = nil
 H.spells[72].usable = nil
 H.Equal(Id(), 72, "Shield Bash first: same tier, lower ID")
 H.spells[72].cooldown = true
+H.spells[72].usable, H.spells[72].noResources = false, true
 H.Equal(Id(), 6552, "Shield Bash on cooldown: Pummel")
+H.Equal(I.why, "72-cd,6552+", "cooling down with low rage: the log says cooldown")
+H.spells[72].usable, H.spells[72].noResources = nil, nil
 H.spells[6552].inRange = false
 H.Equal(Id(), nil, "out of range")
 H.spells[6552].inRange = true

@@ -94,10 +94,13 @@ local function Ready(entry, isKick)
     if not id then return nil, "rank" end
     local since = ns.State.SecondsSinceCast(entry.first)
     if since and since < (isKick and Interrupts.KICK_DEBOUNCE or Interrupts.CC_DEBOUNCE) then return nil, "recent" end
+    -- Cooldown before usability: a kick cooling down is also "not usable"
+    -- with low rage, and the log must say cooldown (log of 2026-11-15: 37 of
+    -- 41 "res" were Shield Bash cooling down).
+    if ns.State.OnCooldown(id) == true then return nil, "cd" end
     local usable, noResources = ns.State.Usable(id)
     -- Kicks fail open on an unknown answer; crowd control does not.
     if usable == false or (not isKick and usable == nil) then return nil, noResources and "res" or "use" end
-    if ns.State.OnCooldown(id) == true then return nil, "cd" end
     if ns.Targets.Allows(id) == false then return nil, "refused" end
     if not Reaches(entry.info, id) then return nil, "range" end
     return id
