@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.2 - 2026-11-15
+
+### Changed
+
+- **Protection warriors:** after Charge, Defensive Stance waits until you
+  have spent the rage from the Charge, so it is no longer thrown away.
+- **Protection warriors:** against enemies you have seen casting, the
+  addon keeps 10 rage for Shield Bash, so it is ready when they cast again.
+- **Rogues:** at 5 combo points Eviscerate comes before Slice and Dice;
+  Slice and Dice uses 3 or 4 points.
+- **Rogues:** when Garrote fails because you are not behind the target, it
+  is not suggested again until you change target.
+
 ## 1.2.1 - 2026-11-14
 
 ### New
