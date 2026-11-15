@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.3 - 2026-11-15
+
+### Fixed
+
+- **Warriors:** Demoralizing Shout is no longer suggested again each time
+  you switch target in a pack. It covers every enemy around you, so it
+  comes back only when it wears off or in the next fight.
+
 ## 1.2.2 - 2026-11-15
 
 ### Changed
