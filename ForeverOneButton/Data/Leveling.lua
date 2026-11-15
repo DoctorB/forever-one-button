@@ -35,6 +35,10 @@ local function onCooldown(id) return {t = "cd", id = id, neg = true} end
 local function stealthed() return {t = "stealth"} end
 local function fleeing() return {t = "fleeing"} end
 local function castAgo(id, seconds) return {t = "since", id = id, op = ">=", n = seconds} end
+-- Leave `keep` rage for Shield Bash after paying `cost`, against a kind of
+-- target seen casting (owner request 2026-11-15: 12 of 26 enemy casts in
+-- combat went uninterrupted for lack of rage).
+local function bashRage(cost) return {t = "reserve", id = 72, res = "rage", n = cost + 10} end
 local function any(...) return {t = "any", g = {...}} end
 local function all(...) return {t = "all", g = {...}} end
 local function e(id, ...) return {id = id, gates = {...}} end
@@ -50,6 +54,14 @@ local HEROIC_STRIKE = e(78, any(all(unknown(23881), unknown(12294)), rageAtLeast
 -- Hamstring on a target running away (owner request, 2026-11-06): a fleeing
 -- humanoid comes back with friends. Once per flight: the slow lasts 15 s.
 local HAMSTRING = e(1715, fleeing(), castAgo(1715, 10))
+-- Defensive Stance only with little rage left: a log of 2026-11-15 (15
+-- protection fights) showed the stance taken 0.1 s after Charge from Battle
+-- Stance, before the Charge rage was spent, and the first attack 1.1 s
+-- later. Below 5 the swap costs almost nothing; above, Rend, Sunder or a
+-- shout spend it in Battle Stance first. Not in the first 1.5 s after
+-- Charge either: the second log of 2026-11-15 showed the stance on the pixel
+-- 13 ms after Charge, read with the rage still at 0 from before the pull.
+local DEFENSIVE_STANCE = e(71, buffMissing(71), rageBelow(5), castAgo(100, 1.5))
 local WARRIOR_AOE_HEAD = {
     BATTLE_SHOUT, BLOODRAGE,
     e(6343, targetsAtLeast(2)),           -- Thunder Clap
@@ -104,32 +116,34 @@ local warrior = {
             e(2458, buffMissing(2458)),
         },
     },
+    -- Protection keeps rage for Shield Bash against casters (bashRage).
     protection = {
         st = {
-            BATTLE_SHOUT, BLOODRAGE,
-            e(23922),                          -- Shield Slam
-            e(6572),                           -- Revenge (after a block, dodge or parry)
-            e(7386, stacksBelow(7386, 5)),     -- Sunder Armor up to 5
-            e(772, dot(772)),                  -- Rend
-            e(1160, dot(1160)),                -- Demoralizing Shout
-            e(6343, targetsAtLeast(2)),        -- Thunder Clap
+            e(6673, buffMissing(6673, 120), bashRage(10)), -- Battle Shout
+            BLOODRAGE,
+            e(23922, bashRage(20)),            -- Shield Slam
+            e(6572, bashRage(5)),              -- Revenge (after a block, dodge or parry)
+            e(7386, stacksBelow(7386, 5), bashRage(15)), -- Sunder Armor up to 5
+            e(772, dot(772), bashRage(10)),    -- Rend
+            e(1160, dot(1160), bashRage(10)),  -- Demoralizing Shout
+            e(6343, targetsAtLeast(2), bashRage(20)), -- Thunder Clap
             e(845, targetsAtLeast(2), rageAtLeast(30)), -- Cleave
             e(5308, execute()),                -- Execute
             -- Heroic Strike: whenever affordable until Shield Slam is known,
             -- then only with spare rage. A level-11 log (2026-11-08) with a
             -- 40-rage threshold from the start: the button waited 436 s of
             -- about 900 s in combat with nothing else to press.
-            e(78, any(unknown(23922), rageAtLeast(40))),
-            e(71, buffMissing(71)),            -- Defensive Stance
+            e(78, any(unknown(23922), rageAtLeast(40)), bashRage(15)),
+            DEFENSIVE_STANCE,
         },
         aoe = {
-            BATTLE_SHOUT, BLOODRAGE,
-            e(6343),                           -- Thunder Clap
-            e(1160, dot(1160)),                -- Demoralizing Shout
-            e(6572), e(23922),
-            e(845, rageAtLeast(25)),           -- Cleave
-            e(7386, stacksBelow(7386, 5)),
-            e(71, buffMissing(71)),
+            e(6673, buffMissing(6673, 120), bashRage(10)), BLOODRAGE,
+            e(6343, bashRage(20)),             -- Thunder Clap
+            e(1160, dot(1160), bashRage(10)),  -- Demoralizing Shout
+            e(6572, bashRage(5)), e(23922, bashRage(20)),
+            e(845, rageAtLeast(25)),           -- Cleave (already keeps 5 more)
+            e(7386, stacksBelow(7386, 5), bashRage(15)),
+            DEFENSIVE_STANCE,
         },
     },
 }
@@ -139,10 +153,12 @@ local warrior = {
 -- Slice and Dice at 1 point opened nearly every fight and in 100 of 174
 -- casts the target died before the buff ran out, so it waits for 3 points
 -- (2 points still wasted half the casts in the log of 2026-11-14) on a
--- target above half health; 12 s is the duration assumed below.
+-- target above half health; 12 s is the duration assumed below. At 5
+-- points Eviscerate comes first (owner decision 2026-11-14: Slice and Dice
+-- still took 5 points in 14 of 47 casts), so Slice and Dice uses 3-4.
 -- Eviscerate spends the points before the target dies: 5 points, 3 below
 -- 35 %, 2 below 20 %.
-local SLICE_AND_DICE = e(5171, buffMissing(5171, 12), combo(">=", 3), targetAtLeast(50))
+local SLICE_AND_DICE = e(5171, buffMissing(5171, 12), combo(">=", 3), combo("<=", 4), targetAtLeast(50))
 -- Expose Armor (owner decision 2026-11-14): only where the fight is long,
 -- elites and bosses, at 5 points, once while it lasts (Engine/Dots.lua).
 local EXPOSE_ARMOR = e(8647, elite(), combo(">=", 5))

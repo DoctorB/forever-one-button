@@ -113,6 +113,19 @@ local EVALUATE = {
         return not onCooldown
     end,
     buff = function(g) return Neg(g, ns.State.BuffActive(g.id, g.dur)) end,
+    -- Rage kept for an interrupt (g.id) against a kind of target seen
+    -- casting: needs g.n rage there; elsewhere, or when the interrupt is off,
+    -- unknown, cooling down or unusable for a reason other than rage (no
+    -- shield), it does not hold anything back.
+    reserve = function(g, ctx)
+        if not ns.Settings.Feature("interrupts") then return true end
+        if not (ns.Interrupts and ns.Interrupts.TargetIsCaster() == true) then return true end
+        local id = ns.Ranks.HighestKnown(g.id)
+        if not id or ns.State.OnCooldown(id) == true then return true end
+        local usable, noResources = ns.State.Usable(id)
+        if usable == false and not noResources then return true end
+        return Verdict({t = "power", res = g.res or "rage", op = ">=", n = g.n}, ctx)
+    end,
     -- Informational in the data; it only says "no DoT on a target about to
     -- die" (non-boss, below 35%). DoTs already ticking are handled by
     -- Engine/Dots.lua.

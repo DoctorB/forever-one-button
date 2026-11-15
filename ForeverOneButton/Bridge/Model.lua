@@ -97,9 +97,10 @@ function Model.Refresh()
     -- shows the suggestions.
     -- Exception (owner request 2026-11-14): a stealth opener on an
     -- attackable target is published out of combat too, so the reader
-    -- presses it; it is what starts the fight.
+    -- presses it; it is what starts the fight. Not on a target the player
+    -- tried to Pick Pocket or Sap (owner decision 2026-11-14).
     local opener = snapshot.entries[1] and snapshot.entries[1].opener and ns.State.Stealthed() == true
-        and ns.State.TargetAttackable() == true
+        and ns.State.TargetAttackable() == true and not ns.Targets.OpenerHeld()
     local outOfCombat = ns.Settings.Get().pixel.combatOnly and not ns.InCombat() and not opener
     Model.observation.outOfCombat = outOfCombat
     if casting or outOfRange or noTarget or outOfCombat then head = nil end
@@ -152,12 +153,22 @@ function Model.Refresh()
         if ns.Grid and ns.Grid.ShowDefensives then ns.Grid.ShowDefensives(row) end
     end
 
-    -- Interrupt suggestion: shown beside the grid; in the pixel above.
+    -- Interrupt suggestion: shown beside the grid; in the pixel above. The
+    -- log line also says why nothing was suggested while the target casts,
+    -- and "noslot" when the suggestion has no cell to press.
     local before = Model.interrupt
+    local why = okInterrupt and ns.Interrupts.why or nil
+    if interrupt and interrupt.id and not interruptHead then
+        why = (why and why .. "," or "") .. (selfHeal and "heal" or "noslot")
+    end
     if (interrupt and interrupt.id) ~= (before and before.id) then
         Model.interrupt = interrupt
-        ns.Log("interrupt", interrupt and interrupt.id or "none", interrupt and interrupt.kind or "-")
         if ns.Grid and ns.Grid.ShowInterrupt then ns.Grid.ShowInterrupt(interrupt) end
+    end
+    local line = tostring(interrupt and interrupt.id or "none") .. "|" .. (why or "-")
+    if line ~= Model.interruptLine then
+        Model.interruptLine = line
+        ns.Log("interrupt", interrupt and interrupt.id or "none", interrupt and interrupt.kind or "-", why or "-")
     end
     return changed
 end
@@ -170,6 +181,7 @@ function Model.Reset()
     Model.snapshot = {status = ns.STATUS.MISSING, entries = {}, count = 0}
     Model.pixelHead = nil
     Model.interrupt = nil
+    Model.interruptLine = nil
     if ns.Grid and ns.Grid.ShowInterrupt then ns.Grid.ShowInterrupt(nil) end
     Model.defenses, Model.defenseSignature = nil, ""
     if ns.Grid and ns.Grid.ShowDefensives then ns.Grid.ShowDefensives(nil) end

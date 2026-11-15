@@ -58,6 +58,20 @@ function Interrupts.TargetCast()
     return nil
 end
 
+-- Kinds of creature seen casting this session ("npc:<id>" from
+-- Targets.Key): the rotation keeps rage for the kick against them.
+local casters = {}
+
+-- true when the target is of a kind seen casting, false when it is not,
+-- nil when the target cannot be told apart.
+function Interrupts.TargetIsCaster()
+    local key = ns.Targets.Key()
+    if not key then return nil end
+    return casters[key] == true
+end
+
+function Interrupts.ForgetCasters() casters = {} end
+
 local function Worthy()
     if not ns.State.TargetAttackable() then return false end
     local ok, classification = pcall(UnitClassification, "target")
@@ -74,25 +88,34 @@ local function Reaches(info, id)
     return ns.State.InRange(id) ~= false
 end
 
+-- The pressed rank, or nil and why not (written to the diagnostic log).
 local function Ready(entry, isKick)
     local id = ns.Ranks.Pressed(entry.first)
-    if not id then return nil end
+    if not id then return nil, "rank" end
     local since = ns.State.SecondsSinceCast(entry.first)
-    if since and since < (isKick and Interrupts.KICK_DEBOUNCE or Interrupts.CC_DEBOUNCE) then return nil end
-    local usable = ns.State.Usable(id)
+    if since and since < (isKick and Interrupts.KICK_DEBOUNCE or Interrupts.CC_DEBOUNCE) then return nil, "recent" end
+    local usable, noResources = ns.State.Usable(id)
     -- Kicks fail open on an unknown answer; crowd control does not.
-    if usable == false or (not isKick and usable == nil) then return nil end
-    if ns.State.OnCooldown(id) == true then return nil end
-    if ns.Targets.Allows(id) == false then return nil end
-    if not Reaches(entry.info, id) then return nil end
+    if usable == false or (not isKick and usable == nil) then return nil, noResources and "res" or "use" end
+    if ns.State.OnCooldown(id) == true then return nil, "cd" end
+    if ns.Targets.Allows(id) == false then return nil, "refused" end
+    if not Reaches(entry.info, id) then return nil, "range" end
     return id
 end
 
--- {id, base, kind, castTexture} or nil.
+-- {id, base, kind, castTexture} or nil. Interrupts.why tells the log what
+-- was decided while the target casts: nil without a cast, else "trivial"
+-- (target not worth it), "none" (no interrupt known) or one
+-- "<spell><+|-reason>" per ability tried, as in the queue line.
 function Interrupts.Suggest()
+    Interrupts.why = nil
     if not ns.Settings.Feature("interrupts") then return nil end
     local cast = Interrupts.TargetCast()
-    if not cast or not Worthy() then return nil end
+    if not cast then return nil end
+    if not Worthy() then Interrupts.why = "trivial"; return nil end
+    local key = ns.Targets.Key()
+    if key then casters[key] = true end
+    local tried = {}
     local mode = ns.Settings.Feature("interruptMode")
     local shielded = cast.notInterruptible == true
     local boss = ns.State.TargetIsBoss() == true
@@ -104,20 +127,23 @@ function Interrupts.Suggest()
                 allowed = false
             end
             if allowed then
-                local id = Ready(entry, isKick)
+                local id, reason = Ready(entry, isKick)
+                tried[#tried + 1] = entry.first .. (id and "+" or ("-" .. reason))
                 if id then return {id = id, base = entry.first, kind = entry.info.kind, castTexture = cast.texture} end
             end
         end
         return nil
     end
-    if mode == "ccPrefer" then return Pick(false) or (not shielded and Pick(true)) or nil end
-    if not shielded then
-        local kick = Pick(true)
-        if kick or mode == "kickOnly" then return kick end
-        return nil
+    local result
+    if mode == "ccPrefer" then
+        result = Pick(false) or (not shielded and Pick(true)) or nil
+    elseif not shielded then
+        result = Pick(true)
+    elseif mode ~= "kickOnly" then
+        result = Pick(false)
     end
-    if mode == "kickOnly" then return nil end
-    return Pick(false)
+    Interrupts.why = #tried > 0 and table.concat(tried, ",") or (shielded and "shielded" or "none")
+    return result
 end
 
 local frame = CreateFrame("Frame")

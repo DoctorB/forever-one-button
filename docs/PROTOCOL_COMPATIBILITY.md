@@ -85,7 +85,7 @@ nero, perché il protocollo li definisce "nessuna raccomandazione eseguibile";
 
 | Caso | Pixel | Griglia | Motivo |
 |---|---|---|---|
-| Fuori combattimento (`InCombatLockdown()` falso) con `pixel.combatOnly` | nero, salvo un'apertura dalla stealth su un bersaglio attaccabile (Garrote, Cheap Shot…: pubblicata perché il lettore la prema, richiesta del proprietario del 2026-11-14, `test_rogue_leveling`); pubblicazione immediata a `PLAYER_REGEN_DISABLED`, nero immediato a `PLAYER_REGEN_ENABLED` | suggerimenti mostrati | cambia solo il momento: encoder e colori invariati; nero è uno stato già previsto dal v3 |
+| Fuori combattimento (`InCombatLockdown()` falso) con `pixel.combatOnly` | nero, salvo un'apertura dalla stealth su un bersaglio attaccabile (Garrote, Cheap Shot…: pubblicata perché il lettore la prema, richiesta del proprietario del 2026-11-14, `test_rogue_leveling`; non sul bersaglio di un Pick Pocket o Sap tentato, che resta nero finché il bersaglio non cambia); pubblicazione immediata a `PLAYER_REGEN_DISABLED`, nero immediato a `PLAYER_REGEN_ENABLED` | suggerimenti mostrati | cambia solo il momento: encoder e colori invariati; nero è uno stato già previsto dal v3 |
 | Nessuna lista per la classe (`missing`) / errore del motore (`error`) | nero | stato esplicito, nessun segno sulle celle | nessun consiglio sostitutivo |
 | Salute, potere, cooldown, aure segreti | — | — | il motore non li confronta: risposte sì/no del client (`Engine/Secret.lua`) o "sconosciuto"; uno sconosciuto non blocca e non crea una voce |
 | Cast/canale con nome segreto | nero | "casting" | un valore segreto non-nil indica comunque un cast in corso |

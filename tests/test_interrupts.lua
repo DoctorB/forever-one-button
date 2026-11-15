@@ -17,8 +17,14 @@ local function Suggest() H.now = H.now + 3; return I.Suggest() end
 local function Id() local s = Suggest(); return s and s.id end
 
 H.Equal(Id(), nil, "no cast, no interrupt")
+H.Equal(I.why, nil, "no cast: nothing to explain in the log")
 H.targetCast = {name = "Fireball", texture = "fireball"}
 H.Equal(Id(), 6552, "Pummel on an interruptible cast (Shield Bash needs a shield)")
+H.Equal(I.why, "72-use,6552+", "the log says why Shield Bash was skipped")
+H.spells[72].noResources = true
+H.Equal(Id(), 6552, "Shield Bash without rage: Pummel")
+H.Equal(I.why, "72-res,6552+", "the log tells no rage from not usable")
+H.spells[72].noResources = nil
 H.spells[72].usable = nil
 H.Equal(Id(), 72, "Shield Bash first: same tier, lower ID")
 H.spells[72].cooldown = true

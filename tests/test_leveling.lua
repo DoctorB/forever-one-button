@@ -9,7 +9,7 @@ local GATES = {
     dot = true, power = true, buff = true, swing = true, any = true, targets = true, cd = true,
     stack = true, starved = true, health = true, resource = true, known = true, near = true,
     all = true, stealth = true, unconfirmed = true, execute = true, totem = true, tick = true,
-    fleeing = true, since = true, elite = true,
+    fleeing = true, since = true, elite = true, reserve = true,
 }
 
 -- Abilities the leveling lists use beyond the imported class abilities; each
@@ -193,6 +193,74 @@ s = ns.Queue.Build(nil)
 H.Equal(s.entries[1].id, 284, "Shield Slam on cooldown, 45 rage: Heroic Strike")
 H.known[23922], H.spells[23922] = nil, nil
 H.units.player.power[RAGE] = 20
+
+-- Defensive Stance after Charge (log of 2026-11-15): in Battle Stance with
+-- the Charge rage (9) and nothing affordable, no swap that would throw the
+-- rage away; below 5 rage the swap comes.
+H.activeForm = 1
+H.units.player.power[RAGE] = 9
+for _, id in ipairs({772, 284, 6673}) do H.spells[id].noResources = true end
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+for i = 1, s.count do
+    H.Check(s.entries[i].id ~= 71 or not s.entries[i].ready, "9 rage in Battle Stance: no Defensive Stance yet")
+end
+H.units.player.power[RAGE] = 4
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 71, "4 rage in Battle Stance: Defensive Stance")
+-- Right after Charge the rage still reads as before the pull: wait 1.5 s.
+H.known[100], H.spells[100] = true, {name = "Charge", inRange = true}
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 100)
+H.now = H.now + 0.1
+s = ns.Queue.Build(nil)
+for i = 1, s.count do
+    H.Check(s.entries[i].id ~= 71 or not s.entries[i].ready, "just after Charge: no Defensive Stance yet")
+end
+H.now = H.now + 2
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 71, "2 s after Charge with 4 rage: Defensive Stance")
+H.known[100], H.spells[100] = nil, nil
+for _, id in ipairs({772, 284, 6673}) do H.spells[id].noResources = nil end
+H.units.player.power[RAGE] = 20
+
+-- Rage kept for Shield Bash (owner request 2026-11-15) against a kind of
+-- creature seen casting: Heroic Strike (15) needs 25 rage there.
+local function Ready(id)
+    local built = ns.Queue.Build(nil)
+    for i = 1, built.count do
+        if built.entries[i].id == id then return built.entries[i].ready end
+    end
+    return false
+end
+H.known[72], H.spells[72] = true, {name = "Shield Bash", inRange = true}
+H.units.target.guid = "Creature-0-1-2-3-1234-0000000001"
+H.now = H.now + 1
+H.Check(Ready(284), "20 rage, target never seen casting: Heroic Strike")
+H.targetCast = {name = "Frostbolt", texture = "frostbolt"}
+H.Equal(ns.Interrupts.Suggest().id, 72, "the caster's cast: Shield Bash")
+H.targetCast = nil
+H.units.target.guid = "Creature-0-1-2-3-1234-0000000002" -- another of the same kind
+H.now = H.now + 1
+H.Check(not Ready(284), "20 rage against a caster: Heroic Strike waits, 10 kept for Shield Bash")
+H.units.player.power[RAGE] = 25
+H.now = H.now + 1
+H.Check(Ready(284), "25 rage against a caster: Heroic Strike")
+H.units.player.power[RAGE] = 20
+H.spells[72].cooldown = true
+H.now = H.now + 1
+H.Check(Ready(284), "Shield Bash cooling down: nothing to keep")
+H.spells[72].cooldown = nil
+H.spells[72].usable = false -- no shield
+H.now = H.now + 1
+H.Check(Ready(284), "no shield: nothing to keep")
+H.spells[72].usable = nil
+H.units.target.guid = "Creature-0-1-2-3-999-0000000003"
+H.now = H.now + 1
+H.Check(Ready(284), "another kind of creature: nothing to keep")
+ns.Interrupts.ForgetCasters()
+H.known[72], H.spells[72] = nil, nil
+H.units.target.guid = "mob"
 
 -- A priest's wand: never suggested while Shoot is already running.
 H.class = "PRIEST"

@@ -126,7 +126,7 @@ Deadly sulla secondaria.
 | `grid.locked`, `grid.point` | (bloccata, centro −220) | posizione della griglia; barra del titolo sempre visibile: clic destro sblocca/blocca, trascinamento sinistro sposta |
 | `pixel.enabled` | sì/no (sì) | mostrare il quadrato (come `/hcob diagpixel on/off`); `/fob pixel on`/`off` funziona anche in combattimento: pixel e ancora sono frame non protetti (`test_pixel_combat_command`) |
 | `pixel.locked`, `pixel.point` | (bloccato, alto-sinistra +16/−16) | posizione del quadrato |
-| `pixel.combatOnly` | sì/no (sì) | richiesta del proprietario: fuori combattimento il pixel è nero (ingaggio e spell di apertura li sceglie l'utente); eccezione (richiesta del proprietario del 2026-11-14): un'apertura dalla stealth (voce con gate `stealth`: Garrote, Cheap Shot…) su un bersaglio attaccabile è pubblicata anche fuori combattimento, così il lettore la preme; cambia solo quando si pubblica, non cosa |
+| `pixel.combatOnly` | sì/no (sì) | richiesta del proprietario: fuori combattimento il pixel è nero (ingaggio e spell di apertura li sceglie l'utente); eccezione (richiesta del proprietario del 2026-11-14): un'apertura dalla stealth (voce con gate `stealth`: Garrote, Cheap Shot…) su un bersaglio attaccabile è pubblicata anche fuori combattimento, così il lettore la preme, ma non sul bersaglio di un Pick Pocket o Sap tentato (finché il bersaglio non cambia); cambia solo quando si pubblica, non cosa |
 
 ### Funzioni del motore (`Settings.FEATURES`, `Core/Settings.lua`)
 

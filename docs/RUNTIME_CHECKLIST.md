@@ -166,9 +166,46 @@ buffer da 5000 righe teneva solo gli ultimi 76 minuti (dal livello 8 circa),
   seguito da Sinister Strike, Kick sul pixel (26 suggerimenti su 27 premuti;
   13 pressioni rifiutate con "Out of range."). Non ancora visti: Expose
   Armor su un elite, Gouge.
+- 2026-11-14 sera, log 1.2.1 (75 combattimenti): Slice and Dice entro 9 s
+  dalla fine 16 su 47, ancora 14 su 47 a 5 punti; i punti combo restano tra
+  un combattimento e l'altro (ricostruzione dai lanci senza azzerarli).
+  In stealth per Pick Pocket o Sap il pixel mostrava Garrote appena a
+  portata. Scelte del proprietario: a 5 punti Eviscerate prima di Slice and
+  Dice (Slice and Dice a 3-4 punti); dopo un Pick Pocket o Sap tentato su
+  un bersaglio l'apertura non va sul pixel per quel bersaglio
+  (`test_rogue_leveling`). Verifica in gioco da fare.
   Difensivi, rotazione fuori combattimento e promemoria restano suggeriti.
   Verifica in gioco da fare: Garrote alle spalle, Cheap Shot di
   fronte, cella di Gouge, Expose Armor su un elite.
+- 2026-11-14 notte, log (91 combattimenti) girato con la 1.2.1: i file
+  installati erano stati sostituiti dalla versione pubblicata, reinstallati.
+  Garrote rifiutato "behind" 5 volte di fila senza essere trattenuto (il
+  rifiuto non era stato registrato) e il mob attaccato. Ora il rifiuto
+  "behind" trattiene la mossa fino al cambio di bersaglio anche se il GUID
+  non è leggibile (log `refused|703|behind-noguid`, `test_rogue_leveling`).
+  Verifica in gioco da fare.
+- 2026-11-15, log Guerriero protection (15 combattimenti, 396 s): in attesa
+  l'81% del tempo, quasi sempre per mancanza di rage; Heroic Strike mai
+  lanciato (Sunder fino a 5 prende la rage); dopo il Charge la Defensive
+  Stance arrivava 0,1 s dopo, prima di spendere la rage del Charge (3
+  combattimenti, primo attacco a 1,1 s). Ora la Defensive Stance chiede
+  meno di 5 di rage (`test_leveling`). Nessuna riga `interrupt`: il log non
+  diceva se il bersaglio lanciava né perché Shield Bash restava fuori; ora
+  la riga `interrupt` ha un quinto campo con il motivo (`72-use`,
+  `72-range`, `none`, `noslot`...). Verifica in gioco da fare: stance dopo
+  il Charge, Shield Bash su un incantatore.
+- 2026-11-15, secondo log Guerriero (42 combattimenti, 865 s): 30 cast
+  nemici; Shield Bash sul pixel 14 volte, riuscito 11; gli altri 16 senza
+  rage (tutte le mosse in attesa di rage) o fuori combattimento. La Defensive
+  Stance è arrivata ancora 13 ms dopo il Charge (2 volte): la rage letta era
+  quella di prima del pull. Ora attende 1,5 s dopo il Charge; il motivo
+  `res` separa "senza rage" da "non utilizzabile". Verifica in gioco da fare.
+- 2026-11-15, richiesta del proprietario: in protection le mosse lasciano
+  10 di rage per Shield Bash contro i tipi di creatura visti lanciare in
+  questa sessione (`npc:<id>`), finché Shield Bash è pronto e usabile (scudo);
+  gate `reserve` in `Engine/Gates.lua`, `bashRage` in `Data/Leveling.lua`
+  (`test_leveling`). Nel log la mossa trattenuta appare come `-gate`.
+  Verifica in gioco da fare: più cast interrotti, quanta attesa in più.
 
 Condivisione del log (`/fob share`, branch feat/share-log), 2026-11-08,
 client 1.60.1.70862, Ladro 13 in locanda:

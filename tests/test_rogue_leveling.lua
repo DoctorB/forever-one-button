@@ -1,5 +1,5 @@
--- Rogue leveling (Data/Leveling.lua): Slice and Dice waits for 3 combo
--- points on a target above half health; Eviscerate spends the points before
+-- Rogue leveling (Data/Leveling.lua): Slice and Dice at 3-4 combo
+-- points on a target above half health (Eviscerate first at 5); Eviscerate spends the points before
 -- the target dies (5 points, 3 below 35 %, 2 below 20 %); Expose Armor only on
 -- elites and bosses at 5 points, once while it lasts; from stealth Garrote,
 -- Cheap Shot when Garrote is refused from the front; Gouge gets a cell.
@@ -38,6 +38,8 @@ H.Equal(Head(2, 100), 1752, "2 points, full health: Sinister Strike, no Slice an
 H.Equal(Head(3, 100), 5171, "3 points, full health: Slice and Dice")
 H.Equal(Head(3, 50), 5171, "3 points at exactly half health: Slice and Dice")
 H.Equal(Head(3, 49), 1752, "3 points below half health: Sinister Strike")
+H.Equal(Head(4, 100), 5171, "4 points, full health: Slice and Dice")
+H.Equal(Head(5, 100), 2098, "5 points, full health: Eviscerate before Slice and Dice")
 
 -- Eviscerate thresholds (Slice and Dice held back below half health).
 H.Equal(Head(3, 40), 1752, "3 points at 40 %: keep building")
@@ -73,6 +75,19 @@ H.spells[1833] = {name = "Cheap Shot", inRange = true}
 H.Equal(Head(0, 100), 1833, "Garrote refused from the front: Cheap Shot")
 H.units.target.guid = "mob4"
 H.Equal(Head(0, 100), 703, "next target: Garrote again")
+-- Target GUID unreadable: the refusal still holds Garrote back, until the
+-- target changes.
+H.units.target.guid = H.Secret()
+H.Fire("PLAYER_TARGET_CHANGED")
+H.Equal(Head(0, 100), 703, "unreadable target: Garrote")
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-1b", 703)
+H.Fire("UI_ERROR_MESSAGE", 50, "You must be behind your target.")
+H.Equal(Head(0, 100), 1833, "unreadable target, Garrote refused from the front: Cheap Shot")
+H.Equal(Head(0, 100), 1833, "still Cheap Shot on the same target")
+H.units.target.guid = "mob4b"
+H.Fire("PLAYER_TARGET_CHANGED")
+H.Equal(Head(0, 100), 703, "target changed: Garrote again")
+H.units.target.guid = "mob4"
 
 -- The combat-only pixel publishes the stealth opener out of combat, so the
 -- pixel reader presses it; anything else stays black out of combat.
@@ -83,6 +98,26 @@ H.Check(garroteSlot, "Garrote has a cell")
 H.Tick(0.2)
 H.Equal(ns.Model.pixelHead, 703, "out of combat, stealthed: Garrote on the pixel")
 H.Equal(select(1, H.Pixel255()), garroteSlot * 12, "pixel encodes Garrote's cell")
+-- Pick Pocket tried on this target (refused out of range): no opener on
+-- the pixel for it; Sap succeeded on the next one: same; a new target
+-- gets Garrote again.
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-2", 921)
+H.Advance(0.5)
+H.Tick(0.2)
+H.Equal(ns.Model.pixelHead, nil, "Pick Pocket tried: no Garrote on the pixel")
+H.Equal(select(1, H.Pixel255()), 0, "pixel black after Pick Pocket")
+H.units.target.guid = "mob5"
+H.Advance(0.5)
+H.Tick(0.2)
+H.Equal(ns.Model.pixelHead, 703, "another target: Garrote on the pixel again")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "cast-3", 6770)
+H.Advance(0.5)
+H.Tick(0.2)
+H.Equal(ns.Model.pixelHead, nil, "Sap cast: no Garrote on the pixel")
+H.units.target.guid = "mob6"
+H.Advance(0.5)
+H.Tick(0.2)
+H.Equal(ns.Model.pixelHead, 703, "after Sap, a new target: Garrote again")
 H.stealthed = false
 H.Advance(0.5)
 H.Tick(0.2)

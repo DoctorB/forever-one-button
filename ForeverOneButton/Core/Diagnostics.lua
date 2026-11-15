@@ -17,7 +17,10 @@
 --     <why>: every candidate in list order, "<id>+" ready or "<id>-<reason>"
 --     waiting (cd, res, use, cur, range, dot, gate, held; Engine/Queue.lua)
 --   "<seconds>|defense|<id r(eady) w(aiting),... or none>|<health band 1-4 or ->"
---   "<seconds>|interrupt|<spell ID or none>|<interrupt or cc>"
+--   "<seconds>|interrupt|<spell ID or none>|<interrupt or cc>|<why>"
+--     why, while the target casts: "trivial", "none", "shielded" or one
+--     "<spell>+" / "<spell>-<rank|recent|res|use|cd|refused|range>" per ability
+--     tried; ",noslot" or ",heal" when the suggestion cannot reach the pixel
 --   "<seconds>|combat|in|out"
 --   "<seconds>|error|<error type>|<message>"   (UI_ERROR_MESSAGE: why a press
 --     was refused, e.g. target not in front, out of range, not enough energy)

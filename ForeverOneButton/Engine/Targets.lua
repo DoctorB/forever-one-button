@@ -8,7 +8,11 @@
 --     unit itself for players) until the next /reload;
 --   * positional refusals: "You must be behind your target" (Garrote...)
 --     holds the spell back on that one target only, until the target
---     changes, so the next opener is suggested instead.
+--     changes (also when its GUID cannot be read), so the next opener is
+--     suggested instead;
+--   * Pick Pocket or Sap tried on a target (cast or refused): the stealth
+--     opener is not published on the pixel for that target (OpenerHeld), so
+--     it never starts a fight the player did not choose.
 -- The combat log is forbidden on Forever, so a hit that lands as "Immune"
 -- after a successful cast is not learned.
 -- Allows(spellID) answers true, false or nil (unknown); nil never blocks.
@@ -73,7 +77,12 @@ end
 
 -- Answers ----------------------------------------------------------------------
 local refused = {} -- [target key] = {[rank-1 id] = true}
-local behind = {}  -- [rank-1 id] = GUID of the target that refused it
+local behind = {}  -- [rank-1 id] = {guid = GUID or nil, epoch = target epoch}
+local targetEpoch = 0 -- bumped on every target change
+local openerHeldOn -- GUID of the target of the last Pick Pocket / Sap
+
+-- Pick Pocket and Sap (all ranks): the player chose not to open on that target.
+Targets.HOLD_OPENER = {[921] = true, [6770] = true, [2070] = true, [11297] = true}
 
 local function TargetGUID()
     if not UnitGUID then return nil end
@@ -96,7 +105,10 @@ function Targets.Allows(spellID)
     local base = ns.Ranks.Base(spellID)
     local creature, key = Target()
     if key and refused[key] and refused[key][base] then return false end
-    if behind[base] and behind[base] == TargetGUID() then return false end
+    local held = behind[base]
+    if held and held.epoch == targetEpoch and (held.guid == nil or held.guid == TargetGUID()) then
+        return false
+    end
     local types = ns.Data.TargetRules.creatureTypes[base]
     if not types or not creature then return nil end
     for _, allowed in ipairs(types) do
@@ -113,9 +125,24 @@ function Targets.Refuse(spellID, key)
     ns.Log("refused", spellID, key)
 end
 
+-- True while the target is the one of the last Pick Pocket / Sap.
+function Targets.OpenerHeld()
+    local guid = TargetGUID()
+    return guid ~= nil and guid == openerHeldOn
+end
+
+local function HoldOpener(spellID)
+    if not Targets.HOLD_OPENER[spellID] then return end
+    local guid = TargetGUID()
+    if not guid or guid == openerHeldOn then return end
+    openerHeldOn = guid
+    ns.Log("opener", "held", spellID)
+end
+
 function Targets.Forget()
     wipe(refused)
     wipe(behind)
+    openerHeldOn = nil
     cachedAt = nil
 end
 
@@ -134,13 +161,14 @@ local function NotBehind()
     return _G.SPELL_FAILED_NOT_BEHIND or "You must be behind your target."
 end
 
--- Holds the spell back on the current target only (positional refusal).
+-- Holds the spell back on the current target only (positional refusal),
+-- until the target changes; also when its GUID cannot be read.
 function Targets.RefuseHere(spellID)
+    if not spellID then return end
     local guid = TargetGUID()
-    if not (spellID and guid) then return end
-    behind[ns.Ranks.Base(spellID)] = guid
+    behind[ns.Ranks.Base(spellID)] = {guid = guid, epoch = targetEpoch}
     cachedAt = nil
-    ns.Log("refused", spellID, "behind")
+    ns.Log("refused", spellID, guid and "behind" or "behind-noguid")
 end
 
 local failedSpell, failedAt, errorAt, positional = nil, nil, nil, false
@@ -154,11 +182,22 @@ end
 local frame = CreateFrame("Frame")
 Targets.frame = frame
 pcall(frame.RegisterUnitEvent, frame, "UNIT_SPELLCAST_FAILED", "player")
+pcall(frame.RegisterUnitEvent, frame, "UNIT_SPELLCAST_SUCCEEDED", "player")
 pcall(frame.RegisterEvent, frame, "UI_ERROR_MESSAGE")
+pcall(frame.RegisterEvent, frame, "PLAYER_TARGET_CHANGED")
 frame:SetScript("OnEvent", function(_, event, ...)
-    if event == "UNIT_SPELLCAST_FAILED" then
+    if event == "PLAYER_TARGET_CHANGED" then
+        targetEpoch = targetEpoch + 1
+        cachedAt = nil
+        return
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+        local spellID = Plain(select(3, ...))
+        if type(spellID) == "number" then HoldOpener(spellID) end
+        return
+    elseif event == "UNIT_SPELLCAST_FAILED" then
         local spellID = Plain(select(3, ...))
         if type(spellID) ~= "number" then return end
+        HoldOpener(spellID)
         failedSpell, failedAt = spellID, GetTime()
     else
         local message = Plain(select(2, ...))
