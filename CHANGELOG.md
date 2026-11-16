@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.4 - 2026-11-16
+
+### New
+
+- **Protection warriors tanking in a group.** When you are in a party or
+  raid, the addon now helps you keep the enemies on you:
+  - **Taunt** when your target turns to attack someone else in the group.
+  - **Shield Block** after Revenge against elites or when you face two or
+    more enemies.
+  - **Sunder Armor** keeps coming after 5 applications, to hold threat.
+  - A red line above the buttons tells you how many enemies are **not
+    attacking you**. When one gets loose, Thunder Clap and Demoralizing
+    Shout come first; from two, Challenging Shout.
+
 ## 1.2.3 - 2026-11-15
 
 ### Fixed
