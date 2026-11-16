@@ -86,7 +86,8 @@ local function Evaluate(entry, id, ctx)
     if usable == false then return false, 2, "use" end
     if Current(id) then return false, 3, "cur" end
     if ctx.targetAttackable and ns.State.InRange(id) == false then return false, 3, "range" end
-    if ns.Dots.Active(id) == true then return false, 3, "dot" end
+    -- `refresh` (Data/Leveling.lua): cast again while the debuff is up.
+    if not entry.refresh and ns.Dots.Active(id) == true then return false, 3, "dot" end
     if ns.Gates.Blocks(entry.gates, ctx) then return false, 3, "gate" end
     return true
 end
@@ -172,7 +173,11 @@ function Queue.Build(previous)
 
     -- Mana starvation (gate `starved`): something lacks resources and nothing
     -- else is usable. Settled before the gates read it.
-    local candidates, seen = {}, {}
+    -- A spell is listed once, except for a second entry marked `again`
+    -- (Data/Leveling.lua): it stands lower in the list and is used only when
+    -- the first one waits. An entry marked `rotation` is kept whatever role
+    -- the imported data gives the ability (Shield Block for a tank).
+    local candidates, seen, hasAgain = {}, {}, {}
     local roles, activeForm = ns.Data.Defaults.abilityRoles, ns.State.ActiveForm()
     local attacking = Attacking()
     for _, listed in ipairs(list) do
@@ -180,14 +185,17 @@ function Queue.Build(previous)
         local first = entry.id
         local id = ns.Ranks.Pressed(first)
         local role = roles[first]
-        if id and not seen[first] and (role == nil or role == "mixed")
+        local again = entry.again == true and seen[first] == 1
+        if id and (not seen[first] or again)
+            and (role == nil or role == "mixed" or entry.rotation == true)
             and not (activeForm and activeForm == first)
             and not (first == ATTACK_SPELL and attacking)
             and not Repeating(id)
             and not (ctx.targetAttackable and ns.Targets.Allows(id) == false)
             and not (not ns.InCombat() and ns.Precombat.Offered(first)) then
-            seen[first] = true
-            candidates[#candidates + 1] = {entry = entry, id = id, first = first}
+            seen[first] = (seen[first] or 0) + 1
+            if again then hasAgain[first] = true end
+            candidates[#candidates + 1] = {entry = entry, id = id, first = first, again = again or nil}
         end
     end
     local anyUsable = false
@@ -207,22 +215,35 @@ function Queue.Build(previous)
     local ready, waiting, why = {}, {{}, {}, {}}, {}
     local now, heldBy, stillPending = GetTime(), nil, {}
     local nextSwing = ns.Data.Defaults.nextSwing or {}
+    local deferred = {} -- first entry waiting, kept until its `again` entry is seen
     for _, c in ipairs(candidates) do
-        local ok, tier, reason = Evaluate(c.entry, c.id, ctx)
-        if reason == "cur" then
-            pendingSince[c.id] = pendingSince[c.id] or now
-            stillPending[c.id] = true
-            if not heldBy and not nextSwing[c.id] and not nextSwing[c.first]
-                and now - pendingSince[c.id] <= Queue.PENDING_HOLD then
-                heldBy = c.id
+        local earlier = c.again and deferred[c.first]
+        if not c.again or earlier then
+            local ok, tier, reason = Evaluate(c.entry, c.id, ctx)
+            if reason == "cur" then
+                pendingSince[c.id] = pendingSince[c.id] or now
+                stillPending[c.id] = true
+                if not heldBy and not nextSwing[c.id] and not nextSwing[c.first]
+                    and now - pendingSince[c.id] <= Queue.PENDING_HOLD then
+                    heldBy = c.id
+                end
+            else
+                pendingSince[c.id] = nil
+                if ok and heldBy then ok, tier, reason = false, 3, "held" end
             end
-        else
-            pendingSince[c.id] = nil
-            if ok and heldBy then ok, tier, reason = false, 3, "held" end
+            local item = {kind = ENTRY.SPELL, id = c.id, base = c.first, ready = ok, opener = StealthOpener(c.entry)}
+            if ok then
+                ready[#ready + 1] = item
+            elseif earlier then
+                table.insert(waiting[earlier.tier], earlier.item)
+            elseif hasAgain[c.first] then
+                deferred[c.first] = {item = item, tier = tier}
+            else
+                table.insert(waiting[tier], item)
+            end
+            if earlier then deferred[c.first] = nil end
+            why[#why + 1] = c.id .. (ok and "+" or ("-" .. reason))
         end
-        local item = {kind = ENTRY.SPELL, id = c.id, base = c.first, ready = ok, opener = StealthOpener(c.entry)}
-        if ok then ready[#ready + 1] = item else table.insert(waiting[tier], item) end
-        why[#why + 1] = c.id .. (ok and "+" or ("-" .. reason))
     end
     result.why = table.concat(why, ",")
     for id in pairs(pendingSince) do

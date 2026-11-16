@@ -170,6 +170,23 @@ function Model.Refresh()
         Model.interruptLine = line
         ns.Log("interrupt", interrupt and interrupt.id or "none", interrupt and interrupt.kind or "-", why or "-")
     end
+
+    -- Enemies on someone else in the group (tanks: owner request
+    -- 2026-11-16): the warning above the grid and a log line on change.
+    -- The line carries the plate readings (State.looseDetail).
+    local loose, detail = 0, "-"
+    if ns.InCombat() and ns.State.InGroup() then
+        loose = ns.State.LooseCount()
+        detail = ns.State.looseDetail
+    end
+    if detail ~= Model.looseDetail then
+        Model.looseDetail = detail
+        ns.Log("loose", loose, detail)
+    end
+    if loose ~= Model.loose then
+        Model.loose = loose
+        if ns.Grid and ns.Grid.ShowLoose then ns.Grid.ShowLoose(loose) end
+    end
     return changed
 end
 
@@ -183,6 +200,8 @@ function Model.Reset()
     Model.interrupt = nil
     Model.interruptLine = nil
     if ns.Grid and ns.Grid.ShowInterrupt then ns.Grid.ShowInterrupt(nil) end
+    Model.loose, Model.looseDetail = nil, nil
+    if ns.Grid and ns.Grid.ShowLoose then ns.Grid.ShowLoose(0) end
     Model.defenses, Model.defenseSignature = nil, ""
     if ns.Grid and ns.Grid.ShowDefensives then ns.Grid.ShowDefensives(nil) end
     ns.Pixel.Update(nil)

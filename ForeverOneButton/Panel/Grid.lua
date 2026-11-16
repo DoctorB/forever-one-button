@@ -529,6 +529,22 @@ end
 -- Marks queue positions on the cells and lists the queue in order; entries
 -- that are not ready yet are dimmed.
 -- Called on every queue change; touches regions only, so it is combat safe.
+-- Enemies attacking someone else in the group (State.LooseCount), above
+-- the grid in red. Display only: changing target is the player's move.
+local looseText = container:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+looseText:SetPoint("BOTTOM", dragBar, "TOP", 0, 2)
+looseText:SetTextColor(1, 0.25, 0.25)
+looseText:Hide()
+Grid.looseText = looseText
+function Grid.ShowLoose(count)
+    if not count or count < 1 then
+        looseText:Hide()
+        return
+    end
+    looseText:SetText(count == 1 and "1 enemy not on you" or (count .. " enemies not on you"))
+    looseText:Show()
+end
+
 function Grid.ShowQueue(snapshot, observation)
     snapshot = snapshot or {status = ns.STATUS.MISSING, entries = {}, count = 0}
     observation = observation or {}

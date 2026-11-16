@@ -39,6 +39,10 @@ local function castAgo(id, seconds) return {t = "since", id = id, op = ">=", n =
 -- target seen casting (owner request 2026-11-15: 12 of 26 enemy casts in
 -- combat went uninterrupted for lack of rage).
 local function bashRage(cost) return {t = "reserve", id = 72, res = "rage", n = cost + 10} end
+local function inGroup() return {t = "group"} end
+local function loose() return {t = "loose"} end
+local function freeAtLeast(n) return {t = "free", op = ">=", n = n} end
+local function again(entry) entry.again = true; return entry end
 local function any(...) return {t = "any", g = {...}} end
 local function all(...) return {t = "all", g = {...}} end
 local function e(id, ...) return {id = id, gates = {...}} end
@@ -62,6 +66,27 @@ local HAMSTRING = e(1715, fleeing(), castAgo(1715, 10))
 -- Charge either: the second log of 2026-11-15 showed the stance on the pixel
 -- 13 ms after Charge, read with the rage still at 0 from before the pull.
 local DEFENSIVE_STANCE = e(71, buffMissing(71), rageBelow(5), castAgo(100, 1.5))
+-- Group tanking (protection). Taunt (no rage, 10 s cooldown) only when the
+-- threat reading says the target attacks someone else.
+local TAUNT = e(355, inGroup(), loose())
+-- Shield Block: the imported data files it as mitigation, which the queue
+-- leaves out; `rotation` keeps it in this list.
+local SHIELD_BLOCK = e(2565, inGroup(), any(elite(), targetsAtLeast(2)), bashRage(10))
+SHIELD_BLOCK.rotation = true
+-- Sunder Armor kept up for threat after 5 stacks: a second entry, used only
+-- when the first (up to 5) waits (Engine/Queue.lua `again`).
+local SUNDER_THREAT = e(7386, inGroup(), bashRage(15))
+SUNDER_THREAT.again = true
+-- Enemies on someone else in the group (owner request 2026-11-16, e.g. four
+-- mobs with one targeted): threat on all of them without a target change.
+-- Challenging Shout (level 26) from 2 of them; Thunder Clap and
+-- Demoralizing Shout first in the list from 1, Demoralizing Shout also
+-- while its debuff is up (`refresh`), at most every 6 s. The usual Thunder
+-- Clap and Demoralizing Shout entries are their `again` entries.
+local CHALLENGING_SHOUT = e(1161, inGroup(), freeAtLeast(2))
+local THUNDER_CLAP_FREE = e(6343, inGroup(), freeAtLeast(1), bashRage(20))
+local DEMO_SHOUT_FREE = e(1160, inGroup(), freeAtLeast(1), castAgo(1160, 6), bashRage(10))
+DEMO_SHOUT_FREE.refresh = true
 local WARRIOR_AOE_HEAD = {
     BATTLE_SHOUT, BLOODRAGE,
     e(6343, targetsAtLeast(2)),           -- Thunder Clap
@@ -117,18 +142,25 @@ local warrior = {
         },
     },
     -- Protection keeps rage for Shield Bash against casters (bashRage).
+    -- In a group it tanks (owner decision 2026-11-16): Taunt on a target
+    -- attacking someone else, Shield Block on elites and packs (a block also
+    -- opens Revenge), and Sunder Armor again after 5 stacks for threat,
+    -- before Heroic Strike. Alone none of the three.
     protection = {
         st = {
+            TAUNT, CHALLENGING_SHOUT, THUNDER_CLAP_FREE, DEMO_SHOUT_FREE,
             e(6673, buffMissing(6673, 120), bashRage(10)), -- Battle Shout
             BLOODRAGE,
             e(23922, bashRage(20)),            -- Shield Slam
             e(6572, bashRage(5)),              -- Revenge (after a block, dodge or parry)
+            SHIELD_BLOCK,
             e(7386, stacksBelow(7386, 5), bashRage(15)), -- Sunder Armor up to 5
             e(772, dot(772), bashRage(10)),    -- Rend
-            e(1160, dot(1160), bashRage(10)),  -- Demoralizing Shout
-            e(6343, targetsAtLeast(2), bashRage(20)), -- Thunder Clap
+            again(e(1160, dot(1160), bashRage(10))), -- Demoralizing Shout
+            again(e(6343, targetsAtLeast(2), bashRage(20))), -- Thunder Clap
             e(845, targetsAtLeast(2), rageAtLeast(30)), -- Cleave
             e(5308, execute()),                -- Execute
+            SUNDER_THREAT,
             -- Heroic Strike: whenever affordable until Shield Slam is known,
             -- then only with spare rage. A level-11 log (2026-11-08) with a
             -- 40-rage threshold from the start: the button waited 436 s of
@@ -137,12 +169,15 @@ local warrior = {
             DEFENSIVE_STANCE,
         },
         aoe = {
+            TAUNT, CHALLENGING_SHOUT, THUNDER_CLAP_FREE, DEMO_SHOUT_FREE,
             e(6673, buffMissing(6673, 120), bashRage(10)), BLOODRAGE,
-            e(6343, bashRage(20)),             -- Thunder Clap
-            e(1160, dot(1160), bashRage(10)),  -- Demoralizing Shout
+            again(e(6343, bashRage(20))),      -- Thunder Clap
+            again(e(1160, dot(1160), bashRage(10))), -- Demoralizing Shout
             e(6572, bashRage(5)), e(23922, bashRage(20)),
+            SHIELD_BLOCK,
             e(845, rageAtLeast(25)),           -- Cleave (already keeps 5 more)
             e(7386, stacksBelow(7386, 5), bashRage(15)),
+            SUNDER_THREAT,
             DEFENSIVE_STANCE,
         },
     },

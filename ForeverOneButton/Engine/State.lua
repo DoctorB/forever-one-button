@@ -181,6 +181,90 @@ function State.EnemyCount()
     return n
 end
 
+-- Enemies on nameplates that attack someone else in the group: a threat
+-- entry for the player without the aggro (UnitThreatSituation 0 or 1) and a
+-- friendly target other than the player (a mob held by crowd control has
+-- none). Unreadable plates are not counted; 0 when nameplates are off.
+-- State.looseDetail, for the log: plates without the player's aggro, of
+-- those with a readable target, of those friendly (a log of 2026-11-16 had
+-- 17 Taunts on the pixel but the count stayed at 0).
+local looseCount, looseAt = 0, -1
+State.looseDetail = "0/0/0"
+function State.LooseCount()
+    local now = GetTime()
+    if now - looseAt < ENEMY_CACHE_SECONDS then return looseCount end
+    local n, low, targeted = 0, 0, 0
+    if UnitThreatSituation then
+        for i = 1, 40 do
+            local unit = "nameplate" .. i
+            if Plain(Call(UnitExists, unit)) == true and Plain(Call(UnitCanAttack, "player", unit)) == true then
+                local status = Plain(Call(UnitThreatSituation, "player", unit))
+                if type(status) == "number" and status < 2 then
+                    low = low + 1
+                    local target = unit .. "target"
+                    if Plain(Call(UnitExists, target)) == true then
+                        targeted = targeted + 1
+                        if Plain(Call(UnitIsUnit, target, "player")) ~= true
+                            and Plain(Call(UnitIsFriend, "player", target)) == true then
+                            n = n + 1
+                        end
+                    end
+                end
+            end
+        end
+    end
+    looseCount, looseAt = n, now
+    State.looseDetail = low .. "/" .. targeted .. "/" .. n
+    return n
+end
+
+-- In a party or raid: true or false (unreadable counts as alone).
+function State.InGroup()
+    return Plain(Call(IsInGroup)) == true
+end
+
+-- The target attacks someone else: true when the player has a threat entry
+-- on it but is not tanking it (UnitThreatSituation 0 or 1), false while
+-- tanking it (2 or 3), nil when unreadable or not in combat with it.
+function State.TargetOnOther()
+    if not UnitThreatSituation then return nil end
+    local status = Plain(Call(UnitThreatSituation, "player", "target"))
+    if type(status) ~= "number" then return nil end
+    return status < 2
+end
+
+-- The target's own target is a friendly unit other than the player (a group
+-- member or a pet): true; false when it targets the player or nobody (a
+-- mob polymorphed, sapped, trapped or otherwise held drops its target); nil
+-- when unreadable.
+function State.TargetAttacksAlly()
+    local exists = Plain(Call(UnitExists, "targettarget"))
+    if exists == nil then return nil end
+    if exists ~= true then return false end
+    if Plain(Call(UnitIsUnit, "targettarget", "player")) == true then return false end
+    local friend = Plain(Call(UnitIsFriend, "player", "targettarget"))
+    if friend == nil then return nil end
+    return friend == true
+end
+
+-- Crowd control that breaks or is wasted on a taunt, all ranks: Polymorph,
+-- Sap, Hibernate, Freezing Trap, Shackle Undead, Banish, Seduction, Blind,
+-- Gouge, Repentance, Wyvern Sting, Scare Beast, Fear.
+local TARGET_CC = {118, 12824, 12825, 12826, 28270, 28271, 28272, 6770, 2070, 11297, 2637, 18657, 18658,
+    3355, 14308, 14309, 9484, 9485, 10955, 710, 18647, 6358, 2094, 1776, 1777, 8629, 11285, 11286, 20066,
+    19386, 24132, 24133, 1513, 14326, 14327, 5782, 6213, 6215}
+
+-- One of those on the target: true; false when none is seen (target auras
+-- are often unreadable in combat, so TargetAttacksAlly is the main check);
+-- nil without the aura API.
+function State.TargetControlled()
+    if not (C_UnitAuras and C_UnitAuras.GetUnitAuraBySpellID) then return nil end
+    for _, id in ipairs(TARGET_CC) do
+        if type(Call(C_UnitAuras.GetUnitAuraBySpellID, "target", id)) == "table" then return true end
+    end
+    return false
+end
+
 -- Distance bracket from range references (Defaults.rangeReferences: spell ->
 -- yards): true when a known reference of <= yards reaches the target, false
 -- when one of >= yards does not, nil otherwise.

@@ -9,13 +9,14 @@ local GATES = {
     dot = true, power = true, buff = true, swing = true, any = true, targets = true, cd = true,
     stack = true, starved = true, health = true, resource = true, known = true, near = true,
     all = true, stealth = true, unconfirmed = true, execute = true, totem = true, tick = true,
-    fleeing = true, since = true, elite = true, reserve = true,
+    fleeing = true, since = true, elite = true, reserve = true, group = true, loose = true, free = true,
 }
 
 -- Abilities the leveling lists use beyond the imported class abilities; each
 -- must still be a rank-1 ID of the imported rank chains.
 local EXTRA_ABILITIES = {
     ROGUE = {[8647] = "Expose Armor"},
+    WARRIOR = {[355] = "Taunt", [1161] = "Challenging Shout"},
 }
 
 local function CheckGates(gates, label, abilities)
@@ -35,7 +36,7 @@ for class, trees in pairs(R.classes) do
     local abilities = {}
     for _, id in ipairs(R.classAbilities[class]) do abilities[id] = true end
     for id, name in pairs(EXTRA_ABILITIES[class] or {}) do
-        H.Check(R.rankChains[id] and R.rankChains[id][1] == id, class .. ": " .. name .. " is a rank-1 ID")
+        H.Check(R.rankChains[id] == nil or R.rankChains[id][1] == id, class .. ": " .. name .. " is a rank-1 ID or has one rank")
         abilities[id] = true
     end
     for tree in pairs(trees) do
@@ -261,6 +262,134 @@ H.Check(Ready(284), "another kind of creature: nothing to keep")
 ns.Interrupts.ForgetCasters()
 H.known[72], H.spells[72] = nil, nil
 H.units.target.guid = "mob"
+
+-- Group tanking (owner decision 2026-11-16): Taunt, Shield Block and
+-- Sunder Armor after 5 stacks only in a group.
+H.known[355], H.spells[355] = true, {name = "Taunt", inRange = true}
+H.known[2565], H.spells[2565] = true, {name = "Shield Block", inRange = true}
+H.known[7386], H.spells[7386] = true, {name = "Sunder Armor", inRange = true}
+H.auras.target[772] = {applications = 0, expirationTime = H.now + 15} -- Rend up
+H.units.player.power[RAGE] = 30
+H.units.target.threat = 1 -- attacking someone else
+H.units.targettarget = {friend = true} -- the healer
+H.inGroup = false
+H.now = H.now + 1
+H.Check(not Ready(355), "alone: no Taunt")
+H.inGroup = true
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 355, "group, target on someone else: Taunt first")
+-- A crowd-controlled mob: no target of its own, or a polymorph seen on it.
+H.units.targettarget = nil
+H.now = H.now + 1
+H.Check(not Ready(355), "group, target with no target (held by crowd control): no Taunt")
+H.units.targettarget = {is = "player"}
+H.now = H.now + 1
+H.Check(not Ready(355), "group, target on the player: no Taunt")
+H.units.targettarget = {friend = true}
+H.aurasHiddenInCombat = false
+H.auras.target[12826] = {applications = 0, expirationTime = H.now + 20} -- Polymorph rank 4
+H.now = H.now + 1
+H.Check(not Ready(355), "group, polymorphed target: no Taunt")
+H.auras.target[12826] = nil
+H.aurasHiddenInCombat = true
+H.now = H.now + 1
+H.Check(Ready(355), "group, target on the healer again: Taunt")
+H.units.targettarget = nil
+H.units.target.threat = 3
+H.now = H.now + 1
+H.Check(not Ready(355), "group, tanking the target: no Taunt")
+H.units.target.threat = nil
+H.now = H.now + 1
+H.Check(not Ready(355), "group, threat unreadable: no Taunt")
+
+-- Enemies on someone else (owner request 2026-11-16, four mobs with one
+-- targeted): counted from the nameplates; Thunder Clap and Demoralizing
+-- Shout lead from 1, Challenging Shout from 2.
+H.known[1160], H.spells[1160] = true, {name = "Demoralizing Shout", inRange = true}
+H.units.target.threat = 3 -- the targeted mob is on the player
+H.units.nameplate1 = {attackable = true, threat = 0}
+H.units.nameplate1target = {friend = true} -- on the healer
+H.units.nameplate2 = {attackable = true, threat = 3}
+H.units.nameplate2target = {is = "player"}
+H.units.nameplate3 = {attackable = true, threat = 0} -- polymorphed: no target
+H.now = H.now + 1
+H.Equal(ns.State.LooseCount(), 1, "one enemy on someone else")
+H.Equal(ns.State.looseDetail, "2/1/1", "plates without aggro / with a target / loose")
+-- A client answering nil instead of false for "is it the player".
+local unitIsUnit = UnitIsUnit
+UnitIsUnit = function(a, b) if unitIsUnit(a, b) then return true end return nil end
+H.now = H.now + 1
+H.Equal(ns.State.LooseCount(), 1, "UnitIsUnit nil: still one enemy loose")
+UnitIsUnit = unitIsUnit
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 1160)
+H.now = H.now + 7
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 6343, "group, an enemy loose: Thunder Clap first")
+H.Check(Ready(1160), "an enemy loose: Demoralizing Shout although its debuff is up")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 1160)
+H.now = H.now + 1
+H.Check(not Ready(1160), "Demoralizing Shout for a loose enemy at most every 6 s")
+H.known[1161], H.spells[1161] = true, {name = "Challenging Shout", inRange = true}
+H.now = H.now + 1
+H.Check(not Ready(1161), "one enemy loose: no Challenging Shout")
+H.units.nameplate3target = {friend = true}
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 1161, "two enemies loose: Challenging Shout first")
+H.inGroup = false
+H.now = H.now + 1
+H.Check(not Ready(1161), "alone: no Challenging Shout")
+H.Check(not Ready(1160), "alone: Demoralizing Shout waits for its debuff")
+H.inGroup = true
+for _, unit in ipairs({"nameplate1", "nameplate1target", "nameplate2", "nameplate2target", "nameplate3",
+    "nameplate3target"}) do H.units[unit] = nil end
+H.known[1160], H.spells[1160], H.known[1161], H.spells[1161] = nil, nil, nil, nil
+H.units.target.threat = nil
+ns.Grid.ShowLoose(2)
+H.Equal(ns.Grid.looseText:GetText(), "2 enemies not on you", "warning above the grid")
+ns.Grid.ShowLoose(0)
+
+H.units.target.classification = "elite"
+H.now = H.now + 1
+H.Check(Ready(2565), "group, elite target: Shield Block")
+H.inGroup = false
+H.now = H.now + 1
+H.Check(not Ready(2565), "alone: no Shield Block")
+H.inGroup = true
+H.units.target.classification = nil
+H.now = H.now + 1
+H.Check(not Ready(2565), "group, one normal target: no Shield Block")
+
+-- Sunder Armor: the first entry up to 5 stacks, the second only after.
+H.Fire("PLAYER_TARGET_CHANGED")
+for _ = 1, 5 do H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 7386) end
+H.Equal(ns.Dots.Stacks(7386), 5, "five Sunders counted")
+H.inGroup = false
+H.now = H.now + 1
+H.Check(not Ready(7386), "alone, 5 stacks: no more Sunder")
+H.inGroup = true
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Check(Ready(7386), "group, 5 stacks: Sunder again for threat")
+local sunderAt, heroicAt, listed = nil, nil, 0
+for i = 1, s.count do
+    if s.entries[i].id == 7386 then sunderAt = sunderAt or i; listed = listed + 1 end
+    if s.entries[i].id == 284 then heroicAt = i end
+end
+H.Equal(listed, 1, "Sunder listed once")
+H.Check(heroicAt == nil or sunderAt < heroicAt, "Sunder again before Heroic Strike")
+H.units.target.guid = "mob-2" -- a fresh target
+H.Fire("PLAYER_TARGET_CHANGED")
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Equal(select(2, s.why:gsub("7386", "")), 1, "fewer than 5 stacks: the first Sunder entry only")
+H.inGroup = false
+H.known[355], H.spells[355], H.known[2565], H.spells[2565] = nil, nil, nil, nil
+H.known[7386], H.spells[7386] = nil, nil
+H.units.target.guid = "mob"
+H.auras.target[772] = nil
+H.units.player.power[RAGE] = 20
 
 -- A priest's wand: never suggested while Shoot is already running.
 H.class = "PRIEST"

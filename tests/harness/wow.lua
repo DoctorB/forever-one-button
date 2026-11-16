@@ -558,6 +558,9 @@ function UnitLevel(unit)
     return u and (u.level or 10)
 end
 function UnitThreatSituation(_, unit) local u = Unit(unit); return u and u.threat end
+-- H.units.targettarget = {friend = true} (a group member) or {is = "player"}.
+function UnitIsUnit(a, b) local u = Unit(a); return a == b or (u ~= nil and u.is == b) end
+function UnitIsFriend(_, unit) local u = Unit(unit); return u ~= nil and u.friend == true end
 
 Enum = Enum or {}
 Enum.LuaCurveType = {Linear = 0, Step = 1}

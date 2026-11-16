@@ -72,6 +72,8 @@ local EVALUATE = {
     starved = function(_, ctx) return ctx.starved end,
     unconfirmed = function() return false end,
     targets = function(g, ctx) return NumberCompare(g.op, ctx.enemies, g.n) end,
+    -- Enemies attacking someone else in the group (State.LooseCount).
+    free = function(g) return NumberCompare(g.op, ns.State.LooseCount(), g.n) end,
     totem = function(g) return Neg(g, ns.State.TotemActive(g.slot)) end,
     near = function(g) return ns.State.TargetWithin(g.n) end,
     -- Target announced it is running away (Engine/State.lua).
@@ -102,6 +104,17 @@ local EVALUATE = {
     -- Elite or boss target. Unlike the other gates an unknown answer
     -- blocks: the entry is only worth it where the fight is long.
     elite = function(g) return Neg(g, ns.State.TargetIsElite() == true) end,
+    -- In a party or raid; unreadable counts as alone.
+    group = function(g) return Neg(g, ns.State.InGroup()) end,
+    -- The target attacks someone else in the group (a taunt): not tanked by
+    -- the player, its own target a friendly unit, no crowd control seen on
+    -- it (owner request 2026-11-16: never wake a polymorphed or sapped mob).
+    -- Unknown blocks: a taunt is only pressed when every reading says so.
+    loose = function(g)
+        local free = ns.State.TargetOnOther() == true and ns.State.TargetAttacksAlly() == true
+            and ns.State.TargetControlled() ~= true
+        return Neg(g, free)
+    end,
     -- neg: the gate wants the spell ON cooldown. An unlearned spell counts
     -- as on cooldown (it cannot be pressed either).
     cd = function(g)

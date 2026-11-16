@@ -73,7 +73,7 @@ function AutoFill.ReadPool()
         for _, listed in ipairs(contexts[key] or {}) do
             local entry = ns.Queue.HomeStance(listed)
             local role = roles[entry.id]
-            if role == nil or role == "mixed" then Add(entry.id) end
+            if role == nil or role == "mixed" or entry.rotation == true then Add(entry.id) end
         end
     end
     for _, id in ipairs(ns.Data.Defaults.gapClosers[class] or {}) do Add(id) end
