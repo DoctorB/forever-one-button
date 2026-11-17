@@ -272,6 +272,12 @@ end
 
 UIParent = CreateFrame("Frame", "UIParent")
 UIParent.width, UIParent.height = 1920, 1080
+Minimap = CreateFrame("Frame", "Minimap", UIParent)
+Minimap.width, Minimap.height = 140, 140
+function Frame:GetCenter() return self.centerX, self.centerY end
+function Frame:SetHighlightTexture(t) self.highlightTexture = t end
+H.cursor_x, H.cursor_y = 0, 0
+function GetCursorPosition() return H.cursor_x, H.cursor_y end
 
 -- Client globals -----------------------------------------------------------
 function GetTime() return H.now end

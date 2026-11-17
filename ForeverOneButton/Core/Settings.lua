@@ -85,6 +85,8 @@ Settings.DEFAULT_GRID_POINT = {"CENTER", "CENTER", 0, -220}
 -- There is no Advisor here, so the pixel has its own independent anchor; the
 -- default keeps it well clear of the default grid.
 Settings.DEFAULT_PIXEL_POINT = {"TOPLEFT", "TOPLEFT", 16, -16}
+-- Minimap button: lower left of the minimap edge.
+Settings.DEFAULT_MINIMAP_ANGLE = 225
 
 local function Clamp(value, limits)
     value = tonumber(value)
@@ -176,6 +178,11 @@ function Settings.Sanitize(raw)
     -- Owner decision 2026-10-15: optionally hide Blizzard's bottom bar
     -- (stance and experience bars stay). Off by default.
     db.hideBlizzardBar = raw.hideBlizzardBar == true
+    -- Owner request 2026-11-17: button on the minimap edge, shown by default.
+    local minimap = type(raw.minimap) == "table" and raw.minimap or {}
+    local angle = tonumber(minimap.angle)
+    db.minimap = {shown = minimap.shown ~= false,
+        angle = (angle and angle == angle) and math.floor(angle) % 360 or Settings.DEFAULT_MINIMAP_ANGLE}
     local features = type(raw.features) == "table" and raw.features or {}
     db.features = {}
     for name, spec in pairs(Settings.FEATURES) do db.features[name] = SanitizeFeature(features[name], spec) end

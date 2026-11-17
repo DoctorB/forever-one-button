@@ -64,7 +64,7 @@ spostate.
 
 | Tabella | Ambito | Contenuto |
 |---|---|---|
-| `ForeverOneButtonDB` | account, `schema = 2` | `keys[n]` (stringa o `false`), `grid`, `pixel`, `autoFill`, `hideBlizzardBar`, `features` |
+| `ForeverOneButtonDB` | account, `schema = 2` | `keys[n]` (stringa o `false`), `grid`, `pixel`, `autoFill`, `hideBlizzardBar`, `minimap`, `features` |
 | `ForeverOneButtonCharDB` | personaggio, `schema = 1` | `cells[n] = {kind, id, auto}`, `dismissed[nome] = true` |
 
 Al caricamento entrambe vengono ricostruite dalla whitelist (chiavi sconosciute
@@ -116,6 +116,7 @@ Deadly sulla secondaria.
 | `autoFill` | sì/no (sì) | riempimento automatico richiesto dal proprietario |
 | `features.*` | vedi sotto | funzioni del motore oltre la lista di priorità |
 | `hideBlizzardBar` | sì/no (no) | richiesta del proprietario (2026-10-15): rende invisibili e non cliccabili barra azioni principale di Blizzard (pulsanti, grafica, frecce di pagina), micro-menu e borse; barra delle posture e barra dell'esperienza restano; nessun frame spostato, nessun binding toccato, quindi i tasti funzionano; solo fuori combattimento; un frame che contiene una barra mantenuta non viene toccato; effetto verificato in gioco dal proprietario il 2026-10-15 (`FOREVER_API_COMPATIBILITY.md`; `/fob probe frames` elenca i frame presenti) |
+| `minimap.shown`, `minimap.angle` | sì/no (sì), 0–359 (225) | richiesta del proprietario (2026-11-17): pulsante rotondo sul bordo della minimappa con il logo; clic sinistro apre o chiude le opzioni (in combattimento restano chiuse), clic destro blocca o sblocca la griglia, trascinandolo si sposta lungo il bordo e l'angolo viene salvato; pulsante semplice, non secure, nessuna azione; `OnUpdate` attivo solo durante il trascinamento (`test_minimap_button`) |
 | `grid.slots` | 1–20 (20) | quante celle mostrare; 20 è il limite del protocollo v3 |
 | `grid.columns` | 1–20 (10) | forma della scacchiera |
 | `grid.cellSize` | 24–64 (40) | leggibilità di icone e tasti |

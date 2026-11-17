@@ -152,6 +152,8 @@ local function BuildLayoutPage(page)
     y = Section(page, "Interface", y - 4)
     Check("Hide Blizzard's bottom bar", "Hides the main action bar, the menu and the bag buttons. Their keys keep working; the stance and experience bars stay.",
         function() return db().hideBlizzardBar end, function(v) return ns.BlizzardBar.SetHidden(v) end)
+    Check("Show minimap button", "Left-click opens these options, right-click locks or unlocks the grid. Drag it along the minimap edge. Without it, type /fob.",
+        function() return db().minimap.shown end, ns.MinimapButton.SetShown)
 
     Button(page, "Reset grid layout", 150, function() Report(ns.Settings.ResetLayout()) end)
         :SetPoint("TOPLEFT", 12, y - 8)
@@ -519,6 +521,11 @@ function Options.Open(page)
     if page then Options.ShowPage(page) end
     Options.Refresh()
     return true
+end
+
+function Options.Close()
+    if captureFrame then captureFrame:Hide() end
+    if frame then frame:Hide() end
 end
 
 function Options.CloseForCombat()

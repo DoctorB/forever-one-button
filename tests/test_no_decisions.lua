@@ -48,8 +48,9 @@ end
 H.Check(#hits == 0, "forbidden symbols in shipped code: " .. table.concat(hits, ", "))
 
 -- Only the timers/loops that exist, none of which runs an action:
--- the pixel ACK release and the AutoFill coalescing (C_Timer.After), and the
--- model OnUpdate poll.
+-- the pixel ACK release and the AutoFill coalescing (C_Timer.After), the
+-- model OnUpdate poll, and the minimap button's OnUpdate, set and cleared
+-- only while the player drags it (it moves the button, nothing else).
 local timerUses = 0
 for _, file in ipairs(files) do
     local handle = assert(io.open("ForeverOneButton/" .. file, "rb"))
@@ -58,7 +59,7 @@ for _, file in ipairs(files) do
     for _ in code:gmatch("C_Timer%.After%(") do timerUses = timerUses + 1 end
     for _ in code:gmatch('"OnUpdate"') do timerUses = timerUses + 1 end
 end
-H.Equal(timerUses, 4, "C_Timer.After in pixel and AutoFill, OnUpdate set/cleared in the model")
+H.Equal(timerUses, 6, "C_Timer.After in pixel and AutoFill, OnUpdate set/cleared in the model and the minimap drag")
 
 -- 2. Runtime: HCOneButton entry points are tripwires.
 local tripped = {}

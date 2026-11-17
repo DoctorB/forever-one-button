@@ -26,6 +26,7 @@ handlers.PLAYER_LOGIN = function()
     ns.Model.Start()
     ns.AutoFill.Request()
     ns.BlizzardBar.Apply()
+    ns.MinimapButton.Apply()
 end
 
 -- Blizzard may redraw its bar on these; the hidden state is applied again.

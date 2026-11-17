@@ -23,7 +23,7 @@ local function Keys(t)
     table.sort(list)
     return table.concat(list, ",")
 end
-H.Equal(Keys(db), "autoFill,features,grid,hideBlizzardBar,keys,pixel,schema", "top-level whitelist: no cells, no spam/pull")
+H.Equal(Keys(db), "autoFill,features,grid,hideBlizzardBar,keys,minimap,pixel,schema", "top-level whitelist: no cells, no spam/pull")
 H.Equal(db.hideBlizzardBar, false, "Blizzard bar visible by default")
 -- Features: every key from Settings.FEATURES with its default; nothing else.
 local featureNames = {}
@@ -86,7 +86,7 @@ for _, row in ipairs(ns.Options.FEATURE_ORDER) do
     local kind = ns.Settings.FEATURES[row[1]].kind
     if kind == "boolean" then featureChecks = featureChecks + 1 elseif kind == "number" then featureNumbers = featureNumbers + 1 end
 end
-H.Equal(checks, 7 + featureChecks, "grid shown/locked, pixel shown/locked/combat only, Blizzard bar, automatic fill, features")
+H.Equal(checks, 8 + featureChecks, "grid shown/locked, pixel shown/locked/combat only, Blizzard bar, minimap button, automatic fill, features")
 local labels = {}
 for _, b in ipairs(buttons) do labels[b.text] = (labels[b.text] or 0) + 1 end
 H.Equal(labels["Bind"], 20, "one Bind per cell")

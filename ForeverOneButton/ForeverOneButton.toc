@@ -43,5 +43,6 @@ UI\Options.lua
 UI\ShareWindow.lua
 UI\ShareReminder.lua
 UI\BlizzardBar.lua
+UI\MinimapButton.lua
 Core\Commands.lua
 Core\Events.lua
