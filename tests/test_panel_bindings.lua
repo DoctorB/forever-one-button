@@ -23,6 +23,11 @@ local shown = 0
 for slot = 1, 20 do if ns.Grid.buttons[slot].shown then shown = shown + 1 end end
 H.Equal(shown, 20, "20 buttons shown")
 H.Equal(next(H.overrideBindings), nil, "empty cells get no binding")
+local emptyIcon = ns.Grid.buttons[1].icon
+H.Equal(emptyIcon.texture, "Interface\\AddOns\\ForeverOneButton\\Media\\icon", "empty cell shows the add-on logo")
+H.Equal(emptyIcon.desaturated, true, "empty cell logo is grey")
+H.Check(emptyIcon.alpha < 0.5, "empty cell logo is faint")
+H.Check(emptyIcon.texCoord and emptyIcon.texCoord[1] > 0, "empty cell logo cropped to its central tile")
 local b1, b2, b7 = ns.Grid.buttons[1], ns.Grid.buttons[2], ns.Grid.buttons[11]
 H.Check(b1.bg.color[1] ~= b2.bg.color[1], "neighbours alternate (checkerboard)")
 H.Check(b7.bg.color[1] ~= b1.bg.color[1], "row 2 starts on the other colour")

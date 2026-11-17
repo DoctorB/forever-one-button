@@ -59,6 +59,7 @@ function Region:SetTexture(t) self.texture = t end
 function Region:SetAlpha(a) self.alpha = a end
 function Region:SetVertexColor(r, g, b) self.vertex = {r, g, b} end
 function Region:SetDesaturated(d) self.desaturated = d end
+function Region:SetTexCoord(...) self.texCoord = {...} end
 function Region:SetBlendMode(mode) self.blendMode = mode end
 -- Animations: only whether a group is playing is modelled.
 local AnimationGroup = {}

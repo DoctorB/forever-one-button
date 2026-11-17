@@ -28,6 +28,11 @@ local NO_RESOURCES_TINT = {0.45, 0.55, 1.00} -- not enough mana, rage or energy:
 local UNUSABLE_TINT = {0.40, 0.40, 0.40} -- cannot be used now (form, target, reactive): grey
 local CHECKER = {{0.10, 0.12, 0.15, 0.92}, {0.17, 0.19, 0.23, 0.92}}
 local EMPTY_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+-- Empty cells show the add-on logo, grey and faint: only its central tile
+-- (the infinity sign), cropped from the 64 px icon.
+local EMPTY_CELL_ICON = "Interface\\AddOns\\ForeverOneButton\\Media\\icon"
+local EMPTY_CELL_CROP = {0.23, 0.77, 0.22, 0.76}
+local EMPTY_CELL_ALPHA = 0.3
 local GLOW_TEXTURE = "Interface\\Buttons\\UI-ActionButton-Border"
 local GLOW_SCALE = 1.8 -- the border texture's square fills 36 of its 64 pixels
 local STRIP_HEIGHT = 44
@@ -393,8 +398,16 @@ function Grid.Refresh()
         local texture
         if cell and cell.kind == "spell" then texture = ns.SpellIcon(cell.id)
         elseif cell then texture = ns.ItemIcon(cell.id) end
-        button.icon:SetTexture(texture or EMPTY_ICON)
-        button.icon:SetAlpha(cell and 1 or 0.15)
+        if cell then
+            button.icon:SetTexture(texture or EMPTY_ICON)
+            button.icon:SetTexCoord(0, 1, 0, 1)
+            button.icon:SetAlpha(1)
+        else
+            button.icon:SetTexture(EMPTY_CELL_ICON)
+            button.icon:SetTexCoord(unpack(EMPTY_CELL_CROP))
+            button.icon:SetAlpha(EMPTY_CELL_ALPHA)
+            button.icon:SetDesaturated(true)
+        end
         if not cell then button.countText:SetText("") end
         local key = ns.Actions.appliedKeys[slot]
         if key then
@@ -499,7 +512,7 @@ function Grid.RefreshCooldowns(force)
             button.cooldown:SetCooldown(0, 0)
         end
         button.onCooldown = cell ~= nil and onCooldown or nil
-        button.icon:SetDesaturated(onCooldown and true or false)
+        button.icon:SetDesaturated((onCooldown or not cell) and true or false)
         if tint then
             button.icon:SetVertexColor(tint[1], tint[2], tint[3])
         else
