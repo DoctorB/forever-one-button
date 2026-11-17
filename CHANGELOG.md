@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.5 - 2026-11-17
+
+### New
+
+- **Minimap button.** Click the round button on the minimap to open the
+  options. Right-click locks or unlocks the grid, and you can drag the
+  button along the edge of the minimap. You can hide it in the options
+  (Layout).
+
+### Changed
+
+- **Clearer options window.** Settings are grouped under short titles,
+  every option explains itself when you hover it, and options that depend
+  on another one are greyed out while that one is off. The cells page shows
+  each spell with its icon and name.
+- **Empty cells** show the Forever One Button logo in grey instead of a
+  question mark.
+
 ## 1.2.4 - 2026-11-16
 
 ### New

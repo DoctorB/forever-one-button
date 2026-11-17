@@ -42,7 +42,8 @@ Status: **1.0.0**. The offline suites pass; the in-game checks listed in
 
 ## Configuration
 
-Open the options with `/fob`.
+Open the options with `/fob` or with the button on the minimap (left-click;
+right-click locks or unlocks the grid; drag it along the minimap edge).
 
 1. **Cells fill themselves.** The spells of your active talent tree's list,
    then your gap closers (Charge...), interrupts and defensive cooldowns, and
