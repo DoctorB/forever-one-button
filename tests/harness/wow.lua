@@ -226,6 +226,13 @@ function Frame:SetFocus() self.focused = true end
 function Frame:ClearFocus() self.focused = false end
 function Frame:SetChecked(c) self.checked = c end
 function Frame:GetChecked() return self.checked end
+function Frame:LockHighlight() self.highlightLocked = true end
+function Frame:UnlockHighlight() self.highlightLocked = false end
+function Frame:SetEnabled(e) self.enabled = e and true or false end
+function Frame:Enable() self.enabled = true end
+function Frame:Disable() self.enabled = false end
+function Frame:IsEnabled() return self.enabled ~= false end
+function Frame:SetHitRectInsets(l, r, t, b) self.hitRect = {l, r, t, b} end
 function Frame:Click(button)
     if self.scripts.OnClick then self.scripts.OnClick(self, button or "LeftButton") end
 end

@@ -134,6 +134,58 @@ bind3[7]:Click()
 capture.scripts.OnMouseWheel(capture, 1)
 H.Equal(db.keys[7], "MOUSEWHEELUP", "mouse wheel captured")
 
+-- Readability: every row has a tooltip, enums show readable names, keys
+-- are written for players, the open tab is marked.
+for _, row in ipairs(ns.Options.FEATURE_ORDER) do
+    H.Check(type(row[3]) == "string" and row[3] ~= "", "tooltip text for " .. row[1])
+    if row[4] then H.Check(ns.Settings.FEATURES[row[4]] ~= nil, "parent exists for " .. row[1]) end
+    local spec = ns.Settings.FEATURES[row[1]]
+    if spec.kind == "enum" then
+        for value in pairs(spec.values) do
+            H.Check(ns.Options.ENUM_NAMES[row[1]][value] ~= nil, "readable name for " .. row[1] .. "=" .. value)
+        end
+    end
+end
+H.Equal(ns.Options.KeyText("CTRL-SHIFT-1"), "Ctrl-Shift-1", "key text")
+H.Equal(ns.Options.KeyText("BUTTON4"), "Mouse 4", "mouse key text")
+H.Equal(ns.Options.KeyText("SHIFT--"), "Shift--", "minus key text")
+ns.Options.ShowPage(4)
+H.Equal(ns.Options.currentPage, 4, "reminders page open")
+local tabCount, locked = 0, 0
+for _, b in ipairs(buttons) do
+    if b.marker then
+        tabCount = tabCount + 1
+        if b.highlightLocked then locked = locked + 1 end
+    end
+end
+H.Equal(tabCount, 4, "four tabs")
+H.Equal(locked, 1, "only the open tab is highlighted")
+-- Dependent rows: off parent greys the child row out.
+ns.Settings.SetFeature("precombat", false)
+ns.Options.Refresh()
+local greyed, active = 0, 0
+for _, f in ipairs(H.frames) do
+    if f.template == "UICheckButtonTemplate" then
+        if f.enabled == false then greyed = greyed + 1 elseif f.enabled == true then active = active + 1 end
+    end
+end
+H.Equal(greyed, 8, "reminder row off: its eight check boxes greyed")
+ns.Settings.SetFeature("precombat", true)
+ns.Options.Refresh()
+greyed = 0
+for _, f in ipairs(H.frames) do
+    if f.template == "UICheckButtonTemplate" and f.enabled == false then greyed = greyed + 1 end
+end
+H.Equal(greyed, 0, "all reminder rows active again")
+-- Top-off heal is off by default: its threshold buttons are greyed.
+local minusButtons = {}
+for _, b in ipairs(buttons) do if b.text == "-" then minusButtons[#minusButtons + 1] = b end end
+H.Equal(minusButtons[#minusButtons].enabled, false, "top-off threshold greyed while top-off heal is off")
+ns.Settings.SetFeature("topoffHeal", true)
+ns.Options.Refresh()
+H.Equal(minusButtons[#minusButtons].enabled, true, "top-off threshold active with top-off heal on")
+ns.Settings.SetFeature("topoffHeal", false)
+
 -- Entering combat closes the window and any capture.
 bind3[8]:Click()
 H.inCombat = true
