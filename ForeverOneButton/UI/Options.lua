@@ -169,8 +169,8 @@ Options.FEATURE_PAGES = {
     {title = "Combat", rows = {
         {"burstCue", "Burst cue", "A ready burst cooldown moves to position 2, with a purple border."},
         {"interrupts", "Interrupts", "When the target casts, an icon left of the grid shows the interrupt; its cell gets a red \"!\"."},
-        {"interruptMode", "Interrupt style", "Kick only: never crowd control. Kick first: crowd control only on casts that cannot be kicked. CC first: crowd control before the kick."},
-        {"interruptFears", "Fears may interrupt", "Fears count as interrupts. A feared enemy may run into others."},
+        {"interruptMode", "Interrupt style", "Kick only: never crowd control. Kick first: crowd control only on casts that cannot be kicked. CC first: crowd control before the kick.", "interrupts"},
+        {"interruptFears", "Fears may interrupt", "Fears count as interrupts. A feared enemy may run into others.", "interrupts"},
         {"defensives", "Defensive column", "Defensives in a column right of the grid; the first ready one puts an orange \"D\" on its cell."},
         {"holdEmergencies", "Save big defensives for low health", "Immunities and big heals wait until health is low.", "defensives"},
         {"healingItems", "Healing potion or healthstone", "The best one in your bags, in the defensive column and in a cell."},
@@ -208,7 +208,7 @@ Options.ENUM_NAMES = {
 }
 local ENUM_ORDER = {interruptMode = {"kickOnly", "kickPrefer", "ccPrefer"},
     poisonMainHand = ns.Coatings.POISON_CHOICES, poisonOffHand = ns.Coatings.POISON_CHOICES}
-local CONTROL_X, INDENT = 360, 22
+local CONTROL_X, INDENT, LABEL_X = 360, 22, 44
 
 -- A row is active while every parent up its chain is on.
 local function ParentsOn(parentOf, name)
@@ -246,8 +246,9 @@ local function BuildFeaturesPage(page, rows)
             y = y - 28
         else
             local label = page:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-            label:SetPoint("TOPLEFT", 12 + x, y - 3)
-            label:SetWidth(CONTROL_X - 20 - x)
+            -- Same column as the check box labels.
+            label:SetPoint("TOPLEFT", LABEL_X + x, y - 3)
+            label:SetWidth(CONTROL_X - LABEL_X - 8 - x)
             label:SetJustifyH("LEFT")
             label:SetWordWrap(false)
             label:SetText(text)
@@ -297,7 +298,7 @@ local function BuildFeaturesPage(page, rows)
 end
 
 local function ActionLabel(cell)
-    if not cell then return "|cff808080empty - drag a spell or item onto the cell|r" end
+    if not cell then return "|cff808080empty|r" end
     if cell.kind == "spell" then
         return (ns.SpellName(cell.id) or "Spell") .. (cell.auto and " |cff80c0ff(auto)|r" or "")
     end
@@ -403,7 +404,7 @@ local function BuildCellsPage(page)
     note:SetPoint("TOPLEFT", 12, noteY)
     note:SetWidth(Options.PAGE_WIDTH - 24)
     note:SetJustifyH("LEFT")
-    note:SetText("Grey key: the default one.  |cffff8040!|r the key also has a normal WoW binding; the cell wins while the add-on is loaded.")
+    note:SetText("Drag a spell or item onto a cell of the grid to fill it.  Grey key: the default one.  |cffff8040!|r the key also has a normal WoW binding; the cell wins while the add-on is loaded.")
     -- The note wraps to at most two lines of small text.
     return -noteY + 28
 end
