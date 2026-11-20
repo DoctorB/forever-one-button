@@ -171,10 +171,14 @@ function Targets.RefuseHere(spellID)
     ns.Log("refused", spellID, guid and "behind" or "behind-noguid")
 end
 
+-- A refusal says something about a living enemy only: on a corpse, a
+-- friendly or no target, "Invalid target" teaches nothing about the creature.
 local failedSpell, failedAt, errorAt, positional = nil, nil, nil, false
 local function Pair()
     if failedSpell and failedAt and errorAt and math.abs(failedAt - errorAt) <= Targets.PAIR_SECONDS then
-        if positional then Targets.RefuseHere(failedSpell) else Targets.Refuse(failedSpell, Targets.Key()) end
+        if ns.State.TargetAttackable() then
+            if positional then Targets.RefuseHere(failedSpell) else Targets.Refuse(failedSpell, Targets.Key()) end
+        end
         failedSpell, failedAt, errorAt, positional = nil, nil, nil, false
     end
 end

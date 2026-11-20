@@ -86,4 +86,33 @@ C_CurveUtil = savedCurve
 H.secretStats = false
 H.Equal(Heal(), HOLY_LIGHT, "readable again")
 
+-- Victory Rush (Warrior): it strikes the target, so it needs a living enemy
+-- in range that has not refused it (log 2026-11-19: after a kill it held the
+-- pixel 6 s while the client answered "Out of range" / "Invalid target").
+H.class = "WARRIOR"
+H.inCombat = false
+for cell = 1, 4 do A.Clear(cell) end
+local VICTORY_RUSH = 402927
+H.known[VICTORY_RUSH] = true
+H.spells[VICTORY_RUSH] = {name = "Victory Rush", inRange = true}
+H.Check(A.Assign(1, "spell", VICTORY_RUSH), "Victory Rush on cell 1")
+H.inCombat = true
+H.units.player.health = 20
+H.Equal(Heal(), VICTORY_RUSH, "Victory Rush on a living enemy in range")
+H.spells[VICTORY_RUSH].inRange = false
+H.Equal(Heal(), "none", "target out of range: not suggested")
+H.spells[VICTORY_RUSH].inRange = true
+H.units.target.dead = true
+H.Equal(Heal(), "none", "target dead: not suggested")
+H.units.target.dead = nil
+local saved = H.units.target
+H.units.target = nil
+H.Equal(Heal(), "none", "no target: not suggested")
+H.units.target = saved
+H.units.target.guid = "Creature-0-1-2-3-948-00000001"
+ns.Targets.Refuse(VICTORY_RUSH, ns.Targets.Key())
+H.Equal(Heal(), "none", "refused on this kind of creature: not suggested")
+ns.Targets.Forget()
+H.Equal(Heal(), VICTORY_RUSH, "suggested again once refusals are forgotten")
+
 H.Done("test_emergency_heal")

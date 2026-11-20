@@ -185,6 +185,17 @@ local function BreakerCue()
 end
 
 -- Emergency heal (owner request 2026-10-18) -----------------------------------
+-- Heals that strike the target (Victory Rush): only with a living enemy
+-- targeted, in range and not refused on that kind of creature; after a kill
+-- the pixel would otherwise hold a press the client keeps rejecting.
+Defensives.TARGETED_HEALS = {[402927] = true}
+
+local function TargetAllows(entry)
+    if not Defensives.TARGETED_HEALS[entry.base] then return true end
+    return ns.State.TargetAttackable() and ns.State.InRange(entry.id) ~= false
+        and ns.Targets.Allows(entry.id) ~= false
+end
+
 -- In a fight with health below the threshold: the first ready healing spell
 -- of the class's defensive list (Defaults.categories.healing) that has a
 -- cell, else the best healing item if it has a cell. Queue.Build puts it at
@@ -198,7 +209,7 @@ function Defensives.EmergencyHeal()
     for _, first in ipairs(class and ns.Data.Defaults.defensive[class] or {}) do
         if healing[first] then
             local entry = SpellEntry(first, 2)
-            if entry and entry.ready and ns.Actions.SlotFor(entry.id) then
+            if entry and entry.ready and TargetAllows(entry) and ns.Actions.SlotFor(entry.id) then
                 entry.emergency = true
                 return entry
             end

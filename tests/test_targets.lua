@@ -87,6 +87,15 @@ H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-2", JUDGEMENT)
 Fresh()
 H.Equal(T.Allows(JUDGEMENT), false, "error before the failed cast: learned too")
 
+-- On a corpse (or no enemy targeted) "Invalid target" teaches nothing: the
+-- creature itself never refused the spell.
+H.units.target.dead = true
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-5", SEAL)
+H.Fire("UI_ERROR_MESSAGE", 50, "Invalid target")
+H.units.target.dead = nil
+Fresh()
+H.Equal(T.Allows(SEAL), nil, "refusal on a corpse not learned")
+
 -- Other failures, or an error long after the cast, teach nothing.
 H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-3", SEAL)
 H.Fire("UI_ERROR_MESSAGE", 50, "Not enough mana")
