@@ -9,11 +9,22 @@ local ADDON_NAME, ns = ...
 local Ranks = {}
 ns.Ranks = Ranks
 
-local base -- [any rank] = rank 1
+-- Chains the importer does not know, by rank-1 ID, in learn-level order;
+-- they replace the imported chain. Charge: some Forever clients know
+-- 1240287 / 1240288 / 1240289 (levels 4, 26, 46, SpellLevels of build
+-- 70959) instead of 100 / 6178 / 11578 (share of 2026-11-20), so the
+-- gap closer, the cell and "Defensive Stance after Charge" found nothing.
+Ranks.EXTRA_CHAINS = {
+    [100] = {100, 1240287, 6178, 1240288, 11578, 1240289},
+}
+
+local base, chains -- [any rank] = rank 1; [rank 1] = chain
 local function Index()
     if base then return end
-    base = {}
-    for first, chain in pairs(ns.Data.Rotations.rankChains) do
+    base, chains = {}, {}
+    for first, chain in pairs(ns.Data.Rotations.rankChains) do chains[first] = chain end
+    for first, chain in pairs(Ranks.EXTRA_CHAINS) do chains[first] = chain end
+    for first, chain in pairs(chains) do
         for _, id in ipairs(chain) do base[id] = first end
     end
 end
@@ -24,7 +35,8 @@ function Ranks.Base(spellID)
 end
 
 function Ranks.Chain(spellID)
-    return ns.Data.Rotations.rankChains[Ranks.Base(spellID)]
+    Index()
+    return chains[Ranks.Base(spellID)]
 end
 
 -- Known spells do not change in a fight, but the client may answer with a

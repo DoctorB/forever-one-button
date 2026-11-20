@@ -222,6 +222,19 @@ H.now = H.now + 2
 s = ns.Queue.Build(nil)
 H.Equal(s.entries[1].id, 71, "2 s after Charge with 4 rage: Defensive Stance")
 H.known[100], H.spells[100] = nil, nil
+-- The same with Forever's own Charge (1240287, share of 2026-11-20).
+H.units.player.power[RAGE] = 4
+H.known[1240287], H.spells[1240287] = true, {name = "Charge", inRange = true}
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g2", 1240287)
+H.now = H.now + 0.1
+s = ns.Queue.Build(nil)
+for i = 1, s.count do
+    H.Check(s.entries[i].id ~= 71 or not s.entries[i].ready, "just after Forever's Charge: no Defensive Stance yet")
+end
+H.now = H.now + 2
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 71, "2 s after Forever's Charge: Defensive Stance")
+H.known[1240287], H.spells[1240287] = nil, nil
 for _, id in ipairs({772, 284, 6673}) do H.spells[id].noResources = nil end
 H.units.player.power[RAGE] = 20
 

@@ -150,6 +150,17 @@ H.Check(s.entries[1].gapCloser, "marked as gap closer")
 H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 100)
 s = Build()
 H.Check(s.entries[1].id ~= 100, "no Charge right after Charge")
+-- Forever's own Charge (1240287, share of 2026-11-20) is the same gap closer.
+H.known[100] = nil
+H.known[1240287], H.spells[1240287] = true, {name = "Charge", inRange = true}
+H.now = H.now + 10
+s = Build()
+H.Equal(s.entries[1].id, 1240287, "Forever's Charge as gap closer")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g2", 1240287)
+s = Build()
+H.Check(s.entries[1].id ~= 1240287, "no Charge right after Forever's Charge")
+H.known[1240287], H.spells[1240287] = nil, nil
+H.known[100] = true
 for id in pairs(refs) do H.spells[id].inRange = true end
 
 -- Execute below 20% once known.
