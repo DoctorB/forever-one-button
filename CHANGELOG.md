@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.7 - 2026-11-20
+
+### Fixed
+
+- **Warriors:** on some characters the game gives Charge a different spell
+  number, and the addon did not recognise it. It is now suggested to close
+  the distance, gets its own cell, and Defensive Stance waits a moment after
+  you charge, as for every other Warrior. Thanks to the player who sent the
+  log that showed it!
+
+### Please keep the addon up to date
+
+That log came from a version several releases old. Many of the things it
+showed had already been fixed, so the quickest way to a better addon is often
+just updating it: check for updates in your addon manager, or download the
+latest version from CurseForge. And if you send a log, please update first,
+so it helps with what is still left to fix. Thank you!
+
 ## 1.2.6 - 2026-11-20
 
 ### Fixed
