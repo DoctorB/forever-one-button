@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.6 - 2026-11-20
+
+### Fixed
+
+- **Warriors:** Victory Rush is suggested as an emergency heal only when a
+  living enemy is within reach. After a kill with no other enemy close by,
+  it no longer stays on the button while it cannot be used.
+- A spell that fails on a dead enemy is no longer skipped on other enemies
+  of the same kind for the rest of the session.
+
 ## 1.2.5 - 2026-11-17
 
 ### New
