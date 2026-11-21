@@ -72,7 +72,6 @@ Preparazione: copiare `dist/ForeverOneButton-<versione>.zip` in `AddOns`,
 36. Bersagli immuni (2026-10-20): con il Paladino, Esorcismo non è mai proposto su bestie o umanoidi (cella grigia) ed è proposto su non morti e demoni; una spell rifiutata dal client con "Invalid target" non viene più proposta su quel tipo di creatura fino al /reload (riga `refused` nel log diagnostico).
 38. Hamstring su un bersaglio in fuga (branch `feat/hamstring-fleeing`, 2026-11-06): con un Guerriero Arms o Fury sotto il 60, Hamstring ha una cella (verificato il 2026-11-06); quando un umanoide scappa ("%s attempts to run away in fear!" in chat) Hamstring è in posizione 1 per quel bersaglio, una volta per fuga, e sparisce dopo il lancio. Annotare la lingua del messaggio in chat (con un client non inglese conta qualsiasi emote del bersaglio sotto il 35 % di salute). Pendente: a livello 8 i mob morivano prima di scappare.
 40. Coating delle armi con un tasto (branch `feat/weapon-coatings`, 2026-11-11): Ladro con due armi, Instant e Deadly Poison e una pietra nelle borse, nessun coating attivo. In Key Bindings > AddOns > Forever One Button assegnare "Apply the next weapon coating". Premendo il tasto, attendendo ogni volta la fine del lancio: Instant sulla mano principale, Deadly sulla secondaria, pietra sulla principale, pietra sulla secondaria (quattro pressioni, nessun clic sull'arma, nessuna finestra di conferma); veleno e pietra restano entrambi sulla stessa arma. Lo stesso dal pulsante della riga promemoria (tooltip con la mano). Durante il lancio il tasto non fa nulla; in combattimento non fa nulla. Da verificare in particolare: l'oggetto va sull'arma giusta con `target-slot` (se si apre il cursore di selezione, il meccanismo va cambiato), la mano secondaria letta da `C_Item.GetWeaponEnchantInfo(1)`, il tempo restante in millisecondi (a 5 minuti dalla fine, in gruppo, il veleno torna proposto).
-41. Victory Rush come cura di emergenza (branch `fix/victory-rush-emergency`, 2026-11-20, dalla share del 19/11): Guerriero sotto la soglia di salute in combattimento, con Victory Rush su una cella e il buff dopo un kill. Con il bersaglio morto, senza bersaglio o con un nemico fuori portata, Victory Rush non va in posizione 1 (resta la rotazione); con un nemico vivo in mischia torna in posizione 1. Nel log diagnostico: nessuna serie di "Out of range." / "Invalid target" per 402927 e nessuna riga `refused|402927` su un cadavere.
 42. Charge di Forever (1.2.7, 2026-11-20, dalla share di un altro giocatore): con un Guerriero che conosce la Charge 1240287 (/dump IsPlayerSpell(1240287)), la cella Charge viene assegnata, fuori mischia fra 8 e 25 metri Charge è in posizione 1 e dopo la Charge Defensive Stance aspetta circa 1,5 s. Se il proprio Guerriero conosce invece 100, annotarlo: il comportamento deve restare quello di prima.
 37. Icona (2026-10-21): dopo un riavvio completo del client, nella lista AddOns della selezione personaggio "Forever One Button" mostra l'infinito dorato su fondo blu (`## IconTexture`, `Media/icon.tga`) invece del punto di domanda.
 
@@ -222,6 +221,19 @@ buffer da 5000 righe teneva solo gli ultimi 76 minuti (dal livello 8 circa),
   Roar) valgono per tutto il pack fino alla scadenza o alla fine del
   combattimento (`test_queue`). Shield Bash: 12 cast nemici, 6 interrotti.
   Revenge 74 su 100 finestre. Taunt premuto a mano, fuori da FOB.
+- 2026-11-21, log 1.2.7 Guerriero protection (due sessioni, 48
+  combattimenti, client 1.60.1.70959): 41 verificata e chiusa. Victory Rush
+  in posizione 1 quattro volte, sempre sotto il 50% di salute, e lanciato
+  dal lettore quattro volte su quattro (una attesa di 1,5 s per il GCD);
+  nessun "Out of range." o "Invalid target" per 402927, nessuna riga
+  `refused|402927`. 42 non superata: Charge 1240287 lanciato a mano 15
+  volte (13 il 2026-11-20), mai in posizione 1 in tutto il log (nessuna riga
+  `head` di Charge). Causa: per un Guerriero `State.TargetWithin(8)` ha solo
+  i riferimenti di Charge (25 m), Rend e Sunder Armor (5 m); fra 8 e 25 m
+  risponde "non so" e il gap closer non parte mai. `test_queue` passava
+  perché dava al Guerriero anche spell di altre classi (riferimento a 10 m).
+  Probabilmente lo stesso motivo del 26 (Carica vista nei lanci, non come
+  suggerimento, 2026-10-16). Da correggere.
 
 Condivisione del log (`/fob share`, branch feat/share-log), 2026-11-08,
 client 1.60.1.70862, Ladro 13 in locanda:
