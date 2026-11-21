@@ -30,7 +30,7 @@ end
 
 -- README examples table.
 local examples = {[1] = "0C60E0", [2] = "1860E0", [3] = "2460E0", [10] = "7860E0", [18] = "D860E0", [19] = "E460E0", [20] = "F060E0"}
-for slot = 1, 20 do
+for slot = 1, 19 do
     lib.Set({7000 + slot, 7001})
     H.Tick(0.06)
     H.Equal(Decoded(), slot, "queue head on cell " .. slot)
@@ -39,6 +39,20 @@ for slot = 1, 20 do
         H.Equal(string.format("%02X%02X%02X", r, g, b), examples[slot], "README hex for slot " .. slot)
     end
 end
+
+-- Cell 20 is pressed by hand: its key never reached the game from the
+-- reader. The pixel shows the next ready action instead; the grid keeps it
+-- first.
+lib.Set({7020, 7003})
+H.Tick(0.06)
+H.Equal(Decoded(), 3, "head on cell 20: the pixel shows position 2")
+H.Equal(ns.Model.snapshot.entries[1].id, 7020, "the queue still leads with cell 20")
+lib.Set({7020})
+H.Tick(0.06)
+H.Equal(Decoded(), "none", "cell 20 alone: black")
+lib.Set({7020, lib.WAIT})
+H.Tick(0.06)
+H.Equal(Decoded(), "none", "cell 20 then a wait: black")
 
 -- Only position 1 is encoded; the tail never leaks into the pixel.
 lib.Set({9999, 7003})

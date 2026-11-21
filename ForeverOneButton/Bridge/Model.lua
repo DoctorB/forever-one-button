@@ -49,13 +49,39 @@ end
 -- picks the nearest enemy by itself (the player never chose it). Black until
 -- a living enemy is targeted. Only a readable "harmful" counts; spells on
 -- the player (shouts, seals, stances, the emergency heal) are unaffected.
-local function AttackWithoutTarget(snapshot, head)
-    local first = snapshot.entries[1]
+local function AttackWithoutTarget(snapshot, head, entry)
+    local first = entry or snapshot.entries[1]
     if not (first and first.kind == ns.ENTRY.SPELL and first.id == head) then return false end
     if ns.State.TargetAttackable() then return false end
     return Harmful(head) == true
 end
 Model.AttackWithoutTarget = AttackWithoutTarget
+
+-- Cell 20 is pressed by hand only. Its key, CTRL-SHIFT-0, never reached the
+-- game from the reader (owner's logs of 2026-11-20/21: Challenging Shout on
+-- the pixel for 94 s and the Healing Potion for 26-35 s per session without
+-- a single cast or error), and while it led the pixel nothing else was
+-- pressed. The grid still shows it first; the pixel moves on to the next
+-- ready action (owner decision 2026-11-21).
+Model.MANUAL_SLOT = 20
+
+-- Position 1 for the pixel: the queue head, or, when the head sits on the
+-- manual cell, the next ready action on another cell. Returns id, entry.
+function Model.PixelHead(snapshot)
+    local head = ns.Queue.Head(snapshot)
+    if not head then return nil, nil end
+    local entries = snapshot.entries
+    if ns.Actions.SlotFor(head) ~= Model.MANUAL_SLOT then return head, entries[1] end
+    for i = 2, #entries do
+        local entry = entries[i]
+        if not entry.ready then break end
+        if (entry.kind == ns.ENTRY.SPELL or entry.kind == ns.ENTRY.ITEM)
+            and ns.Actions.SlotFor(entry.id) ~= Model.MANUAL_SLOT then
+            return entry.id, entry
+        end
+    end
+    return nil, nil
+end
 
 local lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat, lastNoTarget = nil, nil, nil, nil, nil
 local lastInterruptHead = nil
@@ -73,10 +99,10 @@ function Model.Refresh()
     end
     Model.snapshot = snapshot
 
-    local head = ns.Queue.Head(snapshot)
+    local head, headEntry = Model.PixelHead(snapshot)
     local casting = PlayerIsCasting()
     -- An emergency heal is cast on the player: the target's range does not apply.
-    local selfHeal = snapshot.entries[1] and snapshot.entries[1].emergency
+    local selfHeal = headEntry and headEntry.emergency
     -- Interrupt (owner request 2026-11-14: what is suggested, the reader
     -- presses): the suggested kick, or crowd control as fallback, takes the
     -- pixel ahead of the rotation when it has a cell; only the emergency
@@ -84,10 +110,11 @@ function Model.Refresh()
     -- reach and the debounce after a cast.
     local okInterrupt, interrupt = pcall(ns.Interrupts.Suggest)
     if not okInterrupt then interrupt = nil end
-    local interruptHead = (interrupt and interrupt.id and not selfHeal and ns.Actions.SlotFor(interrupt.id) ~= nil) == true
+    local interruptSlot = interrupt and interrupt.id and ns.Actions.SlotFor(interrupt.id)
+    local interruptHead = (interruptSlot and not selfHeal and interruptSlot ~= Model.MANUAL_SLOT) == true
     if interruptHead then head = interrupt.id end
     local outOfRange = head ~= nil and not casting and not selfHeal and ConfirmedOutOfRange(head)
-    local noTarget = head ~= nil and not casting and not selfHeal and AttackWithoutTarget(snapshot, head)
+    local noTarget = head ~= nil and not casting and not selfHeal and AttackWithoutTarget(snapshot, head, headEntry)
     Model.observation.casting = casting
     Model.observation.outOfRange = outOfRange
     Model.observation.noTarget = noTarget
@@ -123,7 +150,8 @@ function Model.Refresh()
             local first = snapshot.entries[1]
             ns.Log("head", interruptHead and interrupt.id or (first and first.id) or "none",
                 (casting and "c" or "") .. (outOfRange and "r" or "") .. (noTarget and "t" or "")
-                    .. (outOfCombat and "o" or "") .. "-")
+                    .. (outOfCombat and "o" or "")
+                    .. (headEntry and headEntry ~= first and ("m" .. headEntry.id) or "") .. "-")
         end
         Model.pixelHead = head
         ns.Pixel.Update(head)
