@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.8 - 2026-11-21
+
+### Fixed
+
+- A small fix for the last cell of the grid. Nothing changes in what the
+  addon suggests or in how you play.
+
 ## 1.2.7 - 2026-11-20
 
 ### Fixed
