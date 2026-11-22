@@ -12,7 +12,12 @@
 --     cell, also the user's and also with the automatic fill off;
 --   * a spell the user removed from a cell is never put back automatically;
 --   * cells the user filled are never touched, except for the rank;
---   * out of combat only; requests in combat run when combat ends.
+--   * out of combat only; requests in combat run when combat ends;
+--   * with no free cell, an automatic cell whose spell the current tree no
+--     longer uses (not in the pool) makes room for a pool spell or the
+--     healing item (owner decision 2026-11-22: Shield Wall and the potion
+--     were left out of a full grid while Hamstring, from another tree, kept
+--     its cell). Only when a cell is needed, the user's cells never.
 -- This never looks at the current queue: what is suggested at a given moment
 -- has no influence on which cell a spell gets.
 local ADDON_NAME, ns = ...
@@ -114,11 +119,46 @@ local function FirstFreeCell(cells)
     return nil
 end
 
+-- The pool as a lookup: IDs and names (another rank or an override of a
+-- pool spell is still in use).
+local function PoolLookup(pool)
+    local keep = {ids = {}, names = {}}
+    for _, id in ipairs(pool) do
+        keep.ids[id] = true
+        local name = ns.SpellName(id)
+        if name then keep.names[name] = true end
+    end
+    return keep
+end
+
+local function InPool(keep, spellID)
+    if keep.ids[spellID] then return true end
+    local override = Override(spellID)
+    if override and keep.ids[override] then return true end
+    local name = ns.SpellName(spellID)
+    return name ~= nil and keep.names[name] == true
+end
+
+-- A free cell, or else the last automatic spell cell the pool no longer
+-- uses (emptied for the caller). nil when the grid is really full.
+local function CellForNew(cells, keep)
+    local slot = FirstFreeCell(cells)
+    if slot or not keep then return slot end
+    for stale = ns.MAX_SLOTS, 1, -1 do
+        local cell = cells[stale]
+        if cell and cell.auto and cell.kind == "spell" and not InPool(keep, cell.id) then
+            ns.Actions.RemoveAuto(stale)
+            return stale
+        end
+    end
+    return nil
+end
+
 -- One automatic item cell for the best healing item owned; a better one
 -- replaces it in the same cell, and with none left the cell is emptied
 -- (not dismissed: the next healing item comes back). A healing item the
 -- user placed is left alone.
-local function PlaceHealingItem(cells, dismissed)
+local function PlaceHealingItem(cells, dismissed, keep)
     if not ns.Settings.Feature("healingItems") or dismissed[ns.Actions.HEALING_ITEM_KEY] then return false end
     local best = ns.Defensives.BestHealingItem()
     local healing = {}
@@ -132,7 +172,7 @@ local function PlaceHealingItem(cells, dismissed)
         end
     end
     if not best then return false end
-    local slot = FirstFreeCell(cells)
+    local slot = CellForNew(cells, keep)
     if not slot then return false end
     ns.Actions.SetAutoItem(slot, best)
     return true
@@ -175,6 +215,7 @@ function AutoFill.Run()
     end
 
     local changed, overflow = upgraded, 0
+    local keep = PoolLookup(pool)
     for _, spellID in ipairs(pool) do
         local name = ns.SpellName(spellID)
         if not dismissed[name or ("spell:" .. spellID)] then
@@ -185,7 +226,7 @@ function AutoFill.Run()
                     changed = true
                 end
             else
-                slot = FirstFreeCell(cells)
+                slot = CellForNew(cells, keep)
                 if slot then
                     ns.Actions.SetAuto(slot, spellID)
                     changed = true
@@ -195,7 +236,7 @@ function AutoFill.Run()
             end
         end
     end
-    if PlaceHealingItem(cells, dismissed) then changed = true end
+    if PlaceHealingItem(cells, dismissed, keep) then changed = true end
     AutoFill.overflow = overflow
     if changed then ns.Actions.Apply() end
     return changed

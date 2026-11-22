@@ -126,6 +126,19 @@ H.Check(ns.Actions.Clear(slot), "clear the item cell")
 ns.AutoFill.Run()
 H.Equal(ns.Actions.SlotUsingAction("item", BETTER), nil, "not put back after clearing")
 
+-- Full grid of automatic cells the pool no longer uses (in game 2026-11-22:
+-- Shield Wall and the potion were left out): they make room for both.
+char.dismissed[ns.Actions.HEALING_ITEM_KEY] = nil
+for id, _ in pairs(SPELLS) do char.dismissed[SPELLS[id]] = nil end
+for s = 1, 20 do
+    H.spells[9500 + s] = {name = "Old" .. s}
+    char.cells[s] = {kind = "spell", id = 9500 + s, auto = true}
+end
+ns.AutoFill.Run()
+H.Check(ns.Actions.SlotUsingAction("spell", 871), "Shield Wall gets a stale cell")
+H.Check(ns.Actions.SlotUsingAction("item", BETTER), "the potion gets a stale cell")
+H.Equal(char.cells[1].id, 9501, "cells nobody needs stay")
+
 -- In game (2026-10-16) the column stayed empty in combat: bag counts were
 -- secret there. The count read out of combat is kept.
 H.bags[BETTER] = nil

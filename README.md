@@ -50,7 +50,10 @@ right-click locks or unlocks the grid; drag it along the minimap edge).
    the best healing potion or healthstone you carry, each take the first free
    cell and **keep it**. A new spell you learn goes to the next free cell; a
    new rank replaces the old one in the same cell; a better potion replaces
-   the old one. Nothing is ever moved. Cells are saved per character.
+   the old one. Nothing is ever moved. When all 20 cells are taken, a cell
+   filled automatically with a spell your current tree no longer uses (say,
+   Hamstring after switching to Protection) makes room for a new one; cells
+   you filled yourself are never taken. Cells are saved per character.
    You can still drag a spell or item onto a cell, or use
    `/fob assign <cell> spell <id or name>` / `/fob assign <cell> item <id>`.
    **Clear** empties a cell and keeps that spell out of the automatic fill

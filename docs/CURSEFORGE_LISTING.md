@@ -91,6 +91,8 @@ pulling. You start every pull and choose every opener.
 - Cells fill themselves from your priority list, gap closers, interrupts,
   defensives and your best healing item. Nothing is ever moved, so your
   muscle memory stays valid; new ranks replace old ones in the same cell.
+  With all 20 cells taken, a spell your current talent tree no longer uses
+  makes room for a new one (never a cell you filled yourself).
   Drag any spell or item onto a cell to change it.
 - Default keys: `SHIFT-1`...`SHIFT-0` for cells 1-10 and `CTRL-SHIFT-1`...
   `CTRL-SHIFT-0` for cells 11-20. Rebind, unbind or reset any cell.

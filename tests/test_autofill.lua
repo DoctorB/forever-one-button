@@ -116,10 +116,41 @@ H.Equal(filled, 20, "all 20 cells used")
 H.Check(F.overflow > 0, "overflow counted")
 H.Check(ns.Grid.statusText:GetText():find("did not fit"), "overflow shown")
 
+-- Full grid (owner decision 2026-11-22): a spell the pool no longer uses
+-- (e.g. Hamstring after a tree change) gives its automatic cell to a new
+-- pool spell; the user's cells are never taken, and with nothing stale the
+-- new spell still overflows.
+for slot = 1, 20 do char.cells[slot] = nil end
+wipe(char.dismissed)
+local twenty = {}
+for i = 1, 20 do twenty[i] = 9000 + i end
+pool.ids = twenty
+F.Run()
+H.Equal(char.cells[20].id, 9020, "grid full")
+H.spells[9100] = {name = "Shield Wall"}
+H.spells[9101] = {name = "Mine"}
+A.Assign(19, "spell", 9101) -- the user's own cell, not in the pool
+pool.ids = {}
+for i = 1, 17 do pool.ids[i] = 9000 + i end
+pool.ids[18] = 9100
+F.Run()
+H.Equal(char.cells[19].id, 9101, "the user's cell is never taken")
+H.Equal(char.cells[20].id, 9100, "a stale automatic cell makes room for the new spell")
+H.Equal(char.cells[18].id, 9018, "only as many cells as needed are freed")
+H.Equal(F.overflow, 0, "nothing left out")
+pool.ids[19] = 9102
+H.spells[9102] = {name = "Another"}
+F.Run()
+H.Equal(char.cells[18].id, 9102, "the next stale cell for the next spell")
+pool.ids[20] = 9103
+H.spells[9103] = {name = "Yet another"}
+F.Run()
+H.Equal(F.overflow, 1, "nothing stale left: overflow")
+H.Equal(A.SlotUsingAction("spell", 9103), nil, "not placed")
+
 -- Combat: nothing protected runs; the fill happens after combat.
-for slot = 2, 20 do if char.cells[slot] then A.Clear(slot) end end
-F.ResetDismissed()
-for slot = 2, 20 do if char.cells[slot] then A.Clear(slot) end end
+for slot = 1, 20 do char.cells[slot] = nil end
+wipe(char.dismissed)
 pool.ids = {101, 400}
 H.inCombat = true
 H.Fire("PLAYER_REGEN_DISABLED")

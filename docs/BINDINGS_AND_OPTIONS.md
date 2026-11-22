@@ -22,7 +22,7 @@ sempre nello stesso slot, limitandosi a quelle che l'addon può suggerire.
 | Ranghi | un rango nuovo (stesso nome localizzato) sostituisce il vecchio **nella stessa cella**, se la cella è automatica |
 | Override | una spell il cui override è già in una cella (o viceversa) non viene duplicata |
 | Scelte dell'utente | le celle riempite a mano non vengono mai toccate; svuotare una cella (`Clear`) o sostituirne la spell la toglie dal riempimento automatico (per nome, tutti i ranghi); `/fob autofill reset` annulla queste esclusioni |
-| Più di 20 spell | le celle finiscono: le spell in eccesso vengono contate e mostrate ("N spells did not fit"); se il motore le suggerisce il pixel è bianco |
+| Più di 20 spell | prima si liberano le celle automatiche di spell che l'albero attuale non usa più (mai quelle dell'utente; decisione del proprietario 2026-11-22); poi le spell in eccesso vengono contate e mostrate ("N spells did not fit"); se il motore le suggerisce il pixel è bianco |
 | Indipendenza dalla coda | la coda/il suggerimento corrente non viene mai consultato: lo prova `tests/test_autofill.lua` |
 | Disattivazione | opzione "Fill cells automatically from the priority list" o `/fob autofill off` |
 
