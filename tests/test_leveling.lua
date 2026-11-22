@@ -400,7 +400,7 @@ s = ns.Queue.Build(nil)
 H.Equal(select(2, s.why:gsub("7386", "")), 1, "fewer than 5 stacks: the first Sunder entry only")
 
 -- A player target (owner decision 2026-11-22, Warsong Gulch log): a
--- battleground is a group, but no Taunt, Sunder once, no threat Sunder,
+-- battleground is a group, but no Taunt, no Sunder (2026-11-22, fifth BG),
 -- Demoralizing Shout only with 2 or more enemies, players never "loose".
 H.units.target.guid = "Player-1-0000001"
 H.units.target.player = true
@@ -409,11 +409,9 @@ H.units.target.threat = 1
 H.units.targettarget = {friend = true}
 H.now = H.now + 1
 H.Check(not Ready(355), "player attacking a teammate: no Taunt")
-H.Check(Ready(7386), "player, no Sunder yet: Sunder")
-H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 7386)
-H.now = H.now + 1
 s = ns.Queue.Build(nil)
-H.Check(not Ready(7386), "player, one Sunder: no more Sunder")
+H.Check(not Ready(7386), "player, no Sunder yet: still no Sunder")
+H.Check(s.why:find("7386-gate", 1, true) ~= nil, "player: Sunder held by its gate")
 H.Check(not s.why:find("7386+", 1, true), "player: neither Sunder entry ready")
 H.known[1160], H.spells[1160] = true, {name = "Demoralizing Shout", inRange = true}
 ns.Dots.Reset() -- no shout from the earlier pulls

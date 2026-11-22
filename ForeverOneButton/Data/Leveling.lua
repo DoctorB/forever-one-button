@@ -80,10 +80,12 @@ SHIELD_BLOCK.rotation = true
 -- when the first (up to 5) waits (Engine/Queue.lua `again`). Not on a
 -- player: there is no threat to hold.
 local SUNDER_THREAT = e(7386, inGroup(), notPlayer(), bashRage(15))
--- Sunder Armor up to 5 stacks; on a player once (owner decision 2026-11-22:
--- in the Warsong Gulch log Sunder took about half the rage spent), the rage
--- then goes to Heroic Strike.
-local SUNDER_STACKS = e(7386, stacksBelow(7386, 5), any(notPlayer(), stacksBelow(7386, 1)), bashRage(15))
+-- Sunder Armor up to 5 stacks, never on a player (owner decisions
+-- 2026-11-22: in the first Warsong Gulch log Sunder took about half the
+-- rage spent; once per player it still opened 29 of the fights against a
+-- new player in the fifth battleground). The rage goes to Revenge, Rend
+-- and Heroic Strike.
+local SUNDER_STACKS = e(7386, stacksBelow(7386, 5), notPlayer(), bashRage(15))
 SUNDER_THREAT.again = true
 -- Enemies on someone else in the group (owner request 2026-11-16, e.g. four
 -- mobs with one targeted): threat on all of them without a target change.
@@ -162,7 +164,7 @@ local warrior = {
             e(23922, bashRage(20)),            -- Shield Slam
             e(6572, bashRage(5)),              -- Revenge (after a block, dodge or parry)
             SHIELD_BLOCK,
-            SUNDER_STACKS,                     -- Sunder Armor up to 5 (once on a player)
+            SUNDER_STACKS,                     -- Sunder Armor up to 5 (never on a player)
             e(772, dot(772), bashRage(10)),    -- Rend
             -- Demoralizing Shout; against a player only with 2 or more enemies.
             again(e(1160, dot(1160), any(notPlayer(), targetsAtLeast(2)), bashRage(10))),
