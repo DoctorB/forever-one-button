@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.10 - 2026-11-22
+
+### Changed
+
+- **Protection Warriors fight players properly.** In battlegrounds the
+  addon no longer suggests tank moves that do nothing against players:
+  no Taunt, Sunder Armor only once per player, and Demoralizing Shout
+  only when two or more enemies are around you. The rage goes to Heroic
+  Strike and your other attacks instead. Against monsters nothing changes.
+
+### Fixed
+
+- **Battle Shout no longer gets stuck.** When another warrior's stronger
+  Battle Shout is already on you, the addon stops suggesting yours for a
+  minute and moves on to your next ability.
+
 ## 1.2.9 - 2026-11-22
 
 ### Fixed
