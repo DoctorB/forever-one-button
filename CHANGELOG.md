@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.9 - 2026-11-22
+
+### Fixed
+
+- **`/pvp` works again with the addon on.** It was blocked, and so were
+  other game commands that only the game itself may use.
+- **New spells and your potion always find a cell.** When all 20 cells were
+  taken, a new spell (say, Shield Wall) or your healing potion was left out.
+  Now a cell holding a spell your current talent tree no longer uses (say,
+  Hamstring after switching to Protection) makes room for it. Cells you
+  filled yourself are never touched.
+
 ## 1.2.8 - 2026-11-21
 
 ### Fixed
