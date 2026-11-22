@@ -108,6 +108,20 @@ H.Fire("UI_ERROR_MESSAGE", 50, H.Secret())
 Fresh()
 H.Equal(T.Allows(SEAL), nil, "secret payloads ignored without errors")
 
+-- A stronger version of a buff already up (battleground of 2026-11-22:
+-- Battle Shout refused 72 times): held for a while on every target.
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-6", SEAL)
+H.Fire("UI_ERROR_MESSAGE", 57, "A more powerful spell is already active")
+Fresh()
+H.Equal(T.Allows(SEAL), false, "stronger aura: held")
+H.units.target.guid = "Creature-0-1-2-3-777-0000000009"
+H.Fire("PLAYER_TARGET_CHANGED")
+Fresh()
+H.Equal(T.Allows(SEAL), false, "stronger aura: held on another target too")
+H.now = H.now + T.STRONGER_HOLD_SECONDS + 1
+Fresh()
+H.Equal(T.Allows(SEAL), nil, "stronger aura: asked again after the hold")
+
 T.Forget()
 Fresh()
 H.Equal(T.Allows(JUDGEMENT), nil, "forgotten")

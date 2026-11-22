@@ -10,6 +10,8 @@
 --     holds the spell back on that one target only, until the target
 --     changes (also when its GUID cannot be read), so the next opener is
 --     suggested instead;
+--   * "A more powerful spell is already active" (someone else's stronger
+--     buff): the spell waits STRONGER_HOLD_SECONDS on every target;
 --   * Pick Pocket or Sap tried on a target (cast or refused): the stealth
 --     opener is not published on the pixel for that target (OpenerHeld), so
 --     it never starts a fight the player did not choose.
@@ -78,6 +80,7 @@ end
 -- Answers ----------------------------------------------------------------------
 local refused = {} -- [target key] = {[rank-1 id] = true}
 local behind = {}  -- [rank-1 id] = {guid = GUID or nil, epoch = target epoch}
+local stronger = {} -- [rank-1 id] = GetTime() until which a stronger aura blocks it
 local targetEpoch = 0 -- bumped on every target change
 local openerHeldOn -- GUID of the target of the last Pick Pocket / Sap
 
@@ -105,6 +108,7 @@ function Targets.Allows(spellID)
     local base = ns.Ranks.Base(spellID)
     local creature, key = Target()
     if key and refused[key] and refused[key][base] then return false end
+    if stronger[base] and GetTime() < stronger[base] then return false end
     local held = behind[base]
     if held and held.epoch == targetEpoch and (held.guid == nil or held.guid == TargetGUID()) then
         return false
@@ -139,8 +143,22 @@ local function HoldOpener(spellID)
     ns.Log("opener", "held", spellID)
 end
 
+-- "A more powerful spell is already active": someone else's stronger
+-- version of the buff is up (battleground of 2026-11-22: Battle Shout
+-- refused 72 times in 10 s, the pixel stuck on it until the player died).
+-- The aura cannot be read in combat, so the spell waits a while, on any
+-- target.
+Targets.STRONGER_HOLD_SECONDS = 60
+function Targets.HoldStronger(spellID)
+    if not spellID then return end
+    stronger[ns.Ranks.Base(spellID)] = GetTime() + Targets.STRONGER_HOLD_SECONDS
+    cachedAt = nil
+    ns.Log("refused", spellID, "stronger")
+end
+
 function Targets.Forget()
     wipe(refused)
+    wipe(stronger)
     wipe(behind)
     openerHeldOn = nil
     cachedAt = nil
@@ -161,6 +179,10 @@ local function NotBehind()
     return _G.SPELL_FAILED_NOT_BEHIND or "You must be behind your target."
 end
 
+local function Stronger()
+    return _G.SPELL_FAILED_AURA_BOUNCED or "A more powerful spell is already active"
+end
+
 -- Holds the spell back on the current target only (positional refusal),
 -- until the target changes; also when its GUID cannot be read.
 function Targets.RefuseHere(spellID)
@@ -173,13 +195,17 @@ end
 
 -- A refusal says something about a living enemy only: on a corpse, a
 -- friendly or no target, "Invalid target" teaches nothing about the creature.
-local failedSpell, failedAt, errorAt, positional = nil, nil, nil, false
+-- kind: "refused" (the creature), "behind" (this target), "stronger" (a
+-- buff, any target).
+local failedSpell, failedAt, errorAt, kind = nil, nil, nil, nil
 local function Pair()
     if failedSpell and failedAt and errorAt and math.abs(failedAt - errorAt) <= Targets.PAIR_SECONDS then
-        if ns.State.TargetAttackable() then
-            if positional then Targets.RefuseHere(failedSpell) else Targets.Refuse(failedSpell, Targets.Key()) end
+        if kind == "stronger" then
+            Targets.HoldStronger(failedSpell)
+        elseif ns.State.TargetAttackable() then
+            if kind == "behind" then Targets.RefuseHere(failedSpell) else Targets.Refuse(failedSpell, Targets.Key()) end
         end
-        failedSpell, failedAt, errorAt, positional = nil, nil, nil, false
+        failedSpell, failedAt, errorAt, kind = nil, nil, nil, nil
     end
 end
 
@@ -207,9 +233,11 @@ frame:SetScript("OnEvent", function(_, event, ...)
         local message = Plain(select(2, ...))
         if type(message) ~= "string" then return end
         if message == NotBehind() then
-            positional = true
+            kind = "behind"
+        elseif message == Stronger() then
+            kind = "stronger"
         elseif RefusalMessages()[message] then
-            positional = false
+            kind = "refused"
         else
             return
         end
