@@ -197,7 +197,11 @@ function State.LooseCount()
     if UnitThreatSituation then
         for i = 1, 40 do
             local unit = "nameplate" .. i
-            if Plain(Call(UnitExists, unit)) == true and Plain(Call(UnitCanAttack, "player", unit)) == true then
+            -- Enemy players are not "loose": they have no threat table to
+            -- win back (Warsong Gulch log of 2026-11-22: Taunt and
+            -- Demoralizing Shout pressed for players attacking a teammate).
+            if Plain(Call(UnitExists, unit)) == true and Plain(Call(UnitCanAttack, "player", unit)) == true
+                and State.UnitIsPlayer(unit) ~= true then
                 local status = Plain(Call(UnitThreatSituation, "player", unit))
                 if type(status) == "number" and status < 2 then
                     low = low + 1
@@ -216,6 +220,31 @@ function State.LooseCount()
     looseCount, looseAt = n, now
     State.looseDetail = low .. "/" .. targeted .. "/" .. n
     return n
+end
+
+-- A player character: true, false, or nil when unreadable, and the reading
+-- that answered (target log line). UnitIsPlayer alone answered nothing in
+-- the battleground of 2026-11-22 (Taunt and Sunder kept coming on players),
+-- so the other readings follow: player-controlled, the GUID, and last being
+-- in a battleground or arena, where nearly every enemy is a player.
+function State.UnitIsPlayer(unit)
+    local player = Plain(Call(UnitIsPlayer, unit))
+    if player ~= nil then return player == true, "unit" end
+    local controlled = Plain(Call(UnitPlayerControlled, unit))
+    if controlled ~= nil then return controlled == true, "controlled" end
+    local guid = Plain(Call(UnitGUID, unit))
+    if type(guid) == "string" then
+        if guid:find("^Player%-") then return true, "guid" end
+        if guid:find("^%a+%-") then return false, "guid" end
+    end
+    local _, instanceType = Call(IsInInstance)
+    instanceType = Plain(instanceType)
+    if instanceType == "pvp" or instanceType == "arena" then return true, "instance" end
+    return nil, "-"
+end
+
+function State.TargetIsPlayer()
+    return (State.UnitIsPlayer("target"))
 end
 
 -- In a party or raid: true or false (unreadable counts as alone).

@@ -73,6 +73,9 @@ handlers.BAG_UPDATE_DELAYED = function() ns.AutoFill.Request() end
 -- Target changed or killed: the pixel follows at once instead of at the next
 -- poll, so an attack is not left on screen for a target that just died.
 handlers.PLAYER_TARGET_CHANGED = function()
+    -- Diagnostic log: is the new target a player, and which reading said so.
+    local player, source = ns.State.UnitIsPlayer("target")
+    ns.Log("target", player == nil and "?" or (player and "player" or "npc"), source)
     if ns.Model.running then ns.Model.Refresh() end
 end
 handlers.UNIT_HEALTH = function(unit)

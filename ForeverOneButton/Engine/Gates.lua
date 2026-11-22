@@ -104,6 +104,8 @@ local EVALUATE = {
     -- Elite or boss target. Unlike the other gates an unknown answer
     -- blocks: the entry is only worth it where the fight is long.
     elite = function(g) return Neg(g, ns.State.TargetIsElite() == true) end,
+    -- The target is a player character (PvP); unknown does not block.
+    player = function(g) return Neg(g, ns.State.TargetIsPlayer()) end,
     -- In a party or raid; unreadable counts as alone.
     group = function(g) return Neg(g, ns.State.InGroup()) end,
     -- The target attacks someone else in the group (a taunt): not tanked by

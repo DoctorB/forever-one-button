@@ -10,6 +10,7 @@ local GATES = {
     stack = true, starved = true, health = true, resource = true, known = true, near = true,
     all = true, stealth = true, unconfirmed = true, execute = true, totem = true, tick = true,
     fleeing = true, since = true, elite = true, reserve = true, group = true, loose = true, free = true,
+    player = true,
 }
 
 -- Abilities the leveling lists use beyond the imported class abilities; each
@@ -397,6 +398,63 @@ H.Fire("PLAYER_TARGET_CHANGED")
 H.now = H.now + 1
 s = ns.Queue.Build(nil)
 H.Equal(select(2, s.why:gsub("7386", "")), 1, "fewer than 5 stacks: the first Sunder entry only")
+
+-- A player target (owner decision 2026-11-22, Warsong Gulch log): a
+-- battleground is a group, but no Taunt, Sunder once, no threat Sunder,
+-- Demoralizing Shout only with 2 or more enemies, players never "loose".
+H.units.target.guid = "Player-1-0000001"
+H.units.target.player = true
+H.Fire("PLAYER_TARGET_CHANGED")
+H.units.target.threat = 1
+H.units.targettarget = {friend = true}
+H.now = H.now + 1
+H.Check(not Ready(355), "player attacking a teammate: no Taunt")
+H.Check(Ready(7386), "player, no Sunder yet: Sunder")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 7386)
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Check(not Ready(7386), "player, one Sunder: no more Sunder")
+H.Check(not s.why:find("7386+", 1, true), "player: neither Sunder entry ready")
+H.known[1160], H.spells[1160] = true, {name = "Demoralizing Shout", inRange = true}
+ns.Dots.Reset() -- no shout from the earlier pulls
+H.now = H.now + 1
+s = ns.Queue.Build(nil)
+H.Check(s.why:find("1160-gate", 1, true) ~= nil, "player, alone in front: no Demoralizing Shout")
+H.units.nameplate1 = {attackable = true, threat = 0, player = true}
+H.units.nameplate1target = {friend = true}
+H.now = H.now + 1
+H.Equal(ns.State.LooseCount(), 0, "an enemy player on a teammate is not loose")
+H.units.nameplate1, H.units.nameplate1target = nil, nil
+H.units.target.player = nil
+H.units.target.threat = nil
+H.units.targettarget = nil
+H.Fire("PLAYER_TARGET_CHANGED")
+H.now = H.now + 1
+H.Check(Ready(1160), "creature: Demoralizing Shout as before")
+H.known[1160], H.spells[1160] = nil, nil
+
+-- UnitIsPlayer unreadable (battleground of 2026-11-22: the gate never
+-- answered): the GUID, then the instance type.
+local unitIsPlayer = UnitIsPlayer
+UnitIsPlayer = function() return H.Secret() end
+H.units.target.guid = "Player-1-0000002"
+H.Equal(select(2, ns.State.UnitIsPlayer("target")), "guid", "player GUID read")
+H.Check(ns.State.TargetIsPlayer() == true, "secret UnitIsPlayer: the GUID says player")
+H.units.target.guid = "Creature-0-1-2-3-4-5"
+H.Check(ns.State.TargetIsPlayer() == false, "secret UnitIsPlayer: the GUID says creature")
+local unitGUID = UnitGUID
+UnitGUID = function() return H.Secret() end
+H.Check(ns.State.TargetIsPlayer() == nil, "nothing readable outside a battleground: unknown")
+H.instanceType = "pvp"
+H.Check(ns.State.TargetIsPlayer() == true, "nothing readable in a battleground: player")
+H.units.nameplate1 = {attackable = true, threat = 0}
+H.units.nameplate1target = {friend = true}
+H.now = H.now + 1
+H.Equal(ns.State.LooseCount(), 0, "battleground: no loose enemies")
+H.units.nameplate1, H.units.nameplate1target = nil, nil
+H.instanceType = nil
+UnitGUID, UnitIsPlayer = unitGUID, unitIsPlayer
+H.units.target.guid = "mob-2"
 H.inGroup = false
 H.known[355], H.spells[355], H.known[2565], H.spells[2565] = nil, nil, nil, nil
 H.known[7386], H.spells[7386] = nil, nil
