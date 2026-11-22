@@ -168,5 +168,8 @@ end
 
 SLASH_FOREVERONEBUTTON1 = "/fob"
 SLASH_FOREVERONEBUTTON2 = "/foreveronebutton"
-SlashCmdList = SlashCmdList or {}
+-- Only a new key in Blizzard's table: assigning the global SlashCmdList
+-- itself (even to the same table) tainted it, and every protected slash
+-- command was then blocked (owner, 2026-11-22: /pvp failed with the add-on
+-- loaded). tests/run.ps1 refuses writes to any Blizzard global.
 SlashCmdList.FOREVERONEBUTTON = Commands.Handle

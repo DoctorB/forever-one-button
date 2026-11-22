@@ -42,6 +42,22 @@ try {
     }
     Write-Host "addon parse: $($addonFiles.Count)/$($addonFiles.Count)"
 
+    # Writing a Blizzard global from add-on code taints it: assigning
+    # SlashCmdList blocked /pvp (2026-11-22). Only the add-on's own globals.
+    $allowedGlobals = @(
+        "ForeverOneButtonDB", "ForeverOneButtonCharDB", "ForeverOneButtonLog",
+        "SLASH_FOREVERONEBUTTON1", "SLASH_FOREVERONEBUTTON2", "BINDING_HEADER_FOREVERONEBUTTON"
+    )
+    foreach ($file in $addonFiles) {
+        $listing = & $luac -l -p $file.FullName
+        foreach ($line in $listing) {
+            if ($line -match "SETGLOBAL\s.*;\s*(\S+)\s*$" -and $allowedGlobals -notcontains $Matches[1]) {
+                throw "Global write to $($Matches[1]) in $($file.FullName)"
+            }
+        }
+    }
+    Write-Host "global writes: only the add-on's own"
+
     $testFiles = @(Get-ChildItem -LiteralPath "tests" -Filter "test_*.lua" | Sort-Object Name)
     foreach ($file in $testFiles) {
         & $luac -p $file.FullName
