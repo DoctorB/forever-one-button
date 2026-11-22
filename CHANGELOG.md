@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.11 - 2026-11-22
+
+### Changed
+
+- **Protection Warriors no longer use Sunder Armor on players.** Against
+  players the rage now goes to Heroic Strike, Rend and Revenge. Against
+  monsters nothing changes.
+
 ## 1.2.10 - 2026-11-22
 
 ### Changed
