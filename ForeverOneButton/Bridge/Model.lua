@@ -85,6 +85,7 @@ end
 
 local lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat, lastNoTarget = nil, nil, nil, nil, nil
 local lastInterruptHead = nil
+local lastControlled = false
 local lastLogged -- the snapshot last written to the diagnostic log
 
 -- One refresh: build the queue, derive the pixel head, notify consumers.
@@ -130,13 +131,20 @@ function Model.Refresh()
         and ns.State.TargetAttackable() == true and not ns.Targets.OpenerHeld()
     local outOfCombat = ns.Settings.Get().pixel.combatOnly and not ns.InCombat() and not opener
     Model.observation.outOfCombat = outOfCombat
-    if casting or outOfRange or noTarget or outOfCombat then head = nil end
+    -- Stunned, feared or charmed: protocol black until control comes back,
+    -- instead of presses the client refuses. The grid still shows the queue.
+    local lost, controlSource = ns.State.ControlLost()
+    local controlled = lost == true
+    Model.observation.controlled = controlled
+    if controlled ~= lastControlled then ns.Log("control", controlled and "lost" or "back", controlSource or "?") end
+    if casting or outOfRange or noTarget or outOfCombat or controlled then head = nil end
 
     local changed = snapshot ~= lastSnapshot or casting ~= lastCasting or outOfRange ~= lastOutOfRange
         or outOfCombat ~= lastOutOfCombat or noTarget ~= lastNoTarget or interruptHead ~= lastInterruptHead
+        or controlled ~= lastControlled
     lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat, lastNoTarget =
         snapshot, casting, outOfRange, outOfCombat, noTarget
-    lastInterruptHead = interruptHead
+    lastInterruptHead, lastControlled = interruptHead, controlled
 
     if head ~= Model.pixelHead or changed then
         if changed then
@@ -150,7 +158,7 @@ function Model.Refresh()
             local first = snapshot.entries[1]
             ns.Log("head", interruptHead and interrupt.id or (first and first.id) or "none",
                 (casting and "c" or "") .. (outOfRange and "r" or "") .. (noTarget and "t" or "")
-                    .. (outOfCombat and "o" or "")
+                    .. (outOfCombat and "o" or "") .. (controlled and "x" or "")
                     .. (headEntry and headEntry ~= first and ("m" .. headEntry.id) or "") .. "-")
         end
         Model.pixelHead = head

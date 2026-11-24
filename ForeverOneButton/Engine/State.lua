@@ -294,6 +294,34 @@ function State.TargetControlled()
     return false
 end
 
+-- Player under a stun, fear, charm or similar: nothing can be cast. In a
+-- battleground (log of 2026-11-22) the pixel kept pressing through them:
+-- 369 refusals in 91 minutes ("Can't do that while stunned/fleeing").
+-- Roots, snares, silences and disarms are left out: a Warrior still acts.
+-- Returns lost (true/false), source ("loc" from C_LossOfControl,
+-- "full" from HasFullControl when the former cannot be read).
+State.LOST_CONTROL = {
+    STUN = true, STUN_MECHANIC = true, FEAR = true, FEAR_MECHANIC = true, CHARM = true,
+    CONFUSE = true, POSSESS = true, SLEEP = true, INCAPACITATE = true, POLYMORPH = true,
+    HORROR = true, FREEZE = true, BANISH = true, CYCLONE = true,
+}
+function State.ControlLost()
+    if C_LossOfControl and C_LossOfControl.GetActiveLossOfControlDataCount then
+        local count = Plain(Call(C_LossOfControl.GetActiveLossOfControlDataCount))
+        if type(count) == "number" then
+            for i = 1, count do
+                local data = Call(C_LossOfControl.GetActiveLossOfControlData, i)
+                local locType = type(data) == "table" and Plain(data.locType)
+                if locType and State.LOST_CONTROL[locType] then return true, "loc" end
+            end
+            return false, "loc"
+        end
+    end
+    local full = Plain(Call(HasFullControl))
+    if full == false then return true, "full" end
+    return false, full == nil and "?" or "full"
+end
+
 -- Distance bracket from range references (Defaults.rangeReferences: spell ->
 -- yards): true when a known reference of <= yards reaches the target, false
 -- when one of >= yards does not, nil otherwise.
