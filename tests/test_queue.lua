@@ -163,6 +163,34 @@ H.known[1240287], H.spells[1240287] = nil, nil
 H.known[100] = true
 for id in pairs(refs) do H.spells[id].inRange = true end
 
+-- A Warrior knows only Charge (25 yd) and melee references (5 yd): nothing
+-- answers for 8 yards (in-game check 42 failed this way, 2026-11-21).
+local warriorRefs = {[100] = true, [772] = true, [7386] = true, [1715] = true}
+for id in pairs(refs) do
+    if not warriorRefs[id] then H.known[id] = nil end
+end
+local function Place(charge, melee)
+    H.spells[100].inRange = charge
+    for id in pairs(warriorRefs) do
+        if id ~= 100 then H.spells[id].inRange = melee end
+    end
+end
+H.now = H.now + 10
+Place(true, false) -- 8 to 25 yards
+s = Build()
+H.Equal(s.entries[1].id, 100, "Charge between 8 and 25 yards with warrior references only")
+H.Check(s.entries[1].gapCloser, "marked as gap closer, warrior references only")
+Place(false, false) -- 5 to 8 yards, or beyond 25: Charge refuses
+s = Build()
+H.Check(not s.entries[1].gapCloser, "no Charge when Charge cannot reach")
+Place(true, true) -- in melee
+s = Build()
+H.Check(not s.entries[1].gapCloser, "no Charge in melee")
+for id in pairs(refs) do
+    H.known[id] = true
+    H.spells[id].inRange = true
+end
+
 -- Execute below 20% once known.
 H.known[5308] = true
 H.spells[5308] = {name = "Execute"}

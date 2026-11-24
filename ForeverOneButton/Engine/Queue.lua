@@ -114,8 +114,21 @@ function Queue.HomeStance(entry)
     return fallbackEntries[fallback]
 end
 
+-- Out of melee reach for a gap closer. A Warrior's range references are
+-- Charge (25 yd) and the melee strikes (5 yd): between 8 and 25 yards no
+-- reference answers for 8 yards, and Charge never led the queue (in-game
+-- check 42, 2026-11-21). Then the melee references decide; the gap
+-- closer's own range check (Charge refuses a target closer than 8 yards)
+-- keeps it out of the 5-8 yard band.
+Queue.MELEE_YARDS = 5
+local function OutOfReach()
+    local within = ns.State.TargetWithin(Queue.GAP_CLOSER_MIN_YARDS)
+    if within ~= nil then return within == false end
+    return ns.State.TargetWithin(Queue.MELEE_YARDS) == false
+end
+
 local function GapCloser(class, ctx)
-    if not ctx.targetAttackable or ns.State.TargetWithin(Queue.GAP_CLOSER_MIN_YARDS) ~= false then return nil end
+    if not ctx.targetAttackable or not OutOfReach() then return nil end
     for _, first in ipairs(ns.Data.Defaults.gapClosers[class] or {}) do
         local id = ns.Ranks.Pressed(first)
         local since = id and ns.State.SecondsSinceCast(first)
