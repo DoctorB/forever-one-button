@@ -73,6 +73,7 @@ Preparazione: copiare `dist/ForeverOneButton-<versione>.zip` in `AddOns`,
 38. Hamstring su un bersaglio in fuga (branch `feat/hamstring-fleeing`, 2026-11-06): con un Guerriero Arms o Fury sotto il 60, Hamstring ha una cella (verificato il 2026-11-06); quando un umanoide scappa ("%s attempts to run away in fear!" in chat) Hamstring è in posizione 1 per quel bersaglio, una volta per fuga, e sparisce dopo il lancio. Annotare la lingua del messaggio in chat (con un client non inglese conta qualsiasi emote del bersaglio sotto il 35 % di salute). Pendente: a livello 8 i mob morivano prima di scappare.
 40. Coating delle armi con un tasto (branch `feat/weapon-coatings`, 2026-11-11): Ladro con due armi, Instant e Deadly Poison e una pietra nelle borse, nessun coating attivo. In Key Bindings > AddOns > Forever One Button assegnare "Apply the next weapon coating". Premendo il tasto, attendendo ogni volta la fine del lancio: Instant sulla mano principale, Deadly sulla secondaria, pietra sulla principale, pietra sulla secondaria (quattro pressioni, nessun clic sull'arma, nessuna finestra di conferma); veleno e pietra restano entrambi sulla stessa arma. Lo stesso dal pulsante della riga promemoria (tooltip con la mano). Durante il lancio il tasto non fa nulla; in combattimento non fa nulla. Da verificare in particolare: l'oggetto va sull'arma giusta con `target-slot` (se si apre il cursore di selezione, il meccanismo va cambiato), la mano secondaria letta da `C_Item.GetWeaponEnchantInfo(1)`, il tempo restante in millisecondi (a 5 minuti dalla fine, in gruppo, il veleno torna proposto).
 42. Charge di Forever (1.2.7, 2026-11-20, dalla share di un altro giocatore): con un Guerriero che conosce la Charge 1240287 (/dump IsPlayerSpell(1240287)), la cella Charge viene assegnata, fuori mischia fra 8 e 25 metri Charge è in posizione 1 e dopo la Charge Defensive Stance aspetta circa 1,5 s. Se il proprio Guerriero conosce invece 100, annotarlo: il comportamento deve restare quello di prima.
+43. Stun e fear (1.2.12, 2026-11-24): in battleground, quando si viene storditi, impauriti o charmati, il log ha `control|lost|loc` (o `full`) e la riga `head` con la `x`, nessun "Can't do that while stunned" o "while fleeing" durante il CC, `control|back` alla fine e la prima mossa subito dopo. Con root o slow il pixel continua.
 37. Icona (2026-10-21): dopo un riavvio completo del client, nella lista AddOns della selezione personaggio "Forever One Button" mostra l'infinito dorato su fondo blu (`## IconTexture`, `Media/icon.tga`) invece del punto di domanda.
 
 Esito al 2026-10-16 (Guerriero Fury livello 13, `TEST_REPORT.md`): 24, 25, 27,
@@ -234,6 +235,10 @@ buffer da 5000 righe teneva solo gli ultimi 76 minuti (dal livello 8 circa),
   perché dava al Guerriero anche spell di altre classi (riferimento a 10 m).
   Probabilmente lo stesso motivo del 26 (Carica vista nei lanci, non come
   suggerimento, 2026-10-16). Da correggere.
+- 2026-11-24: 42 corretta in 1.2.12 senza prova in gioco. Se il riferimento a
+  8 m non risponde decidono i riferimenti di mischia (5 m); la Charge stessa
+  esclude la fascia 5-8 m. `test_queue` ora prova anche i soli riferimenti
+  del Guerriero. Da verificare in gioco (42).
 
 Condivisione del log (`/fob share`, branch feat/share-log), 2026-11-08,
 client 1.60.1.70862, Ladro 13 in locanda:

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.2.12 - 2026-11-24
+
+### Fixed
+
+- **Warriors: Charge is suggested again.** With a target 8 to 25 yards away,
+  out of combat, Charge now comes first, so one key starts the fight. Before,
+  it never showed up as the next move and had to be pressed by hand.
+
 ## 1.2.11 - 2026-11-22
 
 ### Changed
