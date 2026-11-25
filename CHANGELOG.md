@@ -4,7 +4,7 @@
 
 ### Added
 
-- **Up to 30 cells.** You can now show up to 30 cells (Layout & pixel). The
+- **Up to 30 cells.** You can now show up to 30 cells (options, first tab). The
   new cells use `CTRL-1`...`CTRL-0` by default; change or remove them in
   *Cells & keys*, which now lists the cells 15 at a time. The automatic fill
   only uses the cells you show.
