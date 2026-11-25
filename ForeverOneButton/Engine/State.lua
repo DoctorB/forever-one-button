@@ -243,6 +243,26 @@ function State.UnitIsPlayer(unit)
     return nil, "-"
 end
 
+-- Class token of the target ("WARRIOR"), nil when unreadable.
+function State.TargetClass()
+    local _, class = Call(UnitClass, "target")
+    class = Plain(class)
+    if type(class) ~= "string" then return nil end
+    return class
+end
+
+-- Rage kept through a stance change. Forever data (build 1.60.1.71091,
+-- SpellEffect): Tactical Mastery 1310185 (class ability, level 14) keeps 10,
+-- the talent Improved Tactical Mastery 12295 adds 15.
+State.STANCE_RAGE = {[1310185] = 10, [12295] = 15}
+function State.StanceRageKept()
+    local kept = 0
+    for spellID, rage in pairs(State.STANCE_RAGE) do
+        if ns.Ranks.Known(spellID) then kept = kept + rage end
+    end
+    return kept
+end
+
 function State.TargetIsPlayer()
     return (State.UnitIsPlayer("target"))
 end

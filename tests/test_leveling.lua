@@ -10,14 +10,14 @@ local GATES = {
     stack = true, starved = true, health = true, resource = true, known = true, near = true,
     all = true, stealth = true, unconfirmed = true, execute = true, totem = true, tick = true,
     fleeing = true, since = true, elite = true, reserve = true, group = true, loose = true, free = true,
-    player = true,
+    player = true, class = true, stanceRage = true,
 }
 
 -- Abilities the leveling lists use beyond the imported class abilities; each
 -- must still be a rank-1 ID of the imported rank chains.
 local EXTRA_ABILITIES = {
     ROGUE = {[8647] = "Expose Armor"},
-    WARRIOR = {[355] = "Taunt", [1161] = "Challenging Shout"},
+    WARRIOR = {[355] = "Taunt", [1161] = "Challenging Shout", [676] = "Disarm"},
 }
 
 local function CheckGates(gates, label, abilities)
@@ -430,6 +430,107 @@ H.Fire("PLAYER_TARGET_CHANGED")
 H.now = H.now + 1
 H.Check(Ready(1160), "creature: Demoralizing Shout as before")
 H.known[1160], H.spells[1160] = nil, nil
+
+-- Hamstring and Disarm against players (owner request 2026-11-25).
+-- Forever: Hamstring in Battle Stance only, Disarm in Defensive Stance only;
+-- Tactical Mastery keeps 10 rage through a stance change, the talent 15 more.
+local function Head()
+    H.now = H.now + 1
+    return ns.Queue.Build(nil).entries[1].id
+end
+for id, name in pairs({[1715] = "Hamstring", [676] = "Disarm", [2457] = "Battle Stance",
+        [71] = "Defensive Stance", [772] = "Rend"}) do
+    H.known[id] = true
+    H.spells[id] = H.spells[id] or {name = name}
+    H.spells[id].inRange = true
+end
+-- Every known melee reference (Rend, Hamstring, Sunder Armor) at once.
+local function Melee(reached)
+    for _, id in ipairs({772, 1715, 7386}) do
+        if H.spells[id] then H.spells[id].inRange = reached end
+    end
+end
+H.activeForm = 2 -- Defensive Stance
+H.spells[1715].usable = false -- not in Defensive Stance
+H.spells[676].usable = true
+H.units.target.guid = "Player-1-0000003"
+H.units.target.player = true
+H.units.target.class = "PRIEST"
+H.Fire("PLAYER_TARGET_CHANGED")
+H.units.player.power[RAGE] = 30
+H.known[1310185], H.known[12295] = true, true -- 25 rage kept
+H.Equal(ns.State.StanceRageKept(), 25, "Tactical Mastery + talent keep 25")
+H.Equal(Head(), 2457, "player in melee, 30 rage, 25 kept: Battle Stance for Hamstring")
+H.units.player.power[RAGE] = 40
+H.Check(Head() ~= 2457, "40 rage would lose 15: no stance change")
+H.units.player.power[RAGE] = 30
+H.known[12295] = nil
+H.Equal(ns.State.StanceRageKept(), 10, "Tactical Mastery alone keeps 10")
+H.Check(Head() ~= 2457, "30 rage, 10 kept: no stance change")
+H.units.player.power[RAGE] = 20
+H.Equal(Head(), 2457, "20 rage, 10 kept: Battle Stance")
+H.known[1310185] = nil
+H.Check(Head() ~= 2457, "no Tactical Mastery: no stance change")
+H.known[1310185], H.known[12295] = true, true
+H.units.player.power[RAGE] = 30
+H.units.target.player = nil
+H.units.target.guid = "Creature-0-1-2-3-99-0000000009"
+H.Fire("PLAYER_TARGET_CHANGED")
+H.Check(Head() ~= 2457, "creature: no Hamstring stance change")
+H.units.target.guid = "Player-1-0000003"
+H.units.target.player = true
+H.Fire("PLAYER_TARGET_CHANGED")
+Melee(false)
+H.Check(Head() ~= 2457, "player out of melee: no stance change")
+Melee(true)
+
+-- The sequence: Battle Stance, Hamstring, at once Defensive Stance.
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "s1", 2457)
+H.activeForm = 1
+H.spells[1715].usable, H.spells[676].usable = true, false
+H.units.player.power[RAGE] = 25
+H.Equal(Head(), 1715, "in Battle Stance: Hamstring")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "h1", 1715)
+H.units.player.power[RAGE] = 15
+H.Equal(Head(), 71, "after Hamstring: back to Defensive Stance")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "d1", 71)
+H.activeForm = 2
+H.spells[1715].usable, H.spells[676].usable = false, true
+H.units.player.power[RAGE] = 30
+H.Check(Head() ~= 2457, "Hamstring just cast: no new stance change for 12 s")
+-- Hamstring out of reach after the change: back after 2 s.
+H.now = H.now + 12
+H.Equal(Head(), 2457, "12 s later: Battle Stance again")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "s2", 2457)
+H.activeForm = 1
+H.spells[1715].usable, H.spells[676].usable = true, false
+Melee(false)
+H.now = H.now + 0.5
+s = ns.Queue.Build(nil)
+H.Check(s.entries[1].id ~= 71, "Hamstring out of reach: wait up to 2 s in Battle Stance")
+H.now = H.now + 1.5
+s = ns.Queue.Build(nil)
+H.Equal(s.entries[1].id, 71, "2 s without Hamstring: back to Defensive Stance")
+H.activeForm = 2
+H.spells[1715].usable, H.spells[676].usable = false, true
+Melee(true)
+
+-- Disarm: a melee class player while the player's health is below 60 %.
+H.now = H.now + 30
+H.units.player.health = 50
+H.now = H.now + 1
+H.Check(not Ready(676), "a priest: no Disarm")
+H.units.target.class = "ROGUE"
+H.Equal(Head(), 676, "a rogue, health 50 %: Disarm first")
+H.units.player.health = 80
+H.now = H.now + 1
+H.Check(not Ready(676), "health 80 %: no Disarm")
+H.units.player.health = 100
+for _, id in ipairs({1715, 676, 2457, 1310185, 12295}) do H.known[id] = nil end
+H.units.target.player, H.units.target.class = nil, nil
+H.units.target.guid = "mob-2"
+H.Fire("PLAYER_TARGET_CHANGED")
+H.activeForm = 1
 
 -- UnitIsPlayer unreadable (battleground of 2026-11-22: the gate never
 -- answered): the GUID, then the instance type.

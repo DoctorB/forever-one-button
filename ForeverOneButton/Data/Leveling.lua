@@ -67,6 +67,28 @@ local HAMSTRING = e(1715, fleeing(), castAgo(1715, 10))
 -- Charge either: the second log of 2026-11-15 showed the stance on the pixel
 -- 13 ms after Charge, read with the rage still at 0 from before the pull.
 local DEFENSIVE_STANCE = e(71, buffMissing(71), rageBelow(5), castAgo(100, 1.5))
+-- Protection against players (owner request 2026-11-25, PvP in battlegrounds
+-- and in the open world). Forever data (SpellShapeshift, builds 70959 and
+-- 71091): Hamstring needs Battle or Berserker Stance, Disarm Defensive
+-- Stance. Hamstring: Battle Stance, Hamstring, at once back to Defensive
+-- Stance; only on a target surely a player and surely in melee, once every
+-- 12 s, and only when the stance change keeps at least the 10 rage of
+-- Hamstring and loses at most 10 (Tactical Mastery). Back to Defensive
+-- Stance right after Hamstring, or 2 s after the change when Hamstring could
+-- not be pressed (the player ran out of reach). Disarm on a melee class
+-- player while the player's health is below 60 %.
+local function playerSure() return {t = "player", strict = true} end
+local function meleeSure() return {t = "near", n = 5, strict = true} end
+local function recent(id, seconds) return {t = "since", id = id, op = "<", n = seconds} end
+local DISARM_CLASSES = {WARRIOR = true, ROGUE = true, PALADIN = true, SHAMAN = true}
+local PVP_DEFENSIVE_BACK = e(71, buffMissing(71), recent(2457, 15), any(recent(1715, 3), castAgo(2457, 2)))
+local PVP_HAMSTRING = e(1715, playerSure(), castAgo(1715, 12))
+local PVP_BATTLE_STANCE = e(2457, playerSure(), meleeSure(), castAgo(1715, 12), castAgo(2457, 12),
+    {t = "stanceRage", need = 10, lose = 10})
+local PVP_DISARM = e(676, playerSure(), {t = "class", set = DISARM_CLASSES}, healthBelow(60), bashRage(20))
+-- The usual Defensive Stance entry comes second (`again`) after the return.
+DEFENSIVE_STANCE.again = true
+local PVP_HEAD = {PVP_DEFENSIVE_BACK, PVP_HAMSTRING, PVP_DISARM, PVP_BATTLE_STANCE}
 -- Group tanking (protection). Taunt (no rage, 10 s cooldown) only when the
 -- threat reading says the target attacks someone else. Never on a player:
 -- a battleground is a group too, and a taunt does nothing to a player
@@ -158,6 +180,7 @@ local warrior = {
     -- before Heroic Strike. Alone none of the three.
     protection = {
         st = {
+            PVP_HEAD[1], PVP_HEAD[2], PVP_HEAD[3], PVP_HEAD[4],
             TAUNT, CHALLENGING_SHOUT, THUNDER_CLAP_FREE, DEMO_SHOUT_FREE,
             e(6673, buffMissing(6673, 120), bashRage(10)), -- Battle Shout
             BLOODRAGE,
@@ -180,6 +203,7 @@ local warrior = {
             DEFENSIVE_STANCE,
         },
         aoe = {
+            PVP_HEAD[1], PVP_HEAD[2], PVP_HEAD[3], PVP_HEAD[4],
             TAUNT, CHALLENGING_SHOUT, THUNDER_CLAP_FREE, DEMO_SHOUT_FREE,
             e(6673, buffMissing(6673, 120), bashRage(10)), BLOODRAGE,
             again(e(6343, bashRage(20))),      -- Thunder Clap

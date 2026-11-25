@@ -75,7 +75,13 @@ local EVALUATE = {
     -- Enemies attacking someone else in the group (State.LooseCount).
     free = function(g) return NumberCompare(g.op, ns.State.LooseCount(), g.n) end,
     totem = function(g) return Neg(g, ns.State.TotemActive(g.slot)) end,
-    near = function(g) return ns.State.TargetWithin(g.n) end,
+    -- strict: only a sure "within" passes (a stance change is not undone
+    -- for free).
+    near = function(g)
+        local within = ns.State.TargetWithin(g.n)
+        if g.strict then return within == true end
+        return within
+    end,
     -- Target announced it is running away (Engine/State.lua).
     fleeing = function(g) return Neg(g, ns.State.TargetFleeing()) end,
     -- Seconds since our own last cast of the spell; never cast counts as long ago.
@@ -105,7 +111,29 @@ local EVALUATE = {
     -- blocks: the entry is only worth it where the fight is long.
     elite = function(g) return Neg(g, ns.State.TargetIsElite() == true) end,
     -- The target is a player character (PvP); unknown does not block.
-    player = function(g) return Neg(g, ns.State.TargetIsPlayer()) end,
+    -- strict: unknown counts as not a player.
+    player = function(g)
+        local player = ns.State.TargetIsPlayer()
+        if g.strict then player = player == true end
+        return Neg(g, player)
+    end,
+    -- Target's class (UnitClass token) in g.set; unknown does not block.
+    class = function(g)
+        local class = ns.State.TargetClass()
+        if class == nil then return nil end
+        return Neg(g, g.set[class] == true)
+    end,
+    -- A stance change that keeps at least g.need rage and loses at most
+    -- g.lose: rage between g.need and the kept rage + g.lose (Forever:
+    -- Tactical Mastery keeps 10, Improved Tactical Mastery 15 more).
+    stanceRage = function(g, ctx)
+        local kept = ns.State.StanceRageKept()
+        if kept < g.need then return false end
+        return Verdict({t = "all", g = {
+            {t = "power", res = "rage", op = ">=", n = g.need},
+            {t = "power", res = "rage", op = "<=", n = kept + g.lose},
+        }}, ctx)
+    end,
     -- In a party or raid; unreadable counts as alone.
     group = function(g) return Neg(g, ns.State.InGroup()) end,
     -- The target attacks someone else in the group (a taunt): not tanked by
