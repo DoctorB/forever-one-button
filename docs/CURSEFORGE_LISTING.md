@@ -86,16 +86,16 @@ pulling. You start every pull and choose every opener.
 
 ## The panel
 
-- Up to 20 cells (default 20 in 10 columns); columns, cell size, spacing and
+- Up to 30 cells (default 20 in 10 columns); columns, cell size, spacing and
   scale are adjustable.
 - Cells fill themselves from your priority list, gap closers, interrupts,
   defensives and your best healing item. Nothing is ever moved, so your
   muscle memory stays valid; new ranks replace old ones in the same cell.
-  With all 20 cells taken, a spell your current talent tree no longer uses
+  With all the cells shown taken, a spell your current talent tree no longer uses
   makes room for a new one (never a cell you filled yourself).
   Drag any spell or item onto a cell to change it.
-- Default keys: `SHIFT-1`...`SHIFT-0` for cells 1-10 and `CTRL-SHIFT-1`...
-  `CTRL-SHIFT-0` for cells 11-20. Rebind, unbind or reset any cell.
+- Default keys: `SHIFT-1`...`SHIFT-0` for cells 1-10, `CTRL-SHIFT-1`...
+  `CTRL-SHIFT-0` for cells 11-20 and `CTRL-1`...`CTRL-0` for cells 21-30. Rebind, unbind or reset any cell.
 - Gold frame for the next ability, cyan for the ones after it, purple for
   burst, red "!" for the interrupt, orange "D" for the defensive to use.
 - Movable panel: right-click the title bar to unlock, drag it, right-click to

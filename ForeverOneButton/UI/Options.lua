@@ -331,7 +331,28 @@ local function StartCapture(slot)
 end
 
 local CELL_ROW, CELL_TOP = 21, 24
+-- 30 rows do not fit the page: 15 at a time, switched by "1-15" / "16-30".
+Options.CELL_GROUP = 15
 local function BuildCellsPage(page)
+    local groups = {}
+    local groupCount = math.ceil(ns.MAX_SLOTS / Options.CELL_GROUP)
+    local function ShowGroup(index)
+        for i, group in ipairs(groups) do
+            if i == index then group.holder:Show() else group.holder:Hide() end
+            group.button:SetEnabled(i ~= index)
+        end
+        Options.cellGroup = index
+    end
+    for i = 1, groupCount do
+        local holder = CreateFrame("Frame", nil, page)
+        holder:SetAllPoints(page)
+        local first = (i - 1) * Options.CELL_GROUP + 1
+        local last = math.min(ns.MAX_SLOTS, i * Options.CELL_GROUP)
+        local button = Button(page, first .. "-" .. last, 56, function() ShowGroup(i) end)
+        button:SetHeight(16)
+        button:SetPoint("TOPRIGHT", -12 - (groupCount - i) * 60, -1)
+        groups[i] = {holder = holder, button = button}
+    end
     local function Header(text, x)
         local h = page:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         h:SetPoint("TOPLEFT", x, -6)
@@ -345,39 +366,40 @@ local function BuildCellsPage(page)
     rule:SetPoint("TOPLEFT", 12, -19)
     rule:SetSize(Options.PAGE_WIDTH - 24, 1)
     for slot = 1, ns.MAX_SLOTS do
-        local y = -CELL_TOP - (slot - 1) * CELL_ROW
+        local holder = groups[math.floor((slot - 1) / Options.CELL_GROUP) + 1].holder
+        local y = -CELL_TOP - ((slot - 1) % Options.CELL_GROUP) * CELL_ROW
         if slot % 2 == 0 then
-            local band = page:CreateTexture(nil, "BACKGROUND")
+            local band = holder:CreateTexture(nil, "BACKGROUND")
             band:SetColorTexture(1, 1, 1, 0.04)
             band:SetPoint("TOPLEFT", 8, y + 1)
             band:SetSize(Options.PAGE_WIDTH - 16, CELL_ROW)
         end
-        local num = page:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        local num = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         num:SetPoint("TOPLEFT", 14, y - 4)
         num:SetText(tostring(slot))
-        local icon = page:CreateTexture(nil, "ARTWORK")
+        local icon = holder:CreateTexture(nil, "ARTWORK")
         icon:SetSize(18, 18)
         icon:SetPoint("TOPLEFT", 36, y)
-        local action = page:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        local action = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         action:SetPoint("TOPLEFT", 60, y - 4)
         action:SetWidth(190)
         action:SetJustifyH("LEFT")
         action:SetWordWrap(false)
-        local key = page:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        local key = holder:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         key:SetPoint("TOPLEFT", 254, y - 4)
         key:SetWidth(84)
         key:SetJustifyH("LEFT")
         key:SetWordWrap(false)
-        local bind = Button(page, "Bind", 44, function() StartCapture(slot) end)
+        local bind = Button(holder, "Bind", 44, function() StartCapture(slot) end)
         bind:SetPoint("TOPLEFT", 340, y)
         AddTooltip(bind, "Bind", "Press a new key for this cell.")
-        local unbind = Button(page, "Unbind", 54, function() Report(ns.Actions.Unbind(slot)) end)
+        local unbind = Button(holder, "Unbind", 54, function() Report(ns.Actions.Unbind(slot)) end)
         unbind:SetPoint("TOPLEFT", 385, y)
         AddTooltip(unbind, "Unbind", "Remove the key from this cell.")
-        local default = Button(page, "Default", 56, function() Report(ns.Actions.DefaultKey(slot)) end)
+        local default = Button(holder, "Default", 56, function() Report(ns.Actions.DefaultKey(slot)) end)
         default:SetPoint("TOPLEFT", 440, y)
-        AddTooltip(default, "Default", "Give back the default key (Shift-1 ... Ctrl-Shift-0).")
-        local clear = Button(page, "Clear", 44, function() Report(ns.Actions.Clear(slot)) end)
+        AddTooltip(default, "Default", "Give back the default key (Shift-1 ... Ctrl-Shift-0, then Ctrl-1 ... Ctrl-0).")
+        local clear = Button(holder, "Clear", 44, function() Report(ns.Actions.Clear(slot)) end)
         clear:SetPoint("TOPLEFT", 497, y)
         AddTooltip(clear, "Clear", "Empty the cell. An automatic spell will not come back.")
         refreshers[#refreshers + 1] = function()
@@ -401,7 +423,8 @@ local function BuildCellsPage(page)
             num:SetAlpha(alpha); icon:SetAlpha(alpha); action:SetAlpha(alpha); key:SetAlpha(alpha)
         end
     end
-    local noteY = -CELL_TOP - ns.MAX_SLOTS * CELL_ROW - 4
+    ShowGroup(1)
+    local noteY = -CELL_TOP - math.min(ns.MAX_SLOTS, Options.CELL_GROUP) * CELL_ROW - 4
     local note = page:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
     note:SetPoint("TOPLEFT", 12, noteY)
     note:SetWidth(Options.PAGE_WIDTH - 24)

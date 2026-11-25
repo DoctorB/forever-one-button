@@ -47,7 +47,9 @@ H.Equal(b1.attributes.type, nil, "no generic type: right click does nothing")
 local ok, message = A.Assign(5, "spell", 284)
 H.Check(not ok and message:find("cell 3"), "duplicate action refused, cell named")
 H.Equal(ForeverOneButtonCharDB.cells[5], nil, "duplicate not stored")
-H.Check(not A.Assign(21, "spell", 1), "slot 21 refused (protocol limit 20)")
+H.Check(A.Assign(21, "spell", 1), "slot 21 accepted (second colour bank)")
+A.Clear(21)
+H.Check(not A.Assign(31, "spell", 1), "slot 31 refused (protocol limit 30)")
 H.Check(not A.Assign(4, "macro", 1), "only spells and items")
 
 -- Keys: normalization, conflicts, external bindings.

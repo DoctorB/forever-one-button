@@ -7,10 +7,11 @@ ns.NAME = "ForeverOneButton"
 ns.TITLE = "Forever One Button"
 ns.VERSION = "1.2.12"
 
--- Diagnostic Pixel Protocol v3 (HCOneButton) encodes action slots 1..20 only:
--- R = slot * 12 must stay <= 240 (HCOneButton README, "For action slots 1-20").
--- The grid therefore never exposes more than 20 cells.
-ns.MAX_SLOTS = 20
+-- Diagnostic Pixel Protocol v3 (HCOneButton) encodes action slots 1..20 as
+-- R = slot * 12, G = 96. Cells 21..30 (owner request 2026-11-25) use a second
+-- bank, R = (slot - 20) * 12, G = 160 (Pixel/DiagnosticPixel.lua): a v3
+-- reader reads them as an unknown colour and presses nothing.
+ns.MAX_SLOTS = 30
 
 -- Queue snapshot states (Engine/Queue.lua).
 ns.STATUS = {

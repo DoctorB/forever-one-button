@@ -36,7 +36,7 @@ spostate.
 |---|---|
 | L'utente ha scelto un tasto | quel tasto |
 | L'utente ha rimosso il tasto (`Unbind`) | nessuno, nemmeno quello di default |
-| Altrimenti | default: celle 1–10 `SHIFT-1…SHIFT-0`, celle 11–20 `CTRL-SHIFT-1…CTRL-SHIFT-0` (schema di HCOneButton), salvo che l'utente abbia dato quel tasto a un'altra cella |
+| Altrimenti | default: celle 1–10 `SHIFT-1…SHIFT-0`, celle 11–20 `CTRL-SHIFT-1…CTRL-SHIFT-0` (schema di HCOneButton), celle 21–30 `CTRL-1…CTRL-0` (2026-11-25), salvo che l'utente abbia dato quel tasto a un'altra cella |
 
 | Operazione | Comando / UI | Regole |
 |---|---|---|

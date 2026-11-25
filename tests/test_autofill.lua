@@ -219,6 +219,31 @@ H.Tick(1)
 H.Equal(ForeverOneButtonCharDB.cells[1].id, 200, "second character: own cells")
 H.Equal(ForeverOneButtonCharDB.cells[2], nil, "nothing from the first character")
 
+-- Only the cells the grid shows are filled (30 exist since 2026-11-25; with
+-- 20 shown, cells 21-30 have no key and the pixel never names them).
+ns = H.Boot(account, {})
+pool.ids = {}
+for i = 1, 22 do
+    H.spells[8000 + i] = {name = "Fill " .. i}
+    pool.ids[i] = 8000 + i
+end
+InstallPool()
+H.Fire("SPELLS_CHANGED")
+H.Tick(1)
+local filled = 0
+for slot = 1, ns.MAX_SLOTS do
+    if ForeverOneButtonCharDB.cells[slot] then filled = filled + 1 end
+end
+H.Equal(filled, 20, "20 shown cells filled")
+H.Equal(ForeverOneButtonCharDB.cells[21], nil, "no hidden cell filled")
+H.Equal(ns.AutoFill.overflow, 2, "two spells left out")
+H.Check(ns.Settings.SetGridValue("slots", 30), "30 cells shown")
+H.Fire("SPELLS_CHANGED")
+H.Tick(1)
+H.Equal(ForeverOneButtonCharDB.cells[21].id, 8021, "cell 21 filled once shown")
+H.Equal(ForeverOneButtonCharDB.cells[22].id, 8022, "cell 22 filled once shown")
+H.Check(ns.Settings.SetGridValue("slots", 20), "back to 20")
+
 -- 0.1.0 account-wide cells move to the character once.
 ns = H.Boot({schema = 1, cells = {[3] = {kind = "spell", id = 300}}, grid = {slots = 12, columns = 6}}, nil)
 H.Equal(ForeverOneButtonCharDB.cells[3].id, 300, "legacy cell migrated")

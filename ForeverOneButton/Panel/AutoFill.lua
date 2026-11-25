@@ -112,8 +112,14 @@ local function FindCell(cells, spellID, name)
     return nil
 end
 
+-- Cells beyond the number shown are never filled: they have no key and the
+-- pixel never names them.
+local function Shown()
+    return math.min(ns.MAX_SLOTS, ns.Settings.Get().grid.slots or ns.MAX_SLOTS)
+end
+
 local function FirstFreeCell(cells)
-    for slot = 1, ns.MAX_SLOTS do
+    for slot = 1, Shown() do
         if not cells[slot] then return slot end
     end
     return nil
@@ -144,7 +150,7 @@ end
 local function CellForNew(cells, keep)
     local slot = FirstFreeCell(cells)
     if slot or not keep then return slot end
-    for stale = ns.MAX_SLOTS, 1, -1 do
+    for stale = Shown(), 1, -1 do
         local cell = cells[stale]
         if cell and cell.auto and cell.kind == "spell" and not InPool(keep, cell.id) then
             ns.Actions.RemoveAuto(stale)

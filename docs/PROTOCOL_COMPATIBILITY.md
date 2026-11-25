@@ -53,6 +53,30 @@ Il tipo di informazione resta lo stesso ("quale pulsante della panel esegue
 la raccomandazione"); cambia la tabella slot → azione, che ora è quella
 configurata dall'utente invece della tabella per classe di HCOB.
 
+## 3bis. Celle 21–30 (secondo banco, 2026-11-25)
+
+Richiesta del proprietario: 10 celle in più. Il v3 si ferma a R = 240 (slot
+20), quindi le celle 21–30 usano un secondo valore di G:
+
+| Celle | R | G | B |
+|---|---|---|---|
+| 1–20 (invariato, v3) | `slot × 12` | 96 | 224 |
+| 21–30 | `(slot − 20) × 12` | 160 | 224 |
+
+- I colori delle celle 1–20 non cambiano: HC One Button e il reader v3
+  restano compatibili.
+- Un reader v3 vede G = 160 come colore sconosciuto (oltre la tolleranza 8)
+  e non preme nulla.
+- Tasti di default delle celle 21–30: `CTRL-1`…`CTRL-0` (non ALT: sul forum
+  di Forever ALT-1…ALT-0 risultano non registrati; Windows riserva solo
+  CTRL-SHIFT-cifra ai tasti per la lingua di input). Nel client standard
+  CTRL-cifra comanda la barra del pet: la cella ha la precedenza finché
+  l'add-on è caricato. Le celle oltre il numero mostrato (default 20) non hanno tasto né
+  colore e il riempimento automatico non le usa.
+- Prove: `tests/test_protocol_bank2.lua`, `tests/test_autofill.lua`.
+  Reader: `MAX_SLOT = 30` e la palette a due banchi in `reader_core.py`
+  (3.4.0).
+
 ## 4. Mapping coda del motore → protocollo
 
 Dalla 1.0.0 la coda è costruita da `Engine/Queue.lua` (descrizione completa in

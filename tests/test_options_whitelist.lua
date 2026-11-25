@@ -9,8 +9,8 @@ HCOB_DB = {actionSlotKeys = {"SHIFT-1"}, diagPixel = false, prePullSafety = true
 local raw = {
     schema = 1, -- 0.1.0 layout: its account-wide cells migrate to the character spamButton = true, pullAdvisor = true, autoPull = true, priority = {1, 2}, rotation = "x",
     cells = {[1] = {kind = "macro", id = 1}, [2] = {kind = "spell", id = 5}, [3] = {kind = "spell", id = 5},
-        [4] = {kind = "item", id = -3}, [25] = {kind = "spell", id = 9}, [6] = {kind = "spell", id = 6, extra = "spam"}},
-    keys = {[1] = "BUTTON1", [2] = "shift-2", [3] = "SHIFT-2", [4] = "ctrl+alt+q", [30] = "F"},
+        [4] = {kind = "item", id = -3}, [31] = {kind = "spell", id = 9}, [6] = {kind = "spell", id = 6, extra = "spam"}},
+    keys = {[1] = "BUTTON1", [2] = "shift-2", [3] = "SHIFT-2", [4] = "ctrl+alt+q", [31] = "F"},
     grid = {columns = 999, slots = -4, scale = "big", cellSize = 33.4, foo = true, locked = false, point = {"NOWHERE", "CENTER", 1, 2}},
     pixel = {enabled = false, color = {1, 0, 0}, size = 32, point = {"TOPLEFT", "TOPLEFT", 5, -5}},
 }
@@ -89,11 +89,13 @@ end
 H.Equal(checks, 8 + featureChecks, "grid shown/locked, pixel shown/locked/combat only, Blizzard bar, minimap button, automatic fill, features")
 local labels = {}
 for _, b in ipairs(buttons) do labels[b.text] = (labels[b.text] or 0) + 1 end
-H.Equal(labels["Bind"], 20, "one Bind per cell")
-H.Equal(labels["Unbind"], 20, "one Unbind per cell")
-H.Equal(labels["Clear"], 20, "one Clear per cell")
-H.Equal(labels["Default"], 20, "one Default key per cell")
+H.Equal(labels["Bind"], ns.MAX_SLOTS, "one Bind per cell")
+H.Equal(labels["Unbind"], ns.MAX_SLOTS, "one Unbind per cell")
+H.Equal(labels["Clear"], ns.MAX_SLOTS, "one Clear per cell")
+H.Equal(labels["Default"], ns.MAX_SLOTS, "one Default key per cell")
 H.Equal(labels["-"], 6 + featureNumbers, "six layout decrement buttons plus the feature numbers")
+H.Equal(labels["1-15"], 1, "first cell group button")
+H.Equal(labels["16-30"], 1, "second cell group button")
 for text in pairs(labels) do
     H.Check(not text:lower():find("spam") and not text:lower():find("pull") and not text:lower():find("priorit"), "no excluded control: " .. text)
 end

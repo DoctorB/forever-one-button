@@ -21,7 +21,8 @@
 --
 -- RGB protocol v3: the color encodes ONLY the fixed slot.
 -- The colour carries neither the class nor the spell.
--- R = slot * 12, G = 96, B = 224.
+-- R = slot * 12, G = 96, B = 224 for slots 1-20; slots 21-30 (second bank,
+-- 2026-11-25): R = (slot - 20) * 12, G = 160, B = 224.
 -- Black = no recommended action; white = unmapped recommendation.
 local ADDON_NAME, ns = ...
 
@@ -70,6 +71,13 @@ end
 -- Last colour written, for /fob status and tests: "black", "white" or a slot.
 Pixel.lastState = "black"
 
+-- 8-bit red and green of a slot's colour.
+Pixel.BANK_SIZE, Pixel.BANK_G = 20, {96, 160}
+function Pixel.SlotColor(slot)
+    local bank = math.floor((slot - 1) / Pixel.BANK_SIZE)
+    return (slot - bank * Pixel.BANK_SIZE) * 12, Pixel.BANK_G[bank + 1]
+end
+
 local function RenderDiagnosticPixel(spellId)
     if not diagPixelTex then return end
     if not spellId then
@@ -81,7 +89,8 @@ local function RenderDiagnosticPixel(spellId)
 
     local slot = ns.Actions.SlotFor(spellId)
     if slot then
-        diagPixelTex:SetColorTexture((slot * 12) / 255, 96 / 255, 224 / 255, 1)
+        local r, g = Pixel.SlotColor(slot)
+        diagPixelTex:SetColorTexture(r / 255, g / 255, 224 / 255, 1)
         Pixel.lastState = slot
     else
         diagPixelTex:SetColorTexture(1, 1, 1, 1)

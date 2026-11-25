@@ -50,7 +50,7 @@ right-click locks or unlocks the grid; drag it along the minimap edge).
    the best healing potion or healthstone you carry, each take the first free
    cell and **keep it**. A new spell you learn goes to the next free cell; a
    new rank replaces the old one in the same cell; a better potion replaces
-   the old one. Nothing is ever moved. When all 20 cells are taken, a cell
+   the old one. Nothing is ever moved. When all the cells shown are taken, a cell
    filled automatically with a spell your current tree no longer uses (say,
    Hamstring after switching to Protection) makes room for a new one; cells
    you filled yourself are never taken. Cells are saved per character.
@@ -60,12 +60,12 @@ right-click locks or unlocks the grid; drag it along the minimap edge).
    (`/fob autofill reset` undoes this). Turn the fill off in the options or
    with `/fob autofill off`.
 2. **Keys.** Cells 1–10 use `SHIFT-1`…`SHIFT-0`, cells 11–20
-   `CTRL-SHIFT-1`…`CTRL-SHIFT-0` by default. In *Cells & keys* press **Bind**
+   `CTRL-SHIFT-1`…`CTRL-SHIFT-0` and cells 21–30 `CTRL-1`…`CTRL-0` by default. In *Cells & keys* press **Bind**
    and a key to change one (Esc cancels), **Unbind** for no key, **Default** to
    go back. A key used by another cell is refused. A key that also has a normal
    WoW binding is marked with `!`: the cell overrides it while the addon is
    loaded (by default `SHIFT-1`…`6` switch action bar pages).
-3. **Layout.** In *Layout & pixel*: number of cells (1–20, default 20 in 10
+3. **Layout.** In *Layout & pixel*: number of cells (1–30, default 20 in 10
    columns), columns, cell size, spacing, scale, how many queue positions are
    labelled, show/lock grid. The title bar above the grid moves it: right-click
    it to unlock, drag it with the left button, right-click again to lock. The
@@ -110,12 +110,13 @@ closes when combat starts.
 - If the suggestion is not on the grid, the status line says so; no other
   cell is highlighted instead. You start every pull and press every key.
 
-## Diagnostic pixel (protocol v3, unchanged from HCOneButton)
+## Diagnostic pixel (protocol v3 from HCOneButton, plus cells 21–30)
 
 | State | RGB |
 |---|---|
 | Cell *n* (1–20) holds the first ready suggestion | `R = n × 12, G = 96, B = 224` |
-| Out of combat (default "pixel only in combat"), or no executable suggestion (none, wait, no priority list for the class, engine error, player casting or channeling, confirmed out of range, an attack with no living enemy targeted) | `0, 0, 0` |
+| Cell *n* (21–30) holds the first ready suggestion | `R = (n − 20) × 12, G = 160, B = 224` |
+| Out of combat (default "pixel only in combat"), or no executable suggestion (none, wait, no priority list for the class, engine error, player casting or channeling, player stunned, feared or charmed, confirmed out of range, an attack with no living enemy targeted) | `0, 0, 0` |
 | Suggestion not on any cell | `255, 255, 255` |
 
 Only the damage queue reaches the pixel, plus one exception: with health
@@ -199,7 +200,8 @@ again after either answer.
 - **"No priority list for this class"**: the class has no Forever list in the
   data (all nine Forever classes have one).
 - **Gold frame missing but the strip shows `1: --`**: the suggested action is
-  not on a cell: all 20 cells are used or you removed it. Drag it onto a cell.
+  not on a cell: all the cells shown are used or you removed it. Show up to
+  30 cells in *Layout & pixel*. Drag it onto a cell.
 - **Cells stay empty**: `/fob status` shows the automatic fill state.
 - **Always the single-target list in a group fight**: enable enemy nameplates;
   engaged enemies are counted from them.
@@ -219,7 +221,7 @@ again after either answer.
   see [docs/FOREVER_API_COMPATIBILITY.md](docs/FOREVER_API_COMPATIBILITY.md).
 - The priority lists are the imported data; only the warrior lists can be
   checked in game for now.
-- Up to 20 cells: protocol v3 encodes slots 1–20 only.
+- Up to 30 cells.
 
 ## Development
 

@@ -14,7 +14,7 @@ Settings.CHAR_SCHEMA = 1
 -- The complete whitelist. See docs/BINDINGS_AND_OPTIONS.md for the reason
 -- behind every entry. Nothing here selects, ranks or triggers an action.
 Settings.GRID_LIMITS = {
-    slots = {min = 1, max = 20, default = 20},       -- number of cells shown
+    slots = {min = 1, max = 30, default = 20},       -- number of cells shown
     columns = {min = 1, max = 20, default = 10},     -- cells per row
     cellSize = {min = 24, max = 64, default = 40},   -- cell edge, UI units
     spacing = {min = 0, max = 12, default = 4},      -- gap between cells
@@ -72,12 +72,17 @@ end
 local SCHEMA1_DEFAULTS = {slots = 12, columns = 6}
 
 -- Default key per cell, chosen by the owner on 2026-10-15 (same scheme as
--- HCOneButton's Action Panel): SHIFT-1..0 then CTRL-SHIFT-1..0.
+-- HCOneButton's Action Panel): SHIFT-1..0 then CTRL-SHIFT-1..0; cells 21-30
+-- (2026-11-25) CTRL-1..0: a Forever forum report has ALT-1..0 never
+-- registered, and Windows reserves only CTRL-SHIFT-digit (input language
+-- hotkeys). The cell overrides the pet-bar default while the addon is loaded.
 Settings.DEFAULT_KEYS = {
     "SHIFT-1", "SHIFT-2", "SHIFT-3", "SHIFT-4", "SHIFT-5",
     "SHIFT-6", "SHIFT-7", "SHIFT-8", "SHIFT-9", "SHIFT-0",
     "CTRL-SHIFT-1", "CTRL-SHIFT-2", "CTRL-SHIFT-3", "CTRL-SHIFT-4", "CTRL-SHIFT-5",
     "CTRL-SHIFT-6", "CTRL-SHIFT-7", "CTRL-SHIFT-8", "CTRL-SHIFT-9", "CTRL-SHIFT-0",
+    "CTRL-1", "CTRL-2", "CTRL-3", "CTRL-4", "CTRL-5",
+    "CTRL-6", "CTRL-7", "CTRL-8", "CTRL-9", "CTRL-0",
 }
 
 Settings.DEFAULT_GRID_POINT = {"CENTER", "CENTER", 0, -220}
