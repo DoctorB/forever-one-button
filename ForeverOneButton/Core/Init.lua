@@ -5,7 +5,7 @@ local ADDON_NAME, ns = ...
 
 ns.NAME = "ForeverOneButton"
 ns.TITLE = "Forever One Button"
-ns.VERSION = "1.2.12"
+ns.VERSION = "1.2.13"
 
 -- Diagnostic Pixel Protocol v3 (HCOneButton) encodes action slots 1..20 as
 -- R = slot * 12, G = 96. Cells 21..30 (owner request 2026-11-25) use a second

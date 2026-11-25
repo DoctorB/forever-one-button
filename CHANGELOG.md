@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.13 - 2026-11-25
+
+### Added
+
+- **Up to 30 cells.** You can now show up to 30 cells (Layout & pixel). The
+  new cells use `CTRL-1`...`CTRL-0` by default; change or remove them in
+  *Cells & keys*, which now lists the cells 15 at a time. The automatic fill
+  only uses the cells you show.
+- **Protection Warriors against players: Hamstring and Disarm.** Against a
+  player in melee the addon suggests Battle Stance, then Hamstring, then
+  Defensive Stance straight away, at most once every 12 seconds and only
+  when the switch costs you little or no rage (Tactical Mastery). Disarm is
+  suggested against Warriors, Rogues, Paladins and Shamans when your health
+  drops below 60%. Against monsters nothing changes. Show 30 cells to make
+  room for Battle Stance, Hamstring and Disarm.
+
 ## 1.2.12 - 2026-11-24
 
 ### Fixed
