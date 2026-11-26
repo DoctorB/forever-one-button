@@ -5,7 +5,9 @@
 // Pure functions: the Worker (index.js) and the tests use them alike.
 
 export const MAX_PASTE_BYTES = 4 * 1024 * 1024;
-export const MAX_TEXT_BYTES = 24 * 1024 * 1024;
+// The addon keeps at most 20000 entries, about 1.5 MB of text: 6 MB leaves
+// room and keeps a small, highly compressed paste from filling the storage.
+export const MAX_TEXT_BYTES = 6 * 1024 * 1024;
 const PREFIX = /^!FOB:(\d+):([zt])!/;
 const SUFFIX = "!END:FOB!";
 const IDLE_GAP = 300; // seconds, as Share.IDLE_GAP in the addon

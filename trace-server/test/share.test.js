@@ -39,6 +39,8 @@ test("refusals say what is wrong", async () => {
   assert.equal(await code(line("z", Buffer.from("not deflate at all"))), "encoding");
   // A small paste that inflates past the ceiling is refused.
   assert.equal(await code(line("z", deflateRawSync(Buffer.alloc(30 * 1024 * 1024, 65)))), "too_large");
+  // So is one a few times the largest log the addon can hold.
+  assert.equal(await code(line("z", deflateRawSync(Buffer.alloc(7 * 1024 * 1024, 65)))), "too_large");
 });
 
 test("header keeps known keys; entries and summary", () => {
