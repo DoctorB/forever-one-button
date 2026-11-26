@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.14 - 2026-11-26
+
+### Fixed
+
+- **Critical health: the next healing item.** When your best healing item
+  was just used, the next one you carry on a cell (a healthstone, for
+  example) is now suggested instead of nothing.
+- **"A more powerful spell is already active" on Rend and other debuffs.**
+  The spell is now skipped only on that enemy, for half a minute. Before,
+  it was skipped on every enemy for a minute.
+- **Protection Warriors against players:** Battle Stance for Hamstring now
+  waits while Heroic Strike or Cleave is queued, so the rage for Hamstring
+  is still there after the switch.
+- **Two enemies at once:** going back to an enemy that still has your Rend,
+  Corruption or another damage-over-time spell no longer suggests it again.
+- A spell is no longer wrongly marked as useless against a kind of enemy
+  when the game refuses something else at the same moment.
+
 ## 1.2.13 - 2026-11-25
 
 ### Added
