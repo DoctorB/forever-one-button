@@ -572,8 +572,8 @@ function Grid.ShowQueue(snapshot, observation)
         button.positionText:SetText("")
         SetEdges(button.edges, nil)
         button.rangeTint:Hide()
+        button.wasGlowing = button.glow:IsShown()
         button.glow:Hide()
-        button.pulse:Stop()
     end
     SetEdges(Grid.queueIcons[1].edges, nil)
 
@@ -619,7 +619,8 @@ function Grid.ShowQueue(snapshot, observation)
                     if position == 1 and ready then
                         button.glow:SetVertexColor(color[1], color[2], color[3])
                         button.glow:Show()
-                        button.pulse:Play()
+                        -- The pulse of a cell that stays first keeps its beat.
+                        if not (button.wasGlowing and button.pulse:IsPlaying()) then button.pulse:Play() end
                     end
                     if position == 1 and observation.outOfRange then button.rangeTint:Show() end
                 end
@@ -631,6 +632,11 @@ function Grid.ShowQueue(snapshot, observation)
             item.icon:Hide()
             item.label:Hide()
         end
+    end
+
+    for slot = 1, ns.MAX_SLOTS do
+        local button = Grid.buttons[slot]
+        if not button.glow:IsShown() then button.pulse:Stop() end
     end
 
     local text = STATUS_TEXT[snapshot.status]

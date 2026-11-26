@@ -23,7 +23,9 @@ local ADDON_NAME, ns = ...
 local Targets = {}
 ns.Targets = Targets
 
-Targets.PAIR_SECONDS = 0.5 -- the failed cast and its error message arrive together
+-- The failed cast and its error message arrive together (4 ms apart in
+-- the logs); a wider window paired a failure with someone else's error.
+Targets.PAIR_SECONDS = 0.1
 
 local function Plain(value)
     if value == nil or ns.IsSecret(value) then return nil end
@@ -110,7 +112,8 @@ function Targets.Allows(spellID)
     if key and refused[key] and refused[key][base] then return false end
     if stronger[base] and GetTime() < stronger[base] then return false end
     local held = behind[base]
-    if held and held.epoch == targetEpoch and (held.guid == nil or held.guid == TargetGUID()) then
+    if held and held.epoch == targetEpoch and (held.guid == nil or held.guid == TargetGUID())
+        and (held.untilAt == nil or GetTime() < held.untilAt) then
         return false
     end
     local types = ns.Data.TargetRules.creatureTypes[base]
@@ -162,6 +165,7 @@ function Targets.Forget()
     wipe(behind)
     openerHeldOn = nil
     cachedAt = nil
+    if Targets.ForgetPending then Targets.ForgetPending() end
 end
 
 -- Learning from refusals -------------------------------------------------------
@@ -184,29 +188,58 @@ local function Stronger()
 end
 
 -- Holds the spell back on the current target only (positional refusal),
--- until the target changes; also when its GUID cannot be read.
-function Targets.RefuseHere(spellID)
+-- until the target changes; also when its GUID cannot be read. With
+-- `seconds`, at most that long (reason: the word written to the log).
+function Targets.RefuseHere(spellID, seconds, reason)
     if not spellID then return end
     local guid = TargetGUID()
-    behind[ns.Ranks.Base(spellID)] = {guid = guid, epoch = targetEpoch}
+    behind[ns.Ranks.Base(spellID)] = {guid = guid, epoch = targetEpoch, untilAt = seconds and GetTime() + seconds or nil}
     cachedAt = nil
-    ns.Log("refused", spellID, guid and "behind" or "behind-noguid")
+    reason = reason or "behind"
+    ns.Log("refused", spellID, guid and reason or (reason .. "-noguid"))
+end
+
+-- A stronger debuff of someone else on the target (battleground of
+-- 2026-11-25: another Warrior's Rend; the buff rule then held Rend back
+-- for 60 s on every target): only that target waits, and no longer than
+-- the debuff can last. Only a readable "harmful" counts; a buff, or a
+-- spell the client says nothing about, keeps the rule for buffs.
+Targets.STRONGER_DEBUFF_SECONDS = 30
+local function Harmful(spellID)
+    if not (C_Spell and type(C_Spell.IsSpellHarmful) == "function") then return false end
+    local ok, harmful = pcall(C_Spell.IsSpellHarmful, spellID)
+    return ok and not ns.IsSecret(harmful) and harmful == true
 end
 
 -- A refusal says something about a living enemy only: on a corpse, a
 -- friendly or no target, "Invalid target" teaches nothing about the creature.
 -- kind: "refused" (the creature), "behind" (this target), "stronger" (a
 -- buff, any target).
+-- An error of another kind ("Not enough rage") explains the failed cast
+-- that comes with it: that cast is not paired with a refusal message
+-- arriving for something else in the same moment.
 local failedSpell, failedAt, errorAt, kind = nil, nil, nil, nil
+local otherErrorAt
+local function Near(a, b)
+    return a ~= nil and b ~= nil and math.abs(a - b) <= Targets.PAIR_SECONDS
+end
 local function Pair()
     if failedSpell and failedAt and errorAt and math.abs(failedAt - errorAt) <= Targets.PAIR_SECONDS then
         if kind == "stronger" then
-            Targets.HoldStronger(failedSpell)
+            if Harmful(failedSpell) and ns.State.TargetAttackable() then
+                Targets.RefuseHere(failedSpell, Targets.STRONGER_DEBUFF_SECONDS, "stronger-here")
+            else
+                Targets.HoldStronger(failedSpell)
+            end
         elseif ns.State.TargetAttackable() then
             if kind == "behind" then Targets.RefuseHere(failedSpell) else Targets.Refuse(failedSpell, Targets.Key()) end
         end
         failedSpell, failedAt, errorAt, kind = nil, nil, nil, nil
     end
+end
+
+function Targets.ForgetPending()
+    failedSpell, failedAt, errorAt, kind, otherErrorAt = nil, nil, nil, nil, nil
 end
 
 local frame = CreateFrame("Frame")
@@ -228,6 +261,10 @@ frame:SetScript("OnEvent", function(_, event, ...)
         local spellID = Plain(select(3, ...))
         if type(spellID) ~= "number" then return end
         HoldOpener(spellID)
+        if Near(otherErrorAt, GetTime()) then
+            otherErrorAt = nil
+            return
+        end
         failedSpell, failedAt = spellID, GetTime()
     else
         local message = Plain(select(2, ...))
@@ -239,6 +276,11 @@ frame:SetScript("OnEvent", function(_, event, ...)
         elseif RefusalMessages()[message] then
             kind = "refused"
         else
+            if failedSpell and Near(failedAt, GetTime()) then
+                failedSpell, failedAt = nil, nil
+            else
+                otherErrorAt = GetTime()
+            end
             return
         end
         errorAt = GetTime()

@@ -83,8 +83,12 @@ local function recent(id, seconds) return {t = "since", id = id, op = "<", n = s
 local DISARM_CLASSES = {WARRIOR = true, ROGUE = true, PALADIN = true, SHAMAN = true}
 local PVP_DEFENSIVE_BACK = e(71, buffMissing(71), recent(2457, 15), any(recent(1715, 3), castAgo(2457, 2)))
 local PVP_HAMSTRING = e(1715, playerSure(), castAgo(1715, 12))
+-- Not with Heroic Strike or Cleave queued: the swing spends the rage, and
+-- Hamstring then waits in Battle Stance (2 swaps of 66 in the log of
+-- 2026-11-25).
+local function notQueued(id) return {t = "queued", id = id, neg = true} end
 local PVP_BATTLE_STANCE = e(2457, playerSure(), meleeSure(), castAgo(1715, 12), castAgo(2457, 12),
-    {t = "stanceRage", need = 10, lose = 10})
+    {t = "stanceRage", need = 10, lose = 10}, notQueued(78), notQueued(845))
 local PVP_DISARM = e(676, playerSure(), {t = "class", set = DISARM_CLASSES}, healthBelow(60), bashRage(20))
 -- The usual Defensive Stance entry comes second (`again`) after the return.
 DEFENSIVE_STANCE.again = true

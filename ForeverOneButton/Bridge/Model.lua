@@ -230,7 +230,7 @@ end
 -- may stay on screen looking current.
 function Model.Reset()
     lastSnapshot, lastCasting, lastOutOfRange, lastOutOfCombat, lastNoTarget = nil, nil, nil, nil, nil
-    lastInterruptHead = nil
+    lastInterruptHead, lastControlled = nil, false
     Model.snapshot = {status = ns.STATUS.MISSING, entries = {}, count = 0}
     Model.pixelHead = nil
     Model.interrupt = nil

@@ -201,7 +201,9 @@ end
 -- cell, else the best healing item if it has a cell. Queue.Build puts it at
 -- position 1, so the grid and the pixel both name it. Health that cannot be
 -- read never triggers it.
+local emergencyItem -- the item last returned as the emergency heal
 function Defensives.EmergencyHeal()
+    emergencyItem = nil
     if not ns.Settings.Feature("emergencyHeal") or not ns.InCombat() then return nil end
     if ns.State.HealthBelow("player", ns.Settings.Feature("emergencyHealBelow")) ~= true then return nil end
     local class = ns.Trees.Class()
@@ -215,15 +217,33 @@ function Defensives.EmergencyHeal()
             end
         end
     end
-    local itemID = ns.Settings.Feature("healingItems") and Defensives.BestHealingItem()
-    if itemID then
-        local entry = ItemEntry(itemID)
-        if entry.ready and ns.Actions.SlotFor(entry.id) then
-            entry.emergency = true
-            return entry
+    -- The best healing item owned that is ready and has a cell: with the
+    -- potion used, the healthstone on another cell still heals.
+    if ns.Settings.Feature("healingItems") then
+        for _, itemID in ipairs(ns.Data.Consumables.healingItems) do
+            if Defensives.ItemCount(itemID) > 0 then
+                local entry = ItemEntry(itemID)
+                if entry.ready and ns.Actions.SlotFor(entry.id) then
+                    entry.emergency = true
+                    emergencyItem = itemID
+                    return entry
+                end
+            end
         end
     end
     return nil
+end
+
+-- "Item is not ready yet" while an item is the emergency heal: its cooldown
+-- runs (shared with the item used before, and secret in combat), so it
+-- counts as used for this fight instead of being pressed until it ends.
+function Defensives.NoteError(message)
+    if not emergencyItem or type(message) ~= "string" or ns.IsSecret(message) or not ns.InCombat() then return end
+    if message == (_G.ERR_ITEM_COOLDOWN or "Item is not ready yet.") then
+        usedThisFight[emergencyItem] = true
+        ns.Log("refused", -emergencyItem, "cooldown")
+        emergencyItem = nil
+    end
 end
 
 -- The row ---------------------------------------------------------------------
@@ -290,6 +310,7 @@ frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
 frame:RegisterEvent("PLAYER_REGEN_DISABLED")
 pcall(frame.RegisterEvent, frame, "BAG_UPDATE_DELAYED")
+pcall(frame.RegisterEvent, frame, "UI_ERROR_MESSAGE")
 -- Every healing item counted while counts are plain: when the bags change
 -- and as a fight starts, so the counts kept for the fight are current.
 local function Recount()
@@ -298,6 +319,7 @@ end
 frame:SetScript("OnEvent", function(_, event, ...)
     if event == "PLAYER_REGEN_ENABLED" then wipe(usedThisFight) Recount() return end
     if event == "PLAYER_REGEN_DISABLED" or event == "BAG_UPDATE_DELAYED" then Recount() return end
+    if event == "UI_ERROR_MESSAGE" then Defensives.NoteError((select(2, ...))) return end
     local spellID = select(3, ...)
     if type(spellID) ~= "number" or ns.IsSecret(spellID) then return end
     for _, itemID in ipairs(ns.Data.Consumables.healingItems) do

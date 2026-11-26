@@ -318,27 +318,72 @@ end
 -- battleground (log of 2026-11-22) the pixel kept pressing through them:
 -- 369 refusals in 91 minutes ("Can't do that while stunned/fleeing").
 -- Roots, snares, silences and disarms are left out: a Warrior still acts.
--- Returns lost (true/false), source ("loc" from C_LossOfControl,
--- "full" from HasFullControl when the former cannot be read).
+-- Three readings, any of which says "lost" (log of 2026-11-25: the
+-- loss-of-control list alone never answered in a battleground, 351 refused
+-- presses): the loss-of-control list, the full-control flag, and the
+-- client's own refusal of a press ("Can't do that while stunned"), which
+-- holds for REFUSED_CONTROL_SECONDS and is renewed by the next refusal.
+-- Returns lost (true/false), source ("loc" from C_LossOfControl, "full"
+-- from HasFullControl, "refused" from a refused press; "?" when nothing
+-- could be read).
 State.LOST_CONTROL = {
     STUN = true, STUN_MECHANIC = true, FEAR = true, FEAR_MECHANIC = true, CHARM = true,
     CONFUSE = true, POSSESS = true, SLEEP = true, INCAPACITATE = true, POLYMORPH = true,
     HORROR = true, FREEZE = true, BANISH = true, CYCLONE = true,
 }
+State.REFUSED_CONTROL_SECONDS = 1
+local controlRefusedUntil = 0
+
+-- Refusals that mean "no control": the client's own strings where it has
+-- them, and the English texts seen in the logs. "while frozen" (a root:
+-- Charge refused) and "while silenced" are left out.
+local controlMessages
+local function ControlMessages()
+    if controlMessages then return controlMessages end
+    controlMessages = {}
+    for _, name in ipairs({"SPELL_FAILED_STUNNED", "SPELL_FAILED_FLEEING", "SPELL_FAILED_CONFUSED",
+        "SPELL_FAILED_CHARMED", "SPELL_FAILED_POSSESSED", "ERR_ATTACK_STUNNED", "ERR_ATTACK_FLEEING",
+        "ERR_ATTACK_CONFUSED", "ERR_ATTACK_CHARMED"}) do
+        local text = _G[name]
+        if type(text) == "string" and not ns.IsSecret(text) then controlMessages[text] = true end
+    end
+    for _, text in ipairs({"Can't do that while stunned", "Can't do that while fleeing",
+        "Can't do that while incapacitated", "Can't do that while charmed", "Can't do that while sapped",
+        "Can't do that while confused", "Can't do that while horrified", "Can't do that while asleep",
+        "Can't do that while polymorphed", "Can't do that while possessed",
+        "Can't attack while stunned.", "Can't attack while fleeing.", "Can't attack while confused.",
+        "Can't attack while charmed."}) do
+        controlMessages[text] = true
+    end
+    return controlMessages
+end
+
+function State.NoteError(message)
+    if type(message) ~= "string" or ns.IsSecret(message) then return end
+    if not ControlMessages()[message] then return end
+    local fresh = GetTime() >= controlRefusedUntil
+    controlRefusedUntil = GetTime() + State.REFUSED_CONTROL_SECONDS
+    -- The pixel goes black at once, not at the next poll.
+    if fresh and ns.Model and ns.Model.running then ns.Model.Refresh() end
+end
+
 function State.ControlLost()
+    local read = false
     if C_LossOfControl and C_LossOfControl.GetActiveLossOfControlDataCount then
         local count = Plain(Call(C_LossOfControl.GetActiveLossOfControlDataCount))
         if type(count) == "number" then
+            read = true
             for i = 1, count do
                 local data = Call(C_LossOfControl.GetActiveLossOfControlData, i)
                 local locType = type(data) == "table" and Plain(data.locType)
                 if locType and State.LOST_CONTROL[locType] then return true, "loc" end
             end
-            return false, "loc"
         end
     end
     local full = Plain(Call(HasFullControl))
     if full == false then return true, "full" end
+    if GetTime() < controlRefusedUntil then return true, "refused" end
+    if read then return false, "loc" end
     return false, full == nil and "?" or "full"
 end
 
@@ -536,8 +581,11 @@ State.frame = frame
 frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 pcall(frame.RegisterEvent, frame, "PLAYER_SWING")
 pcall(frame.RegisterEvent, frame, "CHAT_MSG_MONSTER_EMOTE")
+pcall(frame.RegisterEvent, frame, "UI_ERROR_MESSAGE")
 frame:SetScript("OnEvent", function(_, event, ...)
-    if event == "UNIT_SPELLCAST_SUCCEEDED" then
+    if event == "UI_ERROR_MESSAGE" then
+        State.NoteError((select(2, ...)))
+    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
         local spellID = select(3, ...)
         if type(spellID) == "number" and not ns.IsSecret(spellID) then State.NoteCast(spellID) end
     elseif event == "CHAT_MSG_MONSTER_EMOTE" then

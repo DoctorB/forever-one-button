@@ -52,4 +52,38 @@ _G.HasFullControl = nil
 H.Equal(ns.State.ControlLost(), false, "unknown never blocks")
 C_LossOfControl = api
 
+-- Battleground log of 2026-11-25: the loss-of-control list stayed empty
+-- through every stun and fear (351 refused presses). The other readings
+-- answer then: the full-control flag, and the client's refusal of a press.
+H.lossOfControl = {}
+_G.HasFullControl = function() return false end
+lost, source = ns.State.ControlLost()
+H.Equal(lost, true, "empty list, no full control: lost")
+H.Equal(source, "full", "source full with the list readable")
+_G.HasFullControl = function() return true end
+H.Equal(ns.State.ControlLost(), false, "empty list, full control")
+H.Tick(0.1)
+H.Equal(ns.Model.pixelHead, 100, "pixel on before the refusal")
+H.Fire("UI_ERROR_MESSAGE", 57, "Can't do that while stunned")
+H.Equal(ns.Model.pixelHead, nil, "refused press: black at once, without a poll")
+lost, source = ns.State.ControlLost()
+H.Equal(lost, true, "refused press: lost")
+H.Equal(source, "refused", "source refused")
+H.Tick(ns.State.REFUSED_CONTROL_SECONDS + 0.1)
+H.Equal(ns.Model.pixelHead, 100, "pixel back after the hold")
+for _, message in ipairs({"Can't attack while stunned.", "Can't do that while incapacitated",
+    "Can't do that while fleeing", "Can't do that while charmed", "Can't do that while sapped"}) do
+    H.Fire("UI_ERROR_MESSAGE", 57, message)
+    H.Equal(ns.State.ControlLost(), true, message)
+    H.Tick(ns.State.REFUSED_CONTROL_SECONDS + 0.1)
+end
+for _, message in ipairs({"Can't do that while frozen", "Ability is not ready yet.", "Not enough rage",
+    "Target needs to be in front of you."}) do
+    H.Fire("UI_ERROR_MESSAGE", 57, message)
+    H.Equal(ns.State.ControlLost(), false, message .. " keeps the pixel on")
+end
+H.Fire("UI_ERROR_MESSAGE", 57, H.Secret())
+H.Equal(ns.State.ControlLost(), false, "secret message ignored")
+_G.HasFullControl = nil
+
 H.Done("test_pixel_control_lost")

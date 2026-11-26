@@ -10,7 +10,7 @@ local GATES = {
     stack = true, starved = true, health = true, resource = true, known = true, near = true,
     all = true, stealth = true, unconfirmed = true, execute = true, totem = true, tick = true,
     fleeing = true, since = true, elite = true, reserve = true, group = true, loose = true, free = true,
-    player = true, class = true, stanceRage = true,
+    player = true, class = true, stanceRage = true, queued = true,
 }
 
 -- Abilities the leveling lists use beyond the imported class abilities; each
@@ -469,6 +469,14 @@ H.Equal(ns.State.StanceRageKept(), 10, "Tactical Mastery alone keeps 10")
 H.Check(Head() ~= 2457, "30 rage, 10 kept: no stance change")
 H.units.player.power[RAGE] = 20
 H.Equal(Head(), 2457, "20 rage, 10 kept: Battle Stance")
+-- Heroic Strike queued: the swing takes the rage Hamstring needs (2 swaps
+-- wasted in the log of 2026-11-25).
+local queuedStrike = ns.Ranks.HighestKnown(78)
+H.Check(queuedStrike, "Heroic Strike known")
+H.currentSpells[queuedStrike] = true
+H.Check(Head() ~= 2457, "Heroic Strike queued: no stance change")
+H.currentSpells[queuedStrike] = nil
+H.Equal(Head(), 2457, "Heroic Strike landed: Battle Stance")
 H.known[1310185] = nil
 H.Check(Head() ~= 2457, "no Tactical Mastery: no stance change")
 H.known[1310185], H.known[12295] = true, true

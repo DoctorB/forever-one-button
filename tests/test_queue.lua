@@ -354,6 +354,11 @@ H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 772)
 H.units.target.guid = "mob-3"
 H.Fire("PLAYER_TARGET_CHANGED")
 H.Equal(ns.Dots.Active(772), false, "Rend stays per target")
+H.units.target.guid = "mob-2"
+H.Fire("PLAYER_TARGET_CHANGED")
+H.Equal(ns.Dots.Active(772), true, "back on the target that has it: Rend still up")
+H.units.target.guid = "mob-3"
+H.Fire("PLAYER_TARGET_CHANGED")
 H.now = H.now + 46
 H.Equal(ns.Dots.Active(1160), false, "shout ran out after 45 s")
 H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "g", 1160)

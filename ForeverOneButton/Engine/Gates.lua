@@ -156,6 +156,13 @@ local EVALUATE = {
         return not onCooldown
     end,
     buff = function(g) return Neg(g, ns.State.BuffActive(g.id, g.dur)) end,
+    -- The spell is queued by the client (an on-next-swing attack waiting
+    -- for the swing: its rage is spent when it lands).
+    queued = function(g)
+        local id = ns.Ranks.HighestKnown(g.id)
+        if not id then return Neg(g, false) end
+        return Neg(g, ns.Queue.Current(id))
+    end,
     -- Rage kept for an interrupt (g.id) against a kind of target seen
     -- casting: needs g.n rage there; elsewhere, or when the interrupt is off,
     -- unknown, cooling down or unusable for a reason other than rage (no

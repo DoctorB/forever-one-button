@@ -122,6 +122,54 @@ H.now = H.now + T.STRONGER_HOLD_SECONDS + 1
 Fresh()
 H.Equal(T.Allows(SEAL), nil, "stronger aura: asked again after the hold")
 
+-- A refusal message that belongs to something else is not paired with a
+-- cast that failed for its own reason in the same moment.
+T.Forget()
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-a", STRIKE)
+H.Fire("UI_ERROR_MESSAGE", 62, "Ability is not ready yet.")
+H.Fire("UI_ERROR_MESSAGE", 57, "Invalid target")
+Fresh()
+H.Equal(T.Allows(STRIKE), nil, "failure explained by its own error: not refused")
+T.Forget()
+H.Fire("UI_ERROR_MESSAGE", 62, "Ability is not ready yet.")
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-b", STRIKE)
+H.Fire("UI_ERROR_MESSAGE", 57, "Invalid target")
+Fresh()
+H.Equal(T.Allows(STRIKE), nil, "error first, then the failure: not refused")
+T.Forget()
+H.Fire("UI_ERROR_MESSAGE", 57, "Invalid target")
+H.now = H.now + 0.3
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-c", STRIKE)
+Fresh()
+H.Equal(T.Allows(STRIKE), nil, "refusal 0.3 s earlier: not paired")
+T.Forget()
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-d", STRIKE)
+H.Fire("UI_ERROR_MESSAGE", 57, "Invalid target")
+Fresh()
+H.Equal(T.Allows(STRIKE), false, "a real refusal is still learned")
+
+-- A stronger debuff of someone else on the target (battleground of
+-- 2026-11-25: Rend refused, then held 60 s on every target): only that
+-- target waits, and not past the debuff's time.
+T.Forget()
+H.spells[STRIKE].harmful = true
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-7", STRIKE)
+H.Fire("UI_ERROR_MESSAGE", 57, "A more powerful spell is already active")
+Fresh()
+H.Equal(T.Allows(STRIKE), false, "stronger debuff: held on this target")
+H.units.target.guid = "Creature-0-1-2-3-778-0000000010"
+H.Fire("PLAYER_TARGET_CHANGED")
+Fresh()
+H.Equal(T.Allows(STRIKE), nil, "stronger debuff: another target is free")
+H.Fire("UNIT_SPELLCAST_FAILED", "player", "cast-8", STRIKE)
+H.Fire("UI_ERROR_MESSAGE", 57, "A more powerful spell is already active")
+Fresh()
+H.Equal(T.Allows(STRIKE), false, "stronger debuff: held again here")
+H.now = H.now + T.STRONGER_DEBUFF_SECONDS + 1
+Fresh()
+H.Equal(T.Allows(STRIKE), nil, "stronger debuff: asked again when it can have run out")
+H.spells[STRIKE].harmful = nil
+
 T.Forget()
 Fresh()
 H.Equal(T.Allows(JUDGEMENT), nil, "forgotten")

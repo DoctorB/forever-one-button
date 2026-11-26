@@ -69,6 +69,30 @@ H.inCombat = true
 H.Equal(Heal(), "none", "nothing without a cell (the pixel would be white)")
 H.spells[HOLY_LIGHT].cooldown = nil
 
+-- The best item used: the next healing item with a cell (potion on
+-- cooldown, healthstone ready).
+local STONE = ns.Data.Consumables.healingItems[5]
+H.items[STONE] = {name = "Healthstone", icon = "stone", spell = 22730}
+H.spells[HOLY_LIGHT].cooldown = true
+H.inCombat = false
+H.Check(A.Assign(3, "item", POTION), "potion back on cell 3")
+H.Check(A.Assign(4, "item", STONE), "healthstone on cell 4")
+H.bags[STONE] = 1
+H.inCombat = true
+H.Equal(Heal(), -POTION, "both ready: the better one")
+H.Fire("UNIT_SPELLCAST_SUCCEEDED", "player", "cast-p", 22729)
+H.Equal(Heal(), -STONE, "potion used: the healthstone")
+-- Its cooldown turns out to be shared: the client refuses the press, and
+-- the item is not pressed again in this fight.
+H.Fire("UI_ERROR_MESSAGE", 51, "Item is not ready yet.")
+H.Equal(Heal(), "none", "refused for its cooldown: no item left")
+H.inCombat = false
+H.Fire("PLAYER_REGEN_ENABLED")
+H.Check(A.Clear(3), "clear the potion")
+H.Check(A.Clear(4), "clear the healthstone")
+H.inCombat = true
+H.spells[HOLY_LIGHT].cooldown = nil
+
 -- Threshold and switch.
 features.emergencyHealBelow = 15
 H.Equal(Heal(), "none", "20% is above a 15% threshold")

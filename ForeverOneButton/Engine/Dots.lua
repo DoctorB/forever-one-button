@@ -24,6 +24,10 @@ Dots.STACKING = {[7386] = {duration = 30, max = 5}}
 Dots.DEFAULT_STACKING = {duration = 30, max = 5}
 
 local applied = {}  -- [rank-1 id] = {target, at}
+-- [rank-1 id] = {[target GUID] = cast time}: with readable GUIDs a DoT is
+-- remembered on every target it was cast on, so coming back to the first
+-- of two enemies does not cast it again while it still ticks there.
+local appliedOn = {}
 local stacks = {}   -- [rank-1 id] = {target, at, count}
 local targetSerial = 0
 
@@ -92,7 +96,12 @@ function Dots.NoteCast(spellID)
             stacks[first] = {target = Here(), at = now, count = 1}
         end
     elseif DotDuration(first) then
-        applied[first] = {target = Here(), at = now}
+        local here = Here()
+        applied[first] = {target = here, at = now}
+        if here.guid then
+            appliedOn[first] = appliedOn[first] or {}
+            appliedOn[first][here.guid] = now
+        end
     end
 end
 
@@ -105,7 +114,12 @@ function Dots.Active(spellID)
     if not duration then return nil end
     local entry = applied[first]
     if not entry then return false end
-    if not Dots.AREA[first] and not SameTarget(entry) then return false end
+    if not Dots.AREA[first] then
+        local guid = TargetGUID()
+        local at = guid and appliedOn[first] and appliedOn[first][guid]
+        if at then return GetTime() - at < duration end
+        if not SameTarget(entry) then return false end
+    end
     return GetTime() - entry.at < duration
 end
 
@@ -122,6 +136,7 @@ end
 
 function Dots.Reset()
     wipe(applied)
+    wipe(appliedOn)
     wipe(stacks)
 end
 
@@ -133,6 +148,14 @@ frame:SetScript("OnEvent", function(_, event)
     if event == "PLAYER_REGEN_ENABLED" then
         -- The next pack has not been hit by the last fight's shout.
         for first in pairs(Dots.AREA) do applied[first] = nil end
+        -- Casts that have run out are dropped; the table stays small.
+        local now = GetTime()
+        for first, targets in pairs(appliedOn) do
+            local duration = DotDuration(first) or 0
+            for guid, at in pairs(targets) do
+                if now - at >= duration then targets[guid] = nil end
+            end
+        end
         return
     end
     targetSerial = targetSerial + 1
