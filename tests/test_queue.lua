@@ -186,6 +186,14 @@ H.Check(not s.entries[1].gapCloser, "no Charge when Charge cannot reach")
 Place(true, true) -- in melee
 s = Build()
 H.Check(not s.entries[1].gapCloser, "no Charge in melee")
+-- Heroic Strike has no range of its own: out of melee it waits, like the
+-- other strikes (logs of 2026-11-27: pressed and refused ten times a second).
+local heroic = ns.Ranks.HighestKnown(78)
+H.Check(s.why:find(heroic .. "-range", 1, true) == nil, "Heroic Strike in reach in melee: " .. s.why)
+Place(false, false)
+s = Build()
+H.Check(s.why:find(heroic .. "-range", 1, true) ~= nil, "Heroic Strike waits out of melee: " .. s.why)
+Place(true, true)
 for id in pairs(refs) do
     H.known[id] = true
     H.spells[id].inRange = true

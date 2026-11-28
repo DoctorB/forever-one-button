@@ -74,6 +74,11 @@ local function Repeating(spellID)
     return ok and not ns.IsSecret(on) and on == true
 end
 
+local function NextSwing(entry, id)
+    local nextSwing = ns.Data.Defaults.nextSwing or {}
+    return nextSwing[id] or nextSwing[entry.id] or false
+end
+
 -- Ready or the tier it waits in: 1 cooldown/resources, 2 barred (wrong
 -- stance or form), 3 held back (gate, range, DoT up, already queued), and
 -- the reason, for the diagnostic log: cd, res, use, cur, range, dot, gate.
@@ -85,7 +90,15 @@ local function Evaluate(entry, id, ctx)
     if noResources == true then return false, 1, "res" end
     if usable == false then return false, 2, "use" end
     if Current(id) then return false, 3, "cur" end
-    if ctx.targetAttackable and ns.State.InRange(id) == false then return false, 3, "range" end
+    if ctx.targetAttackable then
+        local inRange = ns.State.InRange(id)
+        -- An on-next-swing attack has no range of its own: out of melee the
+        -- client refuses every press (logs of 2026-11-27: 288 refusals).
+        if inRange == nil and NextSwing(entry, id) then
+            inRange = ns.State.TargetWithin(Queue.MELEE_YARDS)
+        end
+        if inRange == false then return false, 3, "range" end
+    end
     -- `refresh` (Data/Leveling.lua): cast again while the debuff is up.
     if not entry.refresh and ns.Dots.Active(id) == true then return false, 3, "dot" end
     if ns.Gates.Blocks(entry.gates, ctx) then return false, 3, "gate" end
