@@ -243,6 +243,35 @@ buffer da 5000 righe teneva solo gli ultimi 76 minuti (dal livello 8 circa),
   8 m non risponde decidono i riferimenti di mischia (5 m); la Charge stessa
   esclude la fascia 5-8 m. `test_queue` ora prova anche i soli riferimenti
   del Guerriero. Da verificare in gioco (42).
+- 2026-11-27 sera, due log 1.2.14 dello stesso Guerriero protection 29 in
+  battleground (log condiviso delle 21:02, 73 combattimenti; log salvato
+  delle 23:20, 76 combattimenti; client 1.60.1.71139; installazione uguale
+  al repository):
+  - 42 superata sulla griglia: Charge (1240288) in posizione 1 fuori dal
+    combattimento 77 e 81 volte, lanciato 49 e 43 volte, 45 e 39 entro 1,5 s
+    dalla proposta. Gli "Out of range." di Charge (132 e 98) sono pressioni
+    a mano oltre i 25 m, con Charge non proposto.
+  - 44 superata per le celle 21 e 22: Disarm (CTRL-1) e Battle Stance
+    (CTRL-2) lanciati dal lettore, in tutto 39 e 182 volte. HC One Button
+    con il lettore 3.4.0 non provato.
+  - 45 superata: Battle Stance 108 e 74 volte, mai a meno di 12,1 s dalla
+    precedente; Hamstring subito dopo 82 e 59 volte, Defensive Stance di
+    ritorno dopo 1,06 s (mediana). Senza Hamstring (bersaglio uscito dalla
+    mischia) Defensive Stance torna comunque. Disarm 28 e 11 volte, solo su
+    giocatori.
+  - 46 superata: 98 e 41 episodi `control|lost` chiusi da `control|back`.
+    Con gli stun compare quasi solo `refused` (64 e 9 episodi), un rifiuto al
+    secondo: le due letture del client non rispondono agli stun su Forever.
+    `full` compare 34 e 32 volte, con 3 rifiuti in tutto durante gli episodi.
+    I rifiuti in più dentro un episodio sono Shield Block premuto a mano.
+    "while frozen" (root): il pixel continua, come previsto.
+  - 47 non esercitata: nessuna riga `refused|` in tutti e due i log.
+  - Nuovo: Heroic Strike proposto con il bersaglio fuori mischia (Rend e
+    Sunder Armor in `range`): 61 e 227 rifiuti "Target needs to be in front
+    of you.", fino a 126 in 6,6 s. `IsSpellInRange` non risponde per gli
+    attacchi sul prossimo colpo. Correzione sul branch
+    `fix/heroic-strike-melee-range`: fuori dalla mischia aspettano
+    (`range`), `test_queue`. Da verificare in gioco.
 
 Condivisione del log (`/fob share`, branch feat/share-log), 2026-11-08,
 client 1.60.1.70862, Ladro 13 in locanda:
