@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.15 - 2026-11-28
+
+### Fixed
+
+- **Heroic Strike, Cleave and the other attacks that land with your next
+  swing** are no longer suggested while the enemy is out of melee range.
+  Before, the addon kept asking for them when the enemy had moved away and
+  the game refused every press.
+
 ## 1.2.14 - 2026-11-26
 
 ### Fixed
